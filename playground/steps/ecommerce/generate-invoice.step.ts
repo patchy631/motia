@@ -26,11 +26,11 @@ export const config: FlowConfig<Input> = {
 
 export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
   // Here you would integrate with your invoicing system
-  console.log('[Generate Invoice] Generating invoice for order:', input.orderId)
+  ctx.logger.info('[Generate Invoice] Generating invoice for order', input)
 
   const invoiceNumber = `INV-${Date.now()}`
 
-  console.log('[Generate Invoice] Created invoice:', {
+  ctx.logger.info('[Generate Invoice] Created invoice', {
     invoiceNumber,
     orderId: input.orderId,
     amount: input.amount,

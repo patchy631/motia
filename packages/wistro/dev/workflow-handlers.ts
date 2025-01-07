@@ -26,8 +26,8 @@ const callWorkflowFile = <TData>(
     })
 
     child.on('message', (message: Event<unknown>) => {
-      console.log(`[${command} Runner] Received message`, message)
-      eventManager.emit({ ...message, traceId: event.traceId })
+      event.logger.info('[Runner] Received message', message)
+      eventManager.emit({ ...message, traceId: event.traceId, workflowId: event.workflowId, logger: event.logger })
     })
 
     child.on('close', (code) => {
@@ -56,13 +56,13 @@ export const createWorkflowHandlers = (
 
     subscribes.forEach((subscribe) => {
       eventManager.subscribe(subscribe, file, async (event) => {
-        console.log(`[Workflow] ${file} received event`, event)
+        event.logger.info('[Workflow] received event', { event, file })
         socketServer.emit('event', { time: Date.now(), event, file, traceId: event.traceId })
 
         try {
           await callWorkflowFile(filePath, event, stateConfig, eventManager)
         } catch (error) {
-          console.error(`[Workflow] ${file} error calling workflow`, { error, filePath })
+          event.logger.error(`[Workflow] Error calling workflow`, { error, filePath, file })
         }
       })
     })

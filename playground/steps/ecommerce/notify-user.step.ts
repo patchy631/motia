@@ -19,12 +19,7 @@ export const config: FlowConfig<Input> = {
   workflow: 'ecommerce',
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
+export const executor: FlowExecutor<Input> = async (input, _, ctx) => {
   // Here you would integrate with your notification system
-  console.log('[Notify User] Sending notification:', {
-    userId: input.userId,
-    title: input.title,
-    description: input.description,
-    cta: input.cta,
-  })
+  ctx.logger.info('[Notify User] Sending notification', input)
 }

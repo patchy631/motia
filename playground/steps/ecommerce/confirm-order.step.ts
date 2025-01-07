@@ -18,7 +18,7 @@ export const config: FlowConfig<Input> = {
 
 export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
   // Here you would integrate with your order management system
-  console.log('[Confirm Order] Order confirmed:', input.orderId)
+  ctx.logger.info('[Confirm Order] Order confirmed', input)
 
   await emit({
     type: 'ecommerce.notify-user',

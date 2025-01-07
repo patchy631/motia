@@ -1,4 +1,5 @@
 import { z, ZodObject } from 'zod'
+import { Logger } from './dev/logger'
 
 export type Emitter = (event: any) => Promise<void>
 export type FlowContext = {
@@ -8,6 +9,7 @@ export type FlowContext = {
     clear: (traceId: string) => Promise<void>
     set: <T>(traceId: string, key: string, value: T) => Promise<void>
   }
+  logger: Logger
 }
 export type FlowExecutor<TInput extends ZodObject<any>> = (
   input: z.infer<TInput>,
@@ -23,7 +25,7 @@ export type FlowConfig<TInput extends ZodObject<any>> = {
   subscribes: string[]
   emits: Emit[]
   input: TInput
-  workflow: string;
+  workflow: string
 }
 
 export type Flow<TInput extends ZodObject<any>> = {

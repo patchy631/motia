@@ -6,8 +6,8 @@ config = {
     "workflow": "openai"
 }
 
-async def executor(args, emit):
-    print('[Call Python OpenAI] Received call_ai event', args);
+async def executor(args, emit, ctx):
+    ctx.logger.info('[Call Python OpenAI] Received call_ai event', args);
 
     await emit({
         "type": "openai-response",

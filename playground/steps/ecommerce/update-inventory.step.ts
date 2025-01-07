@@ -17,10 +17,7 @@ export const config: FlowConfig<Input> = {
   workflow: 'ecommerce',
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
+export const executor: FlowExecutor<Input> = async (input, _, ctx) => {
   // Here you would integrate with your inventory management system
-  console.log('[Update Inventory] Updating inventory:', {
-    sku: input.sku,
-    quantity: input.quantity,
-  })
+  ctx.logger.info('[Update Inventory] Updating inventory', input)
 }

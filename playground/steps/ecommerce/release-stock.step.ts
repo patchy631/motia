@@ -17,6 +17,6 @@ export const config: FlowConfig<Input> = {
   workflow: 'ecommerce',
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
-  console.log('[Release Stock] Stock released:', input.sku, input.quantity)
+export const executor: FlowExecutor<Input> = async (input, _, ctx) => {
+  ctx.logger.info('[Release Stock] Stock released', input)
 }

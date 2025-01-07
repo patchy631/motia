@@ -25,7 +25,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
   const reserved = Math.random() > 0.2
 
   if (reserved) {
-    console.log('[Reserve Stock] Stock reserved:', input.sku, input.quantity)
+    ctx.logger.info('[Reserve Stock] Stock reserved', input)
 
     await emit({
       type: 'ecommerce.process-payment',
@@ -35,7 +35,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
       },
     })
   } else {
-    console.log('[Reserve Stock] Reservation failed:', input.sku, input.quantity)
+    ctx.logger.info('[Reserve Stock] Reservation failed', input)
 
     await emit({
       type: 'ecommerce.notify-user',

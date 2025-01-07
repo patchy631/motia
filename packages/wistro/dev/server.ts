@@ -7,6 +7,7 @@ import http from 'http'
 import { Config, WorkflowStep } from './config.types'
 import { Event, EventManager } from './event-manager'
 import { workflowsEndpoint } from './workflows-endpoint'
+import { Logger } from './logger'
 
 export const createServer = async (config: Config, workflowSteps: WorkflowStep[], eventManager: EventManager) => {
   const app = express()
@@ -15,19 +16,21 @@ export const createServer = async (config: Config, workflowSteps: WorkflowStep[]
 
   console.log('[API] Registering routes', config.api.paths)
 
-  const asyncHandler = (emits: string) => {
+  const asyncHandler = (emits: string, workflowId: string) => {
     return async (req: Request, res: Response) => {
       const traceId = randomUUID()
-      const event: Event<unknown> = {
+      const logger = new Logger(traceId, workflowId)
+      const event: Omit<Event<unknown>, 'logger'> = {
         traceId,
+        workflowId,
         type: emits,
         data: req.body,
       }
 
-      console.log('[API] Request received', event)
+      logger.info('[API] Request received', event)
 
       try {
-        await eventManager.emit(event)
+        await eventManager.emit({ ...event, logger })
         res.send({ success: true, eventType: emits, traceId })
       } catch (error) {
         console.error('[API] Error emitting event', error)
@@ -40,14 +43,14 @@ export const createServer = async (config: Config, workflowSteps: WorkflowStep[]
   app.use(bodyParser.urlencoded({ extended: true }))
 
   for (const path in config.api.paths) {
-    const { method, emits } = config.api.paths[path]
+    const { method, emits, workflow } = config.api.paths[path]
 
     console.log('[API] Registering route', { method, path, emits })
 
     if (method === 'POST') {
-      app.post(path, asyncHandler(emits))
+      app.post(path, asyncHandler(emits, workflow))
     } else if (method === 'GET') {
-      app.get(path, asyncHandler(emits))
+      app.get(path, asyncHandler(emits, workflow))
     } else {
       throw new Error(`Unsupported method: ${method}`)
     }

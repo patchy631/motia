@@ -16,9 +16,9 @@ export const config: FlowConfig<Input> = {
   workflow: 'ecommerce',
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit) => {
+export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
   // Here you would integrate with your order management system
-  console.log('[Cancel Order] Order cancelled:', input.orderId)
+  ctx.logger.info('[Cancel Order] Order cancelled:', input.orderId)
 
   await emit({
     type: 'ecommerce.release-stock',

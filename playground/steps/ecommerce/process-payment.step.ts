@@ -23,14 +23,14 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
   const paymentSuccessful = Math.random() > 0.2
 
   if (paymentSuccessful) {
-    console.log('[Process Payment] Payment successful')
+    ctx.logger.info('[Process Payment] Payment successful')
 
     await emit({
       type: 'ecommerce.confirm-order',
       data: { orderId: 'order-123' },
     })
   } else {
-    console.log('[Process Payment] Payment failed')
+    ctx.logger.info('[Process Payment] Payment failed')
 
     await emit({
       type: 'ecommerce.cancel-order',

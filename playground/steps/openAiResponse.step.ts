@@ -15,6 +15,6 @@ export const config: FlowConfig<Input> = {
   workflow: 'openai',
 }
 
-export const executor: FlowExecutor<Input> = async (input) => {
-  console.log('[OpenAI Response] Received event', input)
+export const executor: FlowExecutor<Input> = async (input, _, ctx) => {
+  ctx.logger.info('[OpenAI Response] Received event', input)
 }

@@ -25,7 +25,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
   const inStock = Math.random() > 0.5
 
   if (inStock) {
-    console.log('[Check Inventory] Stock available:', input.sku, input.quantity)
+    ctx.logger.info('[Check Inventory] Stock available', input)
 
     await emit({
       type: 'ecommerce.reserve-stock',
@@ -35,7 +35,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
       },
     })
   } else {
-    console.log('[Check Inventory] Out of stock:', input.sku, input.quantity)
+    ctx.logger.info('[Check Inventory] Out of stock', input)
 
     await emit({
       type: 'ecommerce.notify-user',
