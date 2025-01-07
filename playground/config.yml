@@ -22,6 +22,12 @@ workflows:
   ecommerce:
     name: Ecommerce Example
     description: A workflow that demonstrates the use of ecommerce in a workflow
+  vision:
+    name: Vision Agent Example
+    description: A workflow that demonstrates the use of vision in a workflow
+  wistro:
+    name: Wistro CLI Flows
+    description: A workflow that handles tasks from the wistro cli
 
 api:
   port: 3000
@@ -74,6 +80,18 @@ api:
       method: POST
       emits: ecommerce.new-order
       workflow: ecommerce
+    /api/vision/evaluate:
+      name: Evaluate people in image
+      description: A vision agent that evaluates people in an image
+      method: POST
+      emits: vision.evaluate
+      workflow: vision
+    /api/wistro/generate-step:
+      name: Evaluate people in image
+      description: A vision agent that evaluates people in an image
+      method: POST
+      emits: wistro.generate.step
+      workflow: wistro
 
 cron:
   parallel-merge-cron:
