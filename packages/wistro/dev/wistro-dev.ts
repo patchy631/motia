@@ -28,7 +28,13 @@ async function parseWorkflowFolder(folderPath: string, nextWorkflows: WorkflowSt
 
     if (isPython) {
       console.log('[Workflows] Building Python workflow', file)
-      const config = await getPythonConfig(path.join(folderPath, file))
+      const config = await getPythonConfig(path.join(folderPath, file)).catch((error: unknown) => {
+        console.log(`[Workflows] skipping file ${file} as it does not have a valid config`, { error })
+        return null
+      })
+      if (!config) {
+        continue
+      }
       console.log('[Workflows] Python workflow config', config)
       workflows.push({ config, file, filePath: path.join(folderPath, file) })
     } else {
