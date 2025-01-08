@@ -6,7 +6,7 @@ class BaseLogger {
 
   constructor(meta: any = {}) {
     this.logger = pino({
-      level: 'info',
+      level: process.env.LOG_LEVEL || 'info',
       formatters: { level: (level) => ({ level }) },
       base: null,
       mixin: () => meta,
