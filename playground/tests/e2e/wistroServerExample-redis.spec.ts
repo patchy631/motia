@@ -26,7 +26,7 @@ test.describe('WistroServerExample + Redis E2E', () => {
   test('verifies wistroServerExample flow & Redis events', async ({ page }) => {
     // 2) Navigate to Playground UI
     await page.goto('http://localhost:3000')
-    await expect(page.locator('text=Select Flow')).toBeVisible()
+    await expect(page.locator('text=Wistro Server Example')).toBeVisible()
 
     // 3) Select the "wistroServerExample" flow
     const flowSelect = page.locator('select')

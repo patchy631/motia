@@ -24,13 +24,13 @@ const FLOWS = [
 test.describe('Flow Selector & Visual Tests', () => {
   test('the flow selector is visible', async ({ page }) => {
     // Go to your Playground UI root (adjust if needed)
-    await page.goto('http://localhost:5173/')
-    const selectorHeading = page.locator('text=Select Flow')
+    await page.goto('http://localhost:3000/')
+    const selectorHeading = page.locator('text=Booking Example')
     await expect(selectorHeading).toBeVisible()
   })
 
   test('can switch among the three flows', async ({ page }) => {
-    await page.goto('http://localhost:5173/')
+    await page.goto('http://localhost:3000/')
 
     // Wait for the flow selector to appear
     const flowSelect = page.locator('select')
@@ -46,8 +46,8 @@ test.describe('Flow Selector & Visual Tests', () => {
 
   test('visual regression for the three flows', async ({ page }) => {
     // 1) Navigate to the main Playground UI
-    await page.goto('http://localhost:5173/')
-    await page.locator('text=Select Flow').waitFor()
+    await page.goto('http://localhost:3000/')
+    await page.locator('text=Booking Example').waitFor()
 
     // 2) For each flow, select it, wait for the node, then take a screenshot
     const flowSelect = page.locator('select')
