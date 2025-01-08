@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from './ui/sidebar'
-import { Flow } from 'lucide-react'
+import { Workflow } from 'lucide-react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 
 export const AppSidebar = () => {
@@ -39,7 +39,7 @@ export const AppSidebar = () => {
                       className="flex items-center gap-2"
                       data-testid={flow.id}
                     >
-                      <Flow />
+                      <Workflow />
                       <span>{flow.name}</span>
                     </Link>
                   </SidebarMenuButton>

@@ -6,6 +6,7 @@ import express, { Request, Response } from 'express'
 import http from 'http'
 import { Config, FlowStep } from './config.types'
 import { Event, EventManager, WistroServer, WistroSockerServer } from './../wistro.types'
+import { flowsEndpoint } from './flows-endpoint'
 
 export const createServer = async (
   config: Config,

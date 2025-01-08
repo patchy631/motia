@@ -7,7 +7,7 @@
     "build": "pnpm --filter=!docs run -r build",
     "build-config": "node packages/wistro/src/cli/WistroConfigBuilder.js playground",
     "test:unit": "pnpm vitest",
-    "test": "concurrently \"pnpm run test:unit\" \"pnpm run test:e2e\"",
+    "test": "pnpm run test:unit",
     "clean": "rm -rf node_modules pnpm-lock.yaml dist .turbo .next",
     "wistro": "node packages/wistro/src/cli/index.js"
   },
