@@ -10,7 +10,13 @@ require('ts-node').register({
 program //
   .command('dev')
   .description('Start the development server')
-  .action(async () => {
+  .option('-d, --debug', 'Enable debug logging')
+  .action(async (arg) => {
+    if (arg.debug) {
+      console.log('🔍 Debug logging enabled')
+      process.env.LOG_LEVEL = 'debug'
+    }
+
     const { dev } = require('./dev/wistro-dev')
     await dev()
   })
