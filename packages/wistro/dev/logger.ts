@@ -1,6 +1,8 @@
 import pino from 'pino'
 import { Server } from 'socket.io'
 
+const isDebugEnabled = () => process.env.LOG_LEVEL === 'debug'
+
 class BaseLogger {
   private logger: pino.Logger
 
@@ -68,7 +70,9 @@ export class Logger extends BaseLogger {
 
   debug = (message: string, args?: any) => {
     super.debug(message, args)
-    this.emitLog('debug', message, args)
+    if (isDebugEnabled()) {
+      this.emitLog('debug', message, args)
+    }
   }
 
   warn = (message: string, args?: any) => {
