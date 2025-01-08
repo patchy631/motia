@@ -19,7 +19,7 @@ export const createServer = async (config: Config, workflowSteps: WorkflowStep[]
   const asyncHandler = (emits: string, workflowId: string) => {
     return async (req: Request, res: Response) => {
       const traceId = randomUUID()
-      const logger = new Logger(traceId, workflowId)
+      const logger = new Logger(traceId, workflowId, io)
       const event: Omit<Event<unknown>, 'logger'> = {
         traceId,
         workflowId,

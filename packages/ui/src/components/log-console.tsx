@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Button } from './ui/button'
-import { motion } from 'framer-motion'
-import { useTriggerLogs } from '@/stores/triggerLogs'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronUp, Trash2, Terminal } from 'lucide-react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useTriggerLogs } from '@/stores/triggerLogs'
+import { motion } from 'framer-motion'
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { LogLevelBadge } from './log-level-badge'
+import { Button } from './ui/button'
 
 const timestamp = (time: number) => {
   const date = new Date(Number(time))
@@ -12,18 +14,16 @@ const timestamp = (time: number) => {
 
 export const LogConsole = () => {
   const [isExpanded, setIsExpanded] = useState(false)
-  const messages = useTriggerLogs((state) => state.messages)
-  const resetMessages = useTriggerLogs((state) => state.resetMessages)
-  const traceIds = useMemo(() => Object.keys(messages), [messages])
-
+  const logs = useTriggerLogs((state) => state.logs)
+  const resetLogs = useTriggerLogs((state) => state.resetLogs)
   const toggleExpand = () => setIsExpanded((prev) => !prev)
 
   return (
     <div className="absolute bottom-0 left-0 right-0 w-full bg-black h-fit z-40">
       <div className="flex justify-between w-full items-center p-2">
         <label className="text-green-500 w-full text-left justify-start h-full text-lg font-bold">Logs</label>
-        {traceIds.length > 0 && (
-          <Button variant="link" onClick={() => resetMessages()} className="text-green-500">
+        {logs.length > 0 && (
+          <Button variant="link" onClick={resetLogs} className="text-green-500">
             <Trash2 className="w-4 h-4 text-green-500" />
             Clear logs
           </Button>
@@ -42,17 +42,32 @@ export const LogConsole = () => {
             animate={{ height: '25vh' }}
             transition={{ duration: 0.3 }}
           >
-            {traceIds.map((traceId, index) => (
-              <div key={index} className="flex flex-col gap-2 px-2">
-                {messages[traceId]?.map((message, mIndex) => (
-                  <div key={mIndex} className="flex items-center gap-1 font-mono">
-                    <Terminal className="h-4 w-4 text-green-500" />
-                    <span className="text-green-500">[{timestamp(message.time)}]</span>
-                    {message.message}
-                  </div>
+            <Table>
+              <TableHeader className="sticky top-0 bg-black">
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Level</TableHead>
+                  <TableHead>Trace</TableHead>
+                  <TableHead>Workflow</TableHead>
+                  <TableHead>Message</TableHead>
+                  <TableHead>File</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="text-md font-mono font-bold">
+                {logs.map((log, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="text-green-500">{timestamp(log.time)}</TableCell>
+                    <TableCell>
+                      <LogLevelBadge level={log.level} />
+                    </TableCell>
+                    <TableCell>{log.traceId.split('-').pop()}</TableCell>
+                    <TableCell>{log.workflowId}</TableCell>
+                    <TableCell>{log.msg}</TableCell>
+                    <TableCell>{log.file}</TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            ))}
+              </TableBody>
+            </Table>
           </motion.div>
         </CollapsibleContent>
       </Collapsible>

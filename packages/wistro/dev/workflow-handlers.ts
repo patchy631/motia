@@ -1,15 +1,15 @@
-import { Event, EventManager } from './event-manager'
 import { spawn } from 'child_process'
 import path from 'path'
-import { WorkflowStep } from './config.types'
 import { AdapterConfig } from '../state/createStateAdapter'
-import { Server } from 'socket.io'
+import { WorkflowStep } from './config.types'
+import { Event, EventManager } from './event-manager'
 
 const nodeRunner = path.join(__dirname, 'node', 'node-runner.js')
 const pythonRunner = path.join(__dirname, 'python', 'python-runner.py')
 
 const callWorkflowFile = <TData>(
   flowPath: string,
+  file: string,
   event: Event<TData>,
   stateConfig: AdapterConfig,
   eventManager: EventManager,
@@ -22,12 +22,25 @@ const callWorkflowFile = <TData>(
     const command = isPython ? 'python' : 'node'
 
     const child = spawn(command, [runner, flowPath, jsonData], {
-      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+      stdio: [undefined, undefined, undefined, 'ipc'],
     })
 
+    child.stdout?.on('data', (data) => {
+      try {
+        const message = JSON.parse(data.toString())
+        event.logger.log(message)
+      } catch (error) {
+        console.log(data)
+      }
+    })
+
+    child.stderr?.on('data', (data) => console.error(data))
+
     child.on('message', (message: Event<unknown>) => {
-      event.logger.info('[Runner] Received message', message)
-      eventManager.emit({ ...message, traceId: event.traceId, workflowId: event.workflowId, logger: event.logger })
+      eventManager.emit(
+        { ...message, traceId: event.traceId, workflowId: event.workflowId, logger: event.logger },
+        file,
+      )
     })
 
     child.on('close', (code) => {
@@ -44,7 +57,6 @@ export const createWorkflowHandlers = (
   workflows: WorkflowStep[],
   eventManager: EventManager,
   stateConfig: AdapterConfig,
-  socketServer: Server,
 ) => {
   console.log(`[Workflows] Creating workflow handlers for ${workflows.length} workflows`)
 
@@ -56,11 +68,11 @@ export const createWorkflowHandlers = (
 
     subscribes.forEach((subscribe) => {
       eventManager.subscribe(subscribe, file, async (event) => {
-        event.logger.info('[Workflow] received event', { event, file })
-        socketServer.emit('event', { time: Date.now(), event, file, traceId: event.traceId })
+        const { logger, ...rest } = event
+        logger.info('[Workflow] received event', { event: rest, file })
 
         try {
-          await callWorkflowFile(filePath, event, stateConfig, eventManager)
+          await callWorkflowFile(filePath, file, event, stateConfig, eventManager)
         } catch (error) {
           event.logger.error(`[Workflow] Error calling workflow`, { error, filePath, file })
         }

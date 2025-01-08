@@ -1,20 +1,22 @@
 import { create } from 'zustand'
 
+export type Log = {
+  level: string
+  time: number
+  msg: string
+  traceId: string
+  workflowId: string
+  [key: string]: any
+}
+
 export type TriggerLogsState = {
-  messages: Record<string, { time: number; message: string; data: any }[]> // per trace id
-  addMessage: (traceId: string, time: number, message: string, data: any) => void
-  resetMessages: () => void
+  logs: Log[]
+  addLog: (log: Log) => void
+  resetLogs: () => void
 }
 
 export const useTriggerLogs = create<TriggerLogsState>()((set) => ({
-  messages: {},
-  addMessage: (traceId, time, message, data) =>
-    set((state) => ({
-      ...state,
-      messages: {
-        ...state.messages,
-        [traceId]: [...(state.messages[traceId] || []), { time, message, data }],
-      },
-    })),
-  resetMessages: () => set({ messages: {} }),
+  logs: [],
+  addLog: (log) => set((state) => ({ ...state, logs: [...state.logs, log] })),
+  resetLogs: () => set({ logs: [] }),
 }))
