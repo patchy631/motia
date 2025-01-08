@@ -1,6 +1,7 @@
 import { spawn } from 'child_process'
 import path from 'path'
 import { FlowConfig } from '../../wistro.types'
+import { globalLogger } from '../logger'
 
 export const getPythonConfig = (file: string): Promise<FlowConfig<any>> => {
   const getConfig = path.join(__dirname, 'get-config.py')
@@ -13,7 +14,7 @@ export const getPythonConfig = (file: string): Promise<FlowConfig<any>> => {
     })
 
     child.on('message', (message) => {
-      console.log('[Python Config] Received message', message)
+      globalLogger.debug('[Python Config] Read config', { config: message })
       config = message as FlowConfig<any>
     })
 

@@ -7,6 +7,7 @@ import { getPythonConfig } from './python/get-python-config'
 import { createEventManager } from './event-manager'
 import { Config, WorkflowStep } from './config.types'
 import { FlowConfig } from '../wistro.types'
+import { globalLogger } from './logger'
 
 require('ts-node').register({
   transpileOnly: true,
@@ -21,26 +22,24 @@ async function parseWorkflowFolder(folderPath: string, nextWorkflows: WorkflowSt
   const workflowRootFolders = workflowFolderItems.filter((item) => item.isDirectory())
   let workflows: WorkflowStep[] = [...nextWorkflows]
 
-  console.log('[Workflows] Building workflows', workflowFiles)
+  globalLogger.debug('[Workflows] Building workflows', { workflowFiles, workflowRootFolders })
 
   for (const file of workflowFiles) {
     const isPython = file.endsWith('.py')
 
     if (isPython) {
-      console.log('[Workflows] Building Python workflow', file)
+      globalLogger.debug('[Workflows] Building Python workflow', { file })
       const config = await getPythonConfig(path.join(folderPath, file))
-      console.log('[Workflows] Python workflow config', config)
+      globalLogger.debug('[Workflows] Python workflow config', { config })
       workflows.push({ config, file, filePath: path.join(folderPath, file) })
     } else {
-      console.log('[Workflows] Building Node workflow', file)
+      globalLogger.debug('[Workflows] Building Node workflow', { file })
       const module = require(path.join(folderPath, file))
       if (!module.config) {
-        console.log(`[Workflows] skipping file ${file} as it does not have a valid config`)
+        globalLogger.debug(`[Workflows] skipping file ${file} as it does not have a valid config`)
         continue
       }
-      console.log(
-        `[Workflows] processing component ${module.config.name} for workflow ${module.config.tags?.workflow ?? file}`,
-      )
+      globalLogger.debug('[Workflows] processing component', { config: module.config })
       const config = module.config as FlowConfig<any>
       workflows.push({ config, file, filePath: path.join(folderPath, file) })
     }
@@ -48,7 +47,7 @@ async function parseWorkflowFolder(folderPath: string, nextWorkflows: WorkflowSt
 
   if (workflowRootFolders.length > 0) {
     for (const folder of workflowRootFolders) {
-      console.log('[Workflows] Building nested workflows in path', path.join(folderPath, folder.name))
+      globalLogger.debug('[Workflows] Building nested workflows in path', { path: path.join(folderPath, folder.name) })
       const nestedWorkflows = await parseWorkflowFolder(path.join(folderPath, folder.name), [])
       workflows = [...workflows, ...nestedWorkflows]
     }
@@ -63,7 +62,7 @@ async function buildWorkflows(): Promise<WorkflowStep[]> {
 
   // Check if steps directory exists
   if (!fs.existsSync(flowsDir)) {
-    console.log('No /steps directory found')
+    globalLogger.error('No /steps directory found')
     return []
   }
 
@@ -80,9 +79,11 @@ export const dev = async (): Promise<void> => {
 
   createWorkflowHandlers(workflowSteps, eventManager, config.state)
 
+  console.log('🚀 Server ready and listening on port', config.port)
+
   // 6) Gracefully shut down on SIGTERM
   process.on('SIGTERM', async () => {
-    console.log('[playground/index] Shutting down...')
+    globalLogger.info('[playground/index] Shutting down...')
     server.close()
     process.exit(0)
   })

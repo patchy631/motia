@@ -7,14 +7,14 @@ import http from 'http'
 import { Config, WorkflowStep } from './config.types'
 import { Event, EventManager } from './event-manager'
 import { workflowsEndpoint } from './workflows-endpoint'
-import { Logger } from './logger'
+import { globalLogger, Logger } from './logger'
 
 export const createServer = async (config: Config, workflowSteps: WorkflowStep[], eventManager: EventManager) => {
   const app = express()
   const server = http.createServer(app)
   const io = new SocketIOServer(server)
 
-  console.log('[API] Registering routes', config.api.paths)
+  globalLogger.debug('[API] Registering routes', { paths: config.api.paths })
 
   const asyncHandler = (emits: string, workflowId: string) => {
     return async (req: Request, res: Response) => {
@@ -27,7 +27,7 @@ export const createServer = async (config: Config, workflowSteps: WorkflowStep[]
         data: req.body,
       }
 
-      logger.info('[API] Request received', event)
+      globalLogger.debug('[API] Request received', { event })
 
       try {
         await eventManager.emit({ ...event, logger })
@@ -45,7 +45,7 @@ export const createServer = async (config: Config, workflowSteps: WorkflowStep[]
   for (const path in config.api.paths) {
     const { method, emits, workflow } = config.api.paths[path]
 
-    console.log('[API] Registering route', { method, path, emits })
+    globalLogger.debug('[API] Registering route', { method, path, emits })
 
     if (method === 'POST') {
       app.post(path, asyncHandler(emits, workflow))
@@ -59,7 +59,7 @@ export const createServer = async (config: Config, workflowSteps: WorkflowStep[]
   workflowsEndpoint(config, workflowSteps, app)
   await applyMiddleware(app)
 
-  console.log('[API] Server listening on port', config.port)
+  globalLogger.debug('[API] Server listening on port', config.port)
 
   server.listen(config.port)
 

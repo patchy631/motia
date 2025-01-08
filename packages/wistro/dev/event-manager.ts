@@ -1,4 +1,4 @@
-import { Logger } from './logger'
+import { globalLogger, Logger } from './logger'
 
 export type Event<TData> = {
   type: string
@@ -31,7 +31,7 @@ export const createEventManager = (): EventManager => {
       handlers[event] = []
     }
 
-    console.log(`[Workflow Sub] ${handlerName} subscribing to ${event}`)
+    globalLogger.debug('[Workflow Sub] Subscribing to event', { event, handlerName })
 
     handlers[event].push(handler as Handler)
   }

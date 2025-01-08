@@ -1,8 +1,36 @@
 import pino from 'pino'
 import { Server } from 'socket.io'
 
-export class Logger {
+class BaseLogger {
   private logger: pino.Logger
+
+  constructor(meta: any = {}) {
+    this.logger = pino({
+      level: 'info',
+      formatters: { level: (level) => ({ level }) },
+      base: null,
+      mixin: () => meta,
+    })
+  }
+
+  info(message: string, args?: any) {
+    this.logger.info(message, args)
+  }
+
+  error(message: string, args?: any) {
+    this.logger.error(message, args)
+  }
+
+  debug(message: string, args?: any) {
+    this.logger.debug(message, args)
+  }
+
+  warn(message: string, args?: any) {
+    this.logger.warn(message, args)
+  }
+}
+
+export class Logger extends BaseLogger {
   private emitLog: (level: string, msg: string, args?: any) => void
 
   constructor(
@@ -10,12 +38,7 @@ export class Logger {
     private readonly workflowId: string,
     server: Server,
   ) {
-    this.logger = pino({
-      level: 'info',
-      formatters: { level: (level) => ({ level }) },
-      base: null,
-      mixin: () => ({ traceId, workflowId }),
-    })
+    super({ traceId, workflowId })
 
     this.emitLog = (level: string, msg: string, args?: any) => {
       server.emit('log', {
@@ -29,28 +52,29 @@ export class Logger {
     }
   }
 
-  log = (message: any) => {
+  log(message: any) {
     console.log(JSON.stringify(message))
-    this.emitLog(message.level, message.msg, message)
   }
 
   info = (message: string, args?: any) => {
-    this.logger.info(message, args)
+    super.info(message, args)
     this.emitLog('info', message, args)
   }
 
   error = (message: string, args?: any) => {
-    this.logger.error(message, args)
+    super.error(message, args)
     this.emitLog('error', message, args)
   }
 
   debug = (message: string, args?: any) => {
-    this.logger.debug(message, args)
+    super.debug(message, args)
     this.emitLog('debug', message, args)
   }
 
   warn = (message: string, args?: any) => {
-    this.logger.warn(message, args)
+    super.warn(message, args)
     this.emitLog('warn', message, args)
   }
 }
+
+export const globalLogger = new BaseLogger()

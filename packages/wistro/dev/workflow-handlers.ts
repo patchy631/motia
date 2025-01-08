@@ -3,6 +3,7 @@ import path from 'path'
 import { AdapterConfig } from '../state/createStateAdapter'
 import { WorkflowStep } from './config.types'
 import { Event, EventManager } from './event-manager'
+import { globalLogger } from './logger'
 
 const nodeRunner = path.join(__dirname, 'node', 'node-runner.js')
 const pythonRunner = path.join(__dirname, 'python', 'python-runner.py')
@@ -30,11 +31,11 @@ const callWorkflowFile = <TData>(
         const message = JSON.parse(data.toString())
         event.logger.log(message)
       } catch (error) {
-        console.log(data)
+        event.logger.info(Buffer.from(data).toString(), { file })
       }
     })
 
-    child.stderr?.on('data', (data) => console.error(data))
+    child.stderr?.on('data', (data) => event.logger.error(Buffer.from(data).toString(), { file }))
 
     child.on('message', (message: Event<unknown>) => {
       eventManager.emit(
@@ -58,23 +59,23 @@ export const createWorkflowHandlers = (
   eventManager: EventManager,
   stateConfig: AdapterConfig,
 ) => {
-  console.log(`[Workflows] Creating workflow handlers for ${workflows.length} workflows`)
+  globalLogger.debug(`[Workflows] Creating workflow handlers for ${workflows.length} workflows`)
 
   workflows.forEach((workflow) => {
     const { config, file, filePath } = workflow
     const { subscribes } = config
 
-    console.log(`[Workflows] Establishing workflow subscriptions ${file}`)
+    globalLogger.debug(`[Workflows] Establishing workflow subscriptions`, { file })
 
     subscribes.forEach((subscribe) => {
       eventManager.subscribe(subscribe, file, async (event) => {
         const { logger, ...rest } = event
-        logger.info('[Workflow] received event', { event: rest, file })
+        globalLogger.debug('[Workflow] received event', { event: rest, file })
 
         try {
           await callWorkflowFile(filePath, file, event, stateConfig, eventManager)
-        } catch (error) {
-          event.logger.error(`[Workflow] Error calling workflow`, { error, filePath, file })
+        } catch (error: any) {
+          globalLogger.error(`[Workflow] Error calling workflow`, { error: error.message, filePath, file })
         }
       })
     })
