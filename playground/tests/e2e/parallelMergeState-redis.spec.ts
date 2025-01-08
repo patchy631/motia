@@ -2,10 +2,17 @@ import { test, expect } from '@playwright/test'
 import path from 'path'
 import { createTestServer, Event, WistroServer } from 'wistro'
 
-test.describe('Parallel Merge State Flow + Redis E2E', () => {
-  let collectedEvents: Array<Event<unknown>> = []
+type EventDataType = {
+  stepA: Record<string, unknown>
+  stepB: Record<string, unknown>
+  stepC: Record<string, unknown>
+  mergedAt: Record<string, unknown>
+}
+
+test.describe('Parallel Merge State Workflow + Redis E2E', () => {
+  let collectedEvents: Array<Event<EventDataType>> = []
   let server: WistroServer
-  let eventSubscriber = (event: Event<unknown>) => {
+  let eventSubscriber = (event: Event<EventDataType>) => {
     collectedEvents.push(event)
   }
 
@@ -59,11 +66,11 @@ test.describe('Parallel Merge State Flow + Redis E2E', () => {
     // 5. Verify final completion event data
     const completionEvent = collectedEvents.find((ev) => ev.type === 'pms.join.complete')
     expect(completionEvent).toBeDefined()
-    // expect(completionEvent.data).toMatchObject({
-    //   stepA: expect.any(Object),
-    //   stepB: expect.any(Object),
-    //   stepC: expect.any(Object),
-    //   mergedAt: expect.any(String),
-    // })
+    expect(completionEvent?.data).toMatchObject({
+      stepA: expect.any(Object),
+      stepB: expect.any(Object),
+      stepC: expect.any(Object),
+      mergedAt: expect.any(String),
+    })
   })
 })

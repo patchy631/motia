@@ -10,6 +10,7 @@ type HybridFlowEventData = {
     enriched_by: string
     processed_at: string
   }>
+  timestamp?: string
   summary?: Record<string, unknown>
 }
 
@@ -47,7 +48,7 @@ test.describe('Hybrid Flow E2E', () => {
     const res = await fetch('http://localhost:3000/api/hybrid-endpoint-example', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: testData }),
+      body: JSON.stringify(testData),
     })
 
     expect(res.status).toBe(200)
@@ -70,13 +71,15 @@ test.describe('Hybrid Flow E2E', () => {
 
     // Validate intermediate events
     const validatedEvent = collectedEvents.find((e) => e.type === 'hybrid.validated')
-    expect(validatedEvent?.data?.items).toEqual(testData)
+    expect(validatedEvent?.data?.items).toEqual(testData.items)
+    expect(validatedEvent?.data?.timestamp).toBeDefined()
 
     const transformedEvent = collectedEvents.find((e) => e.type === 'hybrid.transformed')
-    expect(transformedEvent?.data.items).toEqual([
+    expect(transformedEvent?.data?.items).toEqual([
       { id: 1, value: 20, transformed_by: 'python' },
       { id: 2, value: 40, transformed_by: 'python' },
     ])
+    expect(transformedEvent?.data?.timestamp).toBeDefined()
 
     const enrichedEvent = collectedEvents.find((e) => e.type === 'hybrid.enriched')
     expect(enrichedEvent?.data.items).toEqual([

@@ -1,3 +1,5 @@
+import json
+
 config = {
     "name": "Analyze Data",
     "subscribes": ["hybrid.enriched"],
@@ -18,24 +20,28 @@ async def executor(input, emit):
         f"invocation_count={invocation_count} | "
         f"Received input={input}")
 
-    items = input["items"]
+    items = input.items
     
     # Calculate some statistics
-    total = sum(item["value"] for item in items if "value" in item)
-    average = total / len(items) if items else 0
+    total_items = len(items)
+    total = sum(getattr(item, "value", 0) for item in items if hasattr(item, "value"))
+    average = total / total_items if items else 0
     
     analysis = {
         "total": total,
         "average": average,
-        "count": len(items),
+        "count": total_items,
         "analyzed_by": "python"
     }
     
+    # Convert items to a JSON serializable format
+    serializable_items = [item.__dict__ for item in items]
+
     await emit({
         "type": "hybrid.analyzed",
         "data": {
-            "items": items,
+            "items": serializable_items,
             "analysis": analysis,
-            "timestamp": input["timestamp"]
+            "timestamp": getattr(input, "timestamp")
         }
     })

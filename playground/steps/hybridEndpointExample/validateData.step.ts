@@ -4,7 +4,7 @@ import { z } from 'zod'
 type Input = typeof inputSchema
 
 const inputSchema = z.object({
-  data: z.array(
+  items: z.array(
     z.object({
       id: z.number(),
       value: z.number(),
@@ -24,7 +24,7 @@ export const executor: FlowExecutor<Input> = async (input, emit) => {
   await emit({
     type: 'hybrid.validated',
     data: {
-      items: input.data,
+      items: input.items,
       timestamp: new Date().toISOString(),
     },
   })

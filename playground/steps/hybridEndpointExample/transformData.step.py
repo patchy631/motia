@@ -16,13 +16,13 @@ async def executor(input, emit):
 
     print(f"[Python:transform-data] instance_id={instance_id}, "
         f"invocation_count={invocation_count} | "
-        f"Received input={input}")
+        f"Received input={input}")    
 
-    items = input["items"]
+    items = input.items
     # Transform each item
     transformed = [{
-        **item,
-        "value": item["value"] * 2 if "value" in item else None,
+        "id": getattr(item, "id", None),
+        "value": getattr(item, "value", None) * 2 if hasattr(item, "value") else None,
         "transformed_by": "python"
     } for item in items]
     
@@ -30,6 +30,6 @@ async def executor(input, emit):
         "type": "hybrid.transformed",
         "data": {
             "items": transformed,
-            "timestamp": input["timestamp"]
+            "timestamp": getattr(input, "timestamp")
         }
     })
