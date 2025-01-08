@@ -5,13 +5,23 @@ import { randomUUID } from 'crypto'
 import express, { Request, Response } from 'express'
 import http from 'http'
 import { Config, FlowStep } from './config.types'
-import { Event, EventManager } from './event-manager'
-import { flowsEndpoint } from './flows-endpoint'
+import { Event, EventManager, WistroServer, WistroSockerServer } from './../wistro.types'
 
-export const createServer = async (config: Config, flowSteps: FlowStep[], eventManager: EventManager) => {
+export const createServer = async (
+  config: Config,
+  flowSteps: FlowStep[],
+  eventManager: EventManager,
+  options?: {
+    skipSocketServer?: boolean
+  },
+): Promise<{ server: WistroServer; socketServer?: WistroSockerServer }> => {
   const app = express()
   const server = http.createServer(app)
-  const io = new SocketIOServer(server)
+  let io: SocketIOServer | undefined
+
+  if (!options?.skipSocketServer) {
+    io = new SocketIOServer(server)
+  }
 
   console.log('[API] Registering routes', config.api.paths)
 

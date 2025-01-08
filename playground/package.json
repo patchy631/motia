@@ -2,10 +2,19 @@
   "name": "wistro-playground",
   "private": true,
   "scripts": {
-    "dev": "wistro dev"
+    "dev": "wistro dev",
+    "test:tsc-check": "tsc -p ./tests/tsconfig.test.json --noEmit",
+    "test:e2e": "pnpm run test:tsc-check && pnpm playwright test",
+    "test:unit": "pnpm vitest",
+    "test": "concurrently \"pnpm run test:unit\" \"pnpm run test:e2e\""
   },
   "dependencies": {
     "wistro": "workspace:*",
     "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
   }
 }

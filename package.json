@@ -7,15 +7,12 @@
     "build": "pnpm --filter=!docs run -r build",
     "build-config": "node packages/wistro/src/cli/WistroConfigBuilder.js playground",
     "test:unit": "pnpm vitest",
-    "test:e2e": "pnpm playwright test",
     "test": "concurrently \"pnpm run test:unit\" \"pnpm run test:e2e\"",
     "clean": "rm -rf node_modules pnpm-lock.yaml dist .turbo .next",
     "wistro": "node packages/wistro/src/cli/index.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.5",
-    "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^8.2.2",
     "dotenv": "^16.4.7",
     "ignore": "^6.0.2",

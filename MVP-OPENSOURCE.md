@@ -6,7 +6,7 @@ This document describes the **Wistro** platform at an MVP level—spanning descr
 
 ## **1. Introduction**
 
-**Wistro** is an event-driven workflow framework that allows you to build, test, and run “Steps” (logic units) connected by **Events** (messages). You can start with the **Open Source** version, which includes the **Core** engine and a local **Workbench** UI for development and debugging. For production scenarios at scale, **WistroHub** provides a commercial solution with, versioning, deployment, enhanced security, observability, and collaboration features.
+**Wistro** is an event-driven flow framework that allows you to build, test, and run “Steps” (logic units) connected by **Events** (messages). You can start with the **Open Source** version, which includes the **Core** engine and a local **Workbench** UI for development and debugging. For production scenarios at scale, **WistroHub** provides a commercial solution with, versioning, deployment, enhanced security, observability, and collaboration features.
 
 ---
 
@@ -17,7 +17,7 @@ This document describes the **Wistro** platform at an MVP level—spanning descr
 - **Events**: Messages that carry payload data. Emitting an event on a topic causes all subscribing steps to execute.
 - **Topics**: Identifiers for events. Each topic has an associated schema (or type) for its payload.
 - **Messages**: The actual payload data within an event. Validated at compile time and/or runtime for type safety.
-- **Triggers**: Configuration that start workflows (e.g., REST endpoints, cron schedules).
+- **Triggers**: Configuration that start flows (e.g., REST endpoints, cron schedules).
 - **Core**: The Wistro engine that orchestrates events, manages steps, and logs activity in either dev or prod.
 - **Workbench**: **Local development** UI (open source). It visualizes flows, runs tests, and shows logs for debugging.
 - **Step Registry**: An **in-memory** set of steps currently active in a given environment (local dev, production, etc.). Each environment (or instance) loads and maintains its own registry.
@@ -64,9 +64,9 @@ This document describes the **Wistro** platform at an MVP level—spanning descr
    - Each step tested in isolation via mocks.
 2. **Integration / E2E Testing**
    - Validate complete event flow across multiple steps.
-   - Helps ensure correctness of entire workflows.
+   - Helps ensure correctness of entire flows.
 3. **Evaluation**
-   - Run sample datasets through workflows for performance or scenario checks.
+   - Run sample datasets through flows for performance or scenario checks.
    - Compare outputs between versions or configurations.
 4. **Flow-Level Testing**
    - Combine unit, integration, and scenario tests to thoroughly verify flows.

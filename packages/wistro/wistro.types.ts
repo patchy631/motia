@@ -1,4 +1,6 @@
 import { z, ZodObject } from 'zod'
+import { Server } from 'http'
+import { Server as SocketIOServer } from 'socket.io'
 
 export type Emitter = (event: any) => Promise<void>
 export type FlowContext = {
@@ -29,4 +31,20 @@ export type FlowConfig<TInput extends ZodObject<any>> = {
 export type Flow<TInput extends ZodObject<any>> = {
   config: FlowConfig<TInput>
   executor: FlowExecutor<TInput>
+}
+
+export type WistroServer = Server<any>
+export type WistroSockerServer = SocketIOServer
+
+export type Event<TData> = {
+  type: string
+  data: TData
+  traceId: string
+}
+
+export type Handler<TData = unknown> = (event: Event<TData>) => Promise<void>
+
+export type EventManager = {
+  emit: <TData>(event: Event<TData>) => Promise<void>
+  subscribe: <TData>(event: string, handlerName: string, handler: Handler<TData>) => void
 }

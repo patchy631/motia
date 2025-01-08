@@ -2,7 +2,7 @@
 
 ## **Description**
 
-WistroHub is the GitHub for Wistro workflows. It provides a centralized platform for hosting, monitoring, deploying, and scaling workflows with advanced observability and security features.
+WistroHub is the GitHub for Wistro flows. It provides a centralized platform for hosting, monitoring, deploying, and scaling flows with advanced observability and security features.
 
 ---
 
@@ -18,7 +18,7 @@ WistroHub is the GitHub for Wistro workflows. It provides a centralized platform
   - Define and manage upstream environments (e.g., staging, production).
   - One-line deployments with automatic CI/CD integration (e.g., GitHub Actions, GitLab CI).
 - **Version Control**:
-  - Visualize all workflow versions in the Hub UI.
+  - Visualize all flow versions in the Hub UI.
   - Control traffic allocation between versions (e.g., 25% traffic to `v1`, 75% to `v2` for testing).
   - Rollback to previous versions if needed.
 
@@ -36,7 +36,7 @@ WistroHub is the GitHub for Wistro workflows. It provides a centralized platform
   - Add specific runs as datasets for testing and evaluation.
   - Compare metrics and outputs across different versions or environments.
 - **CLI Integration**:
-  - Authenticate with the Hub via CLI to fetch datasets and run workflows locally for regression testing.
+  - Authenticate with the Hub via CLI to fetch datasets and run flows locally for regression testing.
 
 ---
 
@@ -44,10 +44,10 @@ WistroHub is the GitHub for Wistro workflows. It provides a centralized platform
 
 - **Data Integrity**:
   - Messages are encrypted in transit and at rest.
-  - Prevent cross-pollination or unintended exposure of messages between workflows.
+  - Prevent cross-pollination or unintended exposure of messages between flows.
 - **Authentication**:
   - Support for OIDC and custom authentication providers.
-  - Per-environment access controls for APIs and workflows.
+  - Per-environment access controls for APIs and flows.
 - **Auditing**:
   - Full audit logs for changes, deployments, and flow executions.
 
@@ -55,19 +55,19 @@ WistroHub is the GitHub for Wistro workflows. It provides a centralized platform
 
 ## **Additional Ideas**
 
-1. **Workflow Marketplace**:
+1. **Flow Marketplace**:
 
-   - Allow users to share and discover pre-built workflows.
-   - Enable developers to monetize their workflows via paid licenses or subscriptions.
+   - Allow users to share and discover pre-built flows.
+   - Enable developers to monetize their flows via paid licenses or subscriptions.
 
-2. **Workflow Orchestration Features**:
+2. **Flow Orchestration Features**:
 
    - Advanced scheduling options (e.g., dependent flows, conditional triggers).
    - Dynamic scaling of flows based on demand.
 
 3. **Collaboration**:
 
-   - Integrated code review and approval workflows for production changes.
+   - Integrated code review and approval flows for production changes.
 
 4. **Monitoring and Alerting**:
 
@@ -76,4 +76,4 @@ WistroHub is the GitHub for Wistro workflows. It provides a centralized platform
 
 5. **Custom UI Dashboards**:
 
-   - Allow users to build custom dashboards to display metrics and logs relevant to their workflows.
+   - Allow users to build custom dashboards to display metrics and logs relevant to their flows.
