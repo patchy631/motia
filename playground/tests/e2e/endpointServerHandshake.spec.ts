@@ -1,22 +1,8 @@
 import { test, expect } from '@playwright/test'
-import path from 'path'
-import { createTestServer, WistroServer, Event } from 'wistro'
+import { Event } from 'wistro'
 
 test.describe('endpointServerHandshake + Redis E2E', () => {
   let collectedEvents: Array<Event<unknown>> = []
-  let server: WistroServer
-  let eventSubscriber = (event: Event<unknown>) => {
-    collectedEvents.push(event)
-  }
-
-  test.beforeAll(async () => {
-    const result = await createTestServer(path.join(__dirname, '../../'), eventSubscriber)
-    server = result.server
-  })
-
-  test.afterAll(async () => {
-    await server.close()
-  })
 
   test.beforeEach(async () => {
     // Reset our array for each test
@@ -45,15 +31,16 @@ test.describe('endpointServerHandshake + Redis E2E', () => {
         message: 'Hello from endpointServerHandshake test',
       }),
     })
+    const { traceId } = await response.json()
 
     expect(response.status).toBe(200)
 
     // Wait a bit for the events to propagate
     await page.waitForTimeout(1000)
 
-    // 4) Check Redis events
-    // Extract the eventType from each collected event
-    const eventTypes = collectedEvents.map((ev) => ev.type)
+    const allEvents = globalThis.__ALL_EVENTS__ || []
+    const eventTypes = allEvents.filter((ev) => ev.traceId === traceId)
+
     // We expect handshake.initiate => handshake.callApi => handshake.apiResponse
     // Possibly the flow might skip some if there's a direct route, adjust as needed
     // We'll just check that at least these show up somewhere.

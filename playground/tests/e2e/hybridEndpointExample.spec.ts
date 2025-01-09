@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test'
-import path from 'path'
-import { createTestServer, Event, WistroServer } from 'wistro'
+import { Event } from 'wistro'
 
 type HybridWorkflowEventData = {
   items: Array<{
@@ -16,19 +15,6 @@ type HybridWorkflowEventData = {
 
 test.describe('Hybrid Workflow E2E', () => {
   let collectedEvents: Array<Event<HybridWorkflowEventData>> = []
-  let server: WistroServer
-  let eventSubscriber = (event: Event<HybridWorkflowEventData>) => {
-    collectedEvents.push(event)
-  }
-
-  test.beforeAll(async () => {
-    const result = await createTestServer<HybridWorkflowEventData>(path.join(__dirname, '../../'), eventSubscriber)
-    server = result.server
-  })
-
-  test.afterAll(async () => {
-    await server.close()
-  })
 
   test.beforeEach(async () => {
     // Reset our array for each test
@@ -45,13 +31,14 @@ test.describe('Hybrid Workflow E2E', () => {
     }
 
     // Send the request to start the hybrid flow
-    const res = await fetch('http://localhost:3000/api/hybrid-endpoint-example', {
+    const response = await fetch('http://localhost:3000/api/hybrid-endpoint-example', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(testData),
     })
 
-    expect(res.status).toBe(200)
+    expect(response.status).toBe(200)
+    const { traceId } = await response.json()
 
     // Wait for the flow to complete
     await new Promise((resolve) => setTimeout(resolve, 2000)) // Adjust time as needed
@@ -66,8 +53,10 @@ test.describe('Hybrid Workflow E2E', () => {
     ]
 
     // Extract event types from collected events
-    const emittedEventTypes = collectedEvents.map((e) => e.type)
-    expect(emittedEventTypes).toEqual(expect.arrayContaining(expectedEventSequence))
+    const allEvents = globalThis.__ALL_EVENTS__ || []
+    const eventTypes = allEvents.filter((ev) => ev.traceId === traceId)
+
+    expect(eventTypes).toEqual(expect.arrayContaining(expectedEventSequence))
 
     // Validate intermediate events
     const validatedEvent = collectedEvents.find((e) => e.type === 'hybrid.validated')

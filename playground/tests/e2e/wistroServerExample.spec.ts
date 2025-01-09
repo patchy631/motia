@@ -1,27 +1,8 @@
 import { test, expect } from '@playwright/test'
-import path from 'path'
-import { createTestServer, Event, WistroServer } from 'wistro'
+import { Event } from 'wistro'
 
 test.describe('WistroServerExample + Redis E2E', () => {
   let collectedEvents: Array<Event<unknown>> = []
-  let server: WistroServer
-  let eventSubscriber = (event: Event<unknown>) => {
-    collectedEvents.push(event)
-  }
-
-  test.beforeAll(async () => {
-    const result = await createTestServer(path.join(__dirname, '../../'), eventSubscriber)
-    server = result.server
-  })
-
-  test.afterAll(async () => {
-    await server.close()
-  })
-
-  test.beforeEach(async () => {
-    // Reset our array for each test
-    collectedEvents = []
-  })
 
   test('verifies wistroServerExample flow & Redis events', async ({ page }) => {
     // 2) Navigate to Playground UI
@@ -43,13 +24,15 @@ test.describe('WistroServerExample + Redis E2E', () => {
       body: JSON.stringify({ greeting: 'Hello from Redis E2E test' }),
     })
     expect(response.status).toBe(200)
+    const { traceId } = await response.json()
 
     // Give time for the flow to run and events to publish
     await page.waitForTimeout(1000)
 
     // 5) Assert we saw expected Redis events
     // For example, if your flow emits “wistroServerExample.started”, “wistroServerExample.processed”, etc.
-    const eventTypes = collectedEvents.map((ev) => ev.type)
+    const allEvents = globalThis.__ALL_EVENTS__ || []
+    const eventTypes = allEvents.filter((ev) => ev.traceId === traceId)
 
     // Check that we have at least one or more relevant event types
     // Adjust these to match your actual event names:

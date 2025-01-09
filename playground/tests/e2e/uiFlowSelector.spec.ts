@@ -1,6 +1,4 @@
 import { test, expect } from '@playwright/test'
-import path from 'path'
-import { createTestServer, WistroServer } from 'wistro'
 
 // We'll define a helper array of flows we want to test
 // Each object has the flow's "selectOption" value and a unique node label.
@@ -26,17 +24,6 @@ const FLOWS = [
 const wistroWorkbenchUrl = 'http://localhost:3000'
 
 test.describe('Flow Selector & Visual Tests', () => {
-  let server: WistroServer
-
-  test.beforeAll(async () => {
-    const result = await createTestServer(path.join(__dirname, '../../'))
-    server = result.server
-  })
-
-  test.afterAll(async () => {
-    await server.close()
-  })
-
   test('the flow selector is visible', async ({ page }) => {
     // Go to your Playground UI root (adjust if needed)
     await page.goto(wistroWorkbenchUrl)

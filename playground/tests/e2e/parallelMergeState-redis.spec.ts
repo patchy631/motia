@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test'
-import path from 'path'
-import { createTestServer, Event, WistroServer } from 'wistro'
+import { Event } from 'wistro'
 
 type EventDataType = {
   stepA: Record<string, unknown>
@@ -11,19 +10,6 @@ type EventDataType = {
 
 test.describe('Parallel Merge State Workflow + Redis E2E', () => {
   let collectedEvents: Array<Event<EventDataType>> = []
-  let eventSubscriber = (event: Event<EventDataType>) => {
-    collectedEvents.push(event)
-  }
-  let server: WistroServer
-
-  test.beforeAll(async () => {
-    const result = await createTestServer(path.join(__dirname, '../../'), eventSubscriber)
-    server = result.server
-  })
-
-  test.afterAll(async () => {
-    await server.close()
-  })
 
   test.beforeEach(async () => {
     // Reset our array for each test
@@ -40,12 +26,13 @@ test.describe('Parallel Merge State Workflow + Redis E2E', () => {
       }),
     })
     expect(response.status).toBe(200)
+    const { traceId } = await response.json()
 
     // Wait for events to propagate
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    // 2. Verify event sequence
-    const eventTypes = collectedEvents.map((ev) => ev.type)
+    const allEvents = globalThis.__ALL_EVENTS__ || []
+    const eventTypes = allEvents.filter((ev) => ev.traceId === traceId)
 
     // Expected event sequence
     expect(eventTypes).toEqual(
