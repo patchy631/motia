@@ -13,11 +13,10 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  const traceId = ctx.traceId
-  console.log('[join-step] Checking if all partial results exist for traceId =', traceId)
+export const executor: FlowExecutor<Input> = async (_, emit, { logger, state, traceId }) => {
+  logger.info(`[join-step] Checking state - traceId: ${traceId}`)
 
-  const state = await ctx.state.get<
+  const pmState = await state.get<
     Partial<{
       stepA: { msg: string; timestamp: number }
       stepB: { msg: string; timestamp: number }
@@ -26,17 +25,17 @@ export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
     }>
   >()
 
-  if (!state.done || !state.stepA || !state.stepB || !state.stepC) {
-    console.log('[join-step] Not all steps done yet, ignoring for now.')
+  if (!pmState.done || !pmState.stepA || !pmState.stepB || !pmState.stepC) {
+    logger.info('[join-step] Not all steps done yet, ignoring for now.')
     return
   }
 
-  console.log('[join-step] All steps are complete. Merging results...')
+  logger.info('[join-step] All steps are complete. Merging results...')
 
   const merged = {
-    stepA: state.stepA,
-    stepB: state.stepB,
-    stepC: state.stepC,
+    stepA: pmState.stepA,
+    stepB: pmState.stepB,
+    stepC: pmState.stepC,
     mergedAt: new Date().toISOString(),
   }
 
@@ -45,5 +44,5 @@ export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
     data: merged,
   })
 
-  await ctx.state.clear()
+  await state.clear()
 }

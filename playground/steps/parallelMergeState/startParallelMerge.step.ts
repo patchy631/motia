@@ -13,8 +13,8 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  await ctx.state.set<{}>('initialized', true)
+export const executor: FlowExecutor<Input> = async (_, emit, { state }) => {
+  await state.set<{}>('initialized', true)
 
   await emit({
     type: 'pms.start',
