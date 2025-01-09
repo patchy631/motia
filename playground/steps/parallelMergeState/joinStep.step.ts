@@ -15,7 +15,7 @@ export const config: FlowConfig<Input> = {
 
 export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
   const traceId = ctx.traceId
-  console.log('[join-step] Checking if all partial results exist for traceId =', traceId)
+  ctx.logger.info('[join-step] Checking if all partial results exist for traceId =', traceId)
 
   const state = await ctx.state.get<
     Partial<{
@@ -27,11 +27,11 @@ export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
   >()
 
   if (!state.done || !state.stepA || !state.stepB || !state.stepC) {
-    console.log('[join-step] Not all steps done yet, ignoring for now.')
+    ctx.logger.info('[join-step] Not all steps done yet, ignoring for now.')
     return
   }
 
-  console.log('[join-step] All steps are complete. Merging results...')
+  ctx.logger.info('[join-step] All steps are complete. Merging results...')
 
   const merged = {
     stepA: state.stepA,

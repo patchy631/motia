@@ -15,38 +15,36 @@ class StateAdapter {
   }
 
   async get(path) {
-    const fullPath = this._makePath(path)
-    const value = await this.client.call('JSON.GET', this.rootKey, fullPath)
+    const value = await this.client.get(this.rootKey)
+    if (!value) return null
 
-    if (typeof value === 'string') {
-      return JSON.parse(value)[0]
-    }
-    return value ?? null
-  }
+    const data = JSON.parse(value)
+    if (!path) return data
 
-  async preparePath(path) {
-    const segments = path.split('.')
-    let currentKey = ''
-
-    for (const segment of segments) {
-      currentKey = currentKey ? `${currentKey}.${segment}` : segment
-      const exists = await this.client.call('JSON.GET', this.rootKey, currentKey)
-      if (!exists) {
-        await this.client.call('JSON.SET', this.rootKey, currentKey, '{}')
-      }
-    }
+    return path.split('.').reduce((obj, key) => obj?.[key], data) ?? null
   }
 
   async set(path, value) {
-    const nextPath = this._makePath(path)
+    if (!path) {
+      await this.client.multi().set(this.rootKey, JSON.stringify(value)).expire(this.rootKey, this.ttl).exec()
+      return
+    }
 
-    await this.preparePath(nextPath)
+    const existing = (await this.get('')) || {}
+    const segments = path.split('.')
+    let current = existing
 
-    await this.client
-      .multi()
-      .call('JSON.SET', this.rootKey, nextPath, JSON.stringify(value))
-      .call('EXPIRE', this.rootKey, this.ttl)
-      .exec()
+    // Create nested structure
+    for (let i = 0; i < segments.length - 1; i++) {
+      const segment = segments[i]
+      current[segment] = current[segment] || {}
+      current = current[segment]
+    }
+
+    // Set the final value
+    current[segments[segments.length - 1]] = value
+
+    await this.client.multi().set(this.rootKey, JSON.stringify(existing)).expire(this.rootKey, this.ttl).exec()
   }
 
   async delete(path) {
@@ -55,8 +53,20 @@ class StateAdapter {
       return
     }
 
-    const fullPath = this._makePath(path)
-    await this.client.call('JSON.DEL', this.rootKey, fullPath)
+    const existing = (await this.get('')) || {}
+    const segments = path.split('.')
+    let current = existing
+
+    // Navigate to parent of target
+    for (let i = 0; i < segments.length - 1; i++) {
+      current = current[segments[i]]
+      if (!current) return // Path doesn't exist
+    }
+
+    // Delete the target property
+    delete current[segments[segments.length - 1]]
+
+    await this.client.multi().set(this.rootKey, JSON.stringify(existing)).expire(this.rootKey, this.ttl).exec()
   }
 
   async clear() {
@@ -69,10 +79,6 @@ class StateAdapter {
 
   _makeRootKey() {
     return `${this.prefix}:${this.traceId}`
-  }
-
-  _makePath(path) {
-    return `$${path ? '.' + path : ''}`
   }
 }
 
