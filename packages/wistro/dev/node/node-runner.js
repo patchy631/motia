@@ -26,14 +26,8 @@ async function runTypescriptModule(filePath, args) {
       throw new Error('State adapter config is required')
     }
 
-    // Add debug logging to see what we're receiving
-    console.log('DEBUG: Received args:', JSON.stringify(args, null, 2))
-
     const { stateConfig, ...eventData } = args
     const { traceId, flows, type, data } = eventData // Explicitly destructure event properties
-
-    // Add debug logging for context
-    console.log('DEBUG: Event context:', { traceId, flows, type })
 
     const logger = new Logger(traceId, flows, filePath.split('/').pop())
     const state = new StateAdapter(traceId, stateConfig)

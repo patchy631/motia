@@ -13,38 +13,41 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, { logger, state, traceId }) => {
-  setTimeout(async () => {
-    logger.info('[join-step] Checking if all partial results exist for traceId =', traceId)
+export const executor: FlowExecutor<Input> = async (input, emit, { logger, state, traceId }) => {
+  logger.info(`[join-step] Checking state - traceId: ${traceId}`)
 
-    const pmsState = await state.get<
-      Partial<{
-        stepA: { msg: string; timestamp: number }
-        stepB: { msg: string; timestamp: number }
-        stepC: { msg: string; timestamp: number }
-        done: boolean
-      }>
-    >()
+  // First check if we've already completed
+  const joinState = await state.get('join-state')
+  if (joinState?.completed) {
+    logger.info(`[join-step] Already completed for traceId: ${traceId}`)
+    return
+  }
 
-    if (!pmsState.done || !pmsState.stepA || !pmsState.stepB || !pmsState.stepC) {
-      logger.info('[join-step] Not all steps done yet, ignoring for now.')
-      return
-    }
+  const results = await state.get('results')
+  logger.info(`[join-step] Current state: ${JSON.stringify(results)}`)
 
-    logger.info('[join-step] All steps are complete. Merging results...')
+  if (!results?.stepA || !results?.stepB || !results?.stepC) {
+    const available = results ? Object.keys(results) : []
+    logger.info(`[join-step] Waiting for steps. Have ${available.length}/3: ${available.join(', ')}`)
+    return
+  }
 
-    const merged = {
-      stepA: pmsState.stepA,
-      stepB: pmsState.stepB,
-      stepC: pmsState.stepC,
+  logger.info(`[join-step] All steps complete - Results: ${JSON.stringify(results)}`)
+
+  // Mark as completed
+  await state.set('join-state', { completed: true, completedAt: Date.now() })
+
+  await emit({
+    type: 'pms.join.complete',
+    data: {
+      ...results,
       mergedAt: new Date().toISOString(),
-    }
+    },
+  })
 
-    await emit({
-      type: 'pms.join.complete',
-      data: merged,
-    })
-
+  // Wait a bit before clearing state to ensure all events are processed
+  setTimeout(async () => {
     await state.clear()
+    logger.info(`[join-step] Cleared state for traceId: ${traceId}`)
   }, 1000)
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { FlowConfig, FlowExecutor } from 'wistro'
+import { updateStateResults } from './stateManager'
 
 type Input = typeof inputSchema
 
@@ -13,14 +14,17 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, { traceId, logger, state }) => {
-  logger.info('[stepC] received pms.start, traceId =', traceId)
+export const executor: FlowExecutor<Input> = async (input, emit, { traceId, logger, state }) => {
+  logger.info(`[stepC] executing - traceId: ${traceId}, input: ${JSON.stringify(input)}`)
 
-  const partialResultC = { msg: 'Hello from Step C', timestamp: Date.now() }
-  await state.set<{ msg: string; timestamp: number }>('stepC', partialResultC)
-  await state.set('done', true)
+  const partialResultC = {
+    msg: 'Hello from Step C',
+    timestamp: Date.now(),
+  }
 
-  await state.get('stepC')
+  // Update state
+  const currentState = await updateStateResults(state, 'stepC', partialResultC)
+  logger.info(`[stepC] Updated state: ${JSON.stringify(currentState)}`)
 
   await emit({
     type: 'pms.stepC.done',
