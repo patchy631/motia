@@ -18,27 +18,39 @@ function parseArgs(arg) {
 
 async function runTypescriptModule(filePath, args) {
   try {
-    // Remove pathToFileURL since we'll use require
     const module = require(path.resolve(filePath))
 
-    // Check if the specified function exists in the module
     if (typeof module.executor !== 'function') {
       throw new Error(`Function executor not found in module ${filePath}`)
     } else if (!args?.stateConfig) {
       throw new Error('State adapter config is required')
     }
 
-    const { stateConfig, ...event } = args
-    const { traceId, flows } = event
+    // Add debug logging to see what we're receiving
+    console.log('DEBUG: Received args:', JSON.stringify(args, null, 2))
+
+    const { stateConfig, ...eventData } = args
+    const { traceId, flows, type, data } = eventData // Explicitly destructure event properties
+
+    // Add debug logging for context
+    console.log('DEBUG: Event context:', { traceId, flows, type })
+
     const logger = new Logger(traceId, flows, filePath.split('/').pop())
     const state = new StateAdapter(traceId, stateConfig)
     const context = { traceId, flows, logger, state }
-    const emit = async (data) => {
-      process.send?.(data)
-    }
 
-    // Call the function with provided arguments
-    await module.executor(event.data, emit, context)
+    // Make sure we pass the actual input data to the executor
+    await module.executor(
+      data,
+      async (data) => {
+        process.send?.({
+          ...data,
+          traceId,
+          flows,
+        })
+      },
+      context,
+    )
   } catch (error) {
     console.error('Error running TypeScript module:', error)
     process.exit(1)

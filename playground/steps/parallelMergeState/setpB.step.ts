@@ -6,22 +6,24 @@ type Input = typeof inputSchema
 const inputSchema = z.object({})
 
 export const config: FlowConfig<Input> = {
-  name: 'stepB',
+  name: 'StepB',
   subscribes: ['pms.start'],
-  emits: ['pms.stepB.done'],
+  emits: ['pms.StepB.done'],
   input: inputSchema,
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  const traceId = ctx.traceId
-  console.log('[stepB] received pms.start, traceId =', traceId)
+export const executor: FlowExecutor<Input> = async (_, emit, { traceId, logger, state }) => {
+  logger.info('[stepB] received pms.start, traceId =', traceId)
 
-  const partialResultA = { msg: 'Hello from Step B', timestamp: Date.now() }
-  await ctx.state.set('stepB', partialResultA)
+  const partialResultB = { msg: 'Hello from Step B', timestamp: Date.now() }
+  await state.set<{ msg: string; timestamp: number }>('stepB', partialResultB)
+  await state.set('done', true)
+
+  await state.get('StepB')
 
   await emit({
-    type: 'pms.stepB.done',
-    data: partialResultA,
+    type: 'pms.StepB.done',
+    data: partialResultB,
   })
 }

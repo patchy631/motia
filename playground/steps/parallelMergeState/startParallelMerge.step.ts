@@ -13,11 +13,14 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  await ctx.state.set<{}>('initialized', true)
+export const executor: FlowExecutor<Input> = async (_, emit, { state, logger, traceId }) => {
+  logger.info('[start-event] received pms.initialize, traceId =', traceId)
+  await state.set<{}>('initialized', true)
+
+  const pmsStateId = Math.random().toString(36).substring(2)
 
   await emit({
     type: 'pms.start',
-    data: {},
+    data: { pmsStateId },
   })
 }

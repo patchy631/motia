@@ -13,18 +13,17 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  const traceId = ctx.traceId
-  console.log('[stepC] received pms.start, traceId =', traceId)
+export const executor: FlowExecutor<Input> = async (_, emit, { traceId, logger, state }) => {
+  logger.info('[stepC] received pms.start, traceId =', traceId)
 
-  const partialResultA = { msg: 'Hello from Step C', timestamp: Date.now() }
-  await ctx.state.set('stepC', partialResultA)
-  await ctx.state.set('done', true)
+  const partialResultC = { msg: 'Hello from Step C', timestamp: Date.now() }
+  await state.set<{ msg: string; timestamp: number }>('stepC', partialResultC)
+  await state.set('done', true)
 
-  const currentState = await ctx.state.get()
+  await state.get('stepC')
 
   await emit({
     type: 'pms.stepC.done',
-    data: partialResultA,
+    data: partialResultC,
   })
 }
