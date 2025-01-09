@@ -9,13 +9,6 @@ type EventDataType = {
 }
 
 test.describe('Parallel Merge State Workflow + Redis E2E', () => {
-  let collectedEvents: Array<Event<EventDataType>> = []
-
-  test.beforeEach(async () => {
-    // Reset our array for each test
-    collectedEvents = []
-  })
-
   test('verifies parallel merge flow state & events', async ({ page }) => {
     // 1. Trigger the flow
     const response = await fetch('http://localhost:3000/api/parallel-merge', {
@@ -47,11 +40,11 @@ test.describe('Parallel Merge State Workflow + Redis E2E', () => {
     )
 
     // 3. Get the flow trace ID
-    const startEvent = collectedEvents.find((ev) => ev.type === 'pms.start')
+    const startEvent = eventTypes.find((ev) => ev.type === 'pms.start')
     expect(startEvent?.traceId).toBeDefined()
 
     // 5. Verify final completion event data
-    const completionEvent = collectedEvents.find((ev) => ev.type === 'pms.join.complete')
+    const completionEvent = eventTypes.find((ev) => ev.type === 'pms.join.complete')
     expect(completionEvent).toBeDefined()
     expect(completionEvent?.data).toMatchObject({
       stepA: expect.any(Object),

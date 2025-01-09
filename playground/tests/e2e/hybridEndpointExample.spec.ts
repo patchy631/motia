@@ -14,13 +14,6 @@ type HybridWorkflowEventData = {
 }
 
 test.describe('Hybrid Workflow E2E', () => {
-  let collectedEvents: Array<Event<HybridWorkflowEventData>> = []
-
-  test.beforeEach(async () => {
-    // Reset our array for each test
-    collectedEvents = []
-  })
-
   test('processes hybrid flow through all stages', async () => {
     // Test input data
     const testData = {
@@ -59,18 +52,18 @@ test.describe('Hybrid Workflow E2E', () => {
     expect(eventTypes).toEqual(expect.arrayContaining(expectedEventSequence))
 
     // Validate intermediate events
-    const validatedEvent = collectedEvents.find((e) => e.type === 'hybrid.validated')
+    const validatedEvent = eventTypes.find((e) => e.type === 'hybrid.validated')
     expect(validatedEvent?.data?.items).toEqual(testData.items)
     expect(validatedEvent?.data?.timestamp).toBeDefined()
 
-    const transformedEvent = collectedEvents.find((e) => e.type === 'hybrid.transformed')
+    const transformedEvent = eventTypes.find((e) => e.type === 'hybrid.transformed')
     expect(transformedEvent?.data?.items).toEqual([
       { id: 1, value: 20, transformed_by: 'python' },
       { id: 2, value: 40, transformed_by: 'python' },
     ])
     expect(transformedEvent?.data?.timestamp).toBeDefined()
 
-    const enrichedEvent = collectedEvents.find((e) => e.type === 'hybrid.enriched')
+    const enrichedEvent = eventTypes.find((e) => e.type === 'hybrid.enriched')
     expect(enrichedEvent?.data.items).toEqual([
       {
         id: 1,
@@ -89,7 +82,7 @@ test.describe('Hybrid Workflow E2E', () => {
     ])
 
     // Validate the final "completed" event
-    const completedEvent = collectedEvents.find((e) => e.type === 'hybrid.completed')
+    const completedEvent = eventTypes.find((e) => e.type === 'hybrid.completed')
     expect(completedEvent?.data?.summary).toEqual({
       itemCount: 2,
       statistics: {

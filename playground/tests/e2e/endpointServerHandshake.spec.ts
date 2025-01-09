@@ -2,13 +2,6 @@ import { test, expect } from '@playwright/test'
 import { Event } from 'wistro'
 
 test.describe('endpointServerHandshake + Redis E2E', () => {
-  let collectedEvents: Array<Event<unknown>> = []
-
-  test.beforeEach(async () => {
-    // Reset our array for each test
-    collectedEvents = []
-  })
-
   test('Verifies handshake flow & Redis events are published', async ({ page }) => {
     // 1) Go to the Playground UI
     await page.goto('http://localhost:3000')
@@ -49,7 +42,7 @@ test.describe('endpointServerHandshake + Redis E2E', () => {
     )
 
     // (Optional) Check the final event's data
-    const finalEvent = collectedEvents.find((e) => e.type === 'handshake.apiResponse')
+    const finalEvent = eventTypes.find((e) => e.type === 'handshake.apiResponse')
     expect(finalEvent).toBeDefined()
     // If you want to confirm shape:
     // expect(finalEvent.data).toHaveProperty("externalTodo");

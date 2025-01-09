@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test'
 import { Event } from 'wistro'
 
 test.describe('WistroServerExample + Redis E2E', () => {
-  let collectedEvents: Array<Event<unknown>> = []
-
   test('verifies wistroServerExample flow & Redis events', async ({ page }) => {
     // 2) Navigate to Playground UI
     await page.goto('http://localhost:3000')
@@ -41,7 +39,7 @@ test.describe('WistroServerExample + Redis E2E', () => {
     )
 
     // Optional: Inspect the data of a particular event
-    const doneEvent = collectedEvents.find((ev) => ev.type === 'ws-server-example.processed')
+    const doneEvent = eventTypes.find((ev) => ev.type === 'ws-server-example.processed')
     expect(doneEvent).toBeDefined()
     // If there's some known shape of doneEvent.data, e.g. { result: ... }
     // expect(doneEvent.data.result).toBe("SomeValue");
