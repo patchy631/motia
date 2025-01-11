@@ -1,9 +1,10 @@
 import { Event, EventManager } from './../wistro.types'
 import { spawn } from 'child_process'
 import path from 'path'
-import { FlowStep } from './config.types'
+import { Step } from './config.types'
 import { AdapterConfig } from '../state/createStateAdapter'
 import { globalLogger } from './logger'
+import { isEventStep } from './guards'
 
 const nodeRunner = path.join(__dirname, 'node', 'node-runner.js')
 const pythonRunner = path.join(__dirname, 'python', 'python-runner.py')
@@ -51,11 +52,11 @@ const callFlowFile = <TData>(
   })
 }
 
-export const createFlowHandlers = (flows: FlowStep[], eventManager: EventManager, stateConfig: AdapterConfig) => {
-  globalLogger.debug(`[Flows] Creating flow handlers for ${flows.length} flows`)
+export const createFlowHandlers = (steps: Step[], eventManager: EventManager, stateConfig: AdapterConfig) => {
+  globalLogger.debug(`[Flows] Creating flow handlers for ${steps.length} steps`)
 
-  flows.forEach((flow) => {
-    const { config, file, filePath } = flow
+  steps.filter(isEventStep).forEach((step) => {
+    const { config, file, filePath } = step
     const { subscribes } = config
 
     globalLogger.debug('[Flows] Establishing flow subscriptions', { file })

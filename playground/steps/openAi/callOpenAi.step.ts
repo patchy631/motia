@@ -1,5 +1,5 @@
+import { EventConfig, StepHandler } from 'wistro'
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
 
 type Input = typeof inputSchema
 
@@ -9,16 +9,18 @@ const inputSchema = z.object({
   }),
 })
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Call OpenAI',
+  description: 'Call OpenAI',
   subscribes: ['call-openai'],
   emits: [{ type: 'openai-response', label: 'OpenAI Response' }],
   input: inputSchema,
   flows: ['openai'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
-  ctx.logger.info('[Call OpenAI] Received callOpenAi event', input)
+export const executor: StepHandler<typeof config> = async (input, { logger, emit }) => {
+  logger.info('[Call OpenAI] Received callOpenAi event', input)
 
   await emit({
     type: 'openai-response',

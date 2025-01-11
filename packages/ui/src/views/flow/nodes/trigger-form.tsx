@@ -46,7 +46,7 @@ export const TriggerForm = ({ data }: { data: TriggerNodeData }) => {
           <SheetDescription>{data.description}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-2 mt-4">
-          {data.inputSchema && <JsonSchemaForm schema={data.inputSchema} formData={formData} onChange={setFormData} />}
+          {data.bodySchema && <JsonSchemaForm schema={data.bodySchema} formData={formData} onChange={setFormData} />}
           <div className="flex justify-end ">
             <Button onClick={handleRun}>
               <Play className="w-3 h-3" />

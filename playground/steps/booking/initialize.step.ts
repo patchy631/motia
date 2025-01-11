@@ -1,37 +1,44 @@
+import { ApiRouteConfig, StepHandler } from 'wistro/wistro.types'
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
 
-type Input = typeof inputSchema
-
-const inputSchema = z.object({
-  venuePhoneNumber: z.string().min(1),
-  customerPhoneNumber: z.string().min(1),
+const bodySchema = z.object({
+  venuePhoneNumber: z.string({ description: 'The phone number of the venue' }).min(1),
+  customerPhoneNumber: z.string({ description: 'The phone number of the customer' }).min(1),
 })
 
-export const config: FlowConfig<Input> = {
-  name: 'Initialize',
-  subscribes: ['dbz.initialize'],
-  emits: ['dbz.search-customer', 'dbz.error'],
-  input: inputSchema,
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: 'initialize',
+  description: 'Initialize the booking flow',
+  path: '/api/booking/initialize',
+  method: 'POST',
+  emits: ['dbz.search-customer'],
   flows: ['booking'],
+  bodySchema,
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
-  const validation = inputSchema.safeParse(input)
+export const handler: StepHandler<typeof config> = async (req, { emit }) => {
+  const { success, data } = bodySchema.safeParse(req.body)
 
-  if (!validation.success) {
-    await emit({
-      type: 'dbz.error',
-      data: { message: 'input validation error' },
-    })
-    return
+  if (!success || !data) {
+    return {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: { message: 'input validation error' },
+    }
   }
 
   await emit({
     type: 'dbz.search-customer',
     data: {
-      venuePhoneNumber: input.venuePhoneNumber,
-      customerPhoneNumber: input.customerPhoneNumber,
+      venuePhoneNumber: data.venuePhoneNumber,
+      customerPhoneNumber: data.customerPhoneNumber,
     },
   })
+
+  return {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: { message: 'Booking initialized' },
+  }
 }

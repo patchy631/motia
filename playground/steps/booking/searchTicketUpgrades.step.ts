@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
 
 type Input = typeof inputSchema
 
@@ -10,7 +10,8 @@ const inputSchema = z.object({
   seat: z.coerce.number(),
 })
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Search Ticket Upgrades',
   subscribes: ['dbz.evaluate-upgrades'],
   emits: ['dbz.error', 'dbz.send-text'],
@@ -18,7 +19,7 @@ export const config: FlowConfig<Input> = {
   flows: ['booking'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
+export const handler: StepHandler<typeof config> = async (input, { emit, state }) => {
   const validation = inputSchema.safeParse(input)
 
   if (!validation.success) {
@@ -30,7 +31,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
   }
 
   try {
-    const reservation = await ctx.state.get<{
+    const reservation = await state.get<{
       customer: { id: string; phoneNumber: string }
       venue: { id: string; phoneNumber: string; name: string }
     }>(`booking_${input.customerPhoneNumber}`, 'reservation')
@@ -80,7 +81,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
     await emit({
       type: 'dbz.error',
       data: {
-        message: error instanceof Error ? error.message : `unknown error captured check logs traceId:${ctx.traceId}`,
+        message: error instanceof Error ? error.message : `unknown error captured`,
       },
     })
   }

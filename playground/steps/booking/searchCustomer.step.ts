@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
 
 type Input = typeof inputSchema
 
@@ -8,7 +8,8 @@ const inputSchema = z.object({
   customerPhoneNumber: z.string(),
 })
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Search Customer',
   subscribes: ['dbz.search-customer'],
   emits: ['dbz.send-text', 'dbz.error'],
@@ -16,7 +17,7 @@ export const config: FlowConfig<Input> = {
   flows: ['booking'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
+export const handler: StepHandler<typeof config> = async (input, { emit, state }) => {
   const { venuePhoneNumber, customerPhoneNumber } = input
 
   try {
@@ -41,12 +42,12 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
         throw new Error('failed to create customer')
       }
 
-      customerResponse = await createCustomerResponse
+      customerResponse = createCustomerResponse
     }
 
     const customer = await customerResponse.json()
 
-    ctx.state.set(`booking_${customerPhoneNumber}`, 'reservation', {
+    state.set(`booking_${customerPhoneNumber}`, 'reservation', {
       venue,
       customer,
     })
@@ -62,7 +63,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
     await emit({
       type: 'dbz.error',
       data: {
-        message: error instanceof Error ? error.message : `unknown error captured check logs traceId:${ctx.traceId}`,
+        message: error instanceof Error ? error.message : `unknown error captured`,
       },
     })
   }

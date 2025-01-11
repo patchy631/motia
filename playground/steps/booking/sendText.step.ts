@@ -1,5 +1,5 @@
+import { EventConfig, StepHandler } from 'wistro'
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
 
 type Input = typeof inputSchema
 
@@ -8,15 +8,16 @@ const inputSchema = z.object({
   message: z.string(),
 })
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Send SMS',
   subscribes: ['dbz.send-text'],
-  emits: ['dbz.error'],
+  emits: ['dbz.error', 'dbz.message-sent'],
   input: inputSchema,
   flows: ['booking'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
+export const executor: StepHandler<typeof config> = async (input, { emit }) => {
   try {
     const response = await fetch(`https://supreme-voltaic-flyaway.glitch.me/send-sms`, {
       method: 'POST',
@@ -34,7 +35,7 @@ export const executor: FlowExecutor<Input> = async (input, emit, ctx) => {
     await emit({
       type: 'dbz.error',
       data: {
-        message: error instanceof Error ? error.message : `unknown error captured check logs traceId:${ctx.traceId}`,
+        message: error instanceof Error ? error.message : `unknown error captured`,
       },
     })
   }

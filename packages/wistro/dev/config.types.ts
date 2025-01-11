@@ -1,20 +1,4 @@
-import { ZodObject } from 'zod'
-import { FlowConfig } from '../wistro.types'
-
-export type ApiPath = {
-  method: string
-  emits: string
-  name: string
-  flows: string[]
-  description?: string
-  tags?: string[]
-}
-
-export type ApiRoute = ApiPath & { path: string }
-
-export type ApiConfig = {
-  paths: Record<string, ApiPath>
-}
+import { StepConfig } from '../wistro.types'
 
 export type FlowDefinition = {
   name: string
@@ -38,14 +22,12 @@ export type StateConfig = {
 
 export type Config = {
   port: number
-  api: ApiConfig
   flows: Record<string, FlowDefinition>
-  cron: Record<string, CronDefinition>
   state: StateConfig
 }
 
-export type FlowStep = {
-  config: FlowConfig<ZodObject<any>>
+export type Step<TConfig extends StepConfig = StepConfig> = {
+  config: TConfig
   file: string
   filePath: string
 }

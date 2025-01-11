@@ -2,26 +2,22 @@ import { z, ZodObject } from 'zod'
 import { Server } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { Logger } from './dev/logger'
+import { StateAdapter } from './state/StateAdapter'
 
-export type Emitter = (event: any) => Promise<void>
+export type EmitData = { type: string; data: Record<string, unknown> }
+export type Emitter = (event: EmitData) => Promise<void>
 export type FlowContext = {
+  emit: Emitter
   traceId: string
-  state: {
-    get: <T>(path?: string) => Promise<T>
-    clear: () => Promise<void>
-    set: <T>(path: string, value: T) => Promise<void>
-  }
+  state: StateAdapter
   logger: Logger
 }
-export type FlowExecutor<TInput extends ZodObject<any>> = (
-  input: z.infer<TInput>,
-  emit: Emitter,
-  ctx: FlowContext,
-) => Promise<void>
+export type EventHandler<TInput extends ZodObject<any>> = (input: z.infer<TInput>, ctx: FlowContext) => Promise<void>
 
 export type Emit = string | { type: string; label?: string; conditional?: boolean }
 
-export type FlowConfig<TInput extends ZodObject<any>> = {
+export type EventConfig<TInput extends ZodObject<any>> = {
+  type: 'event'
   name: string
   description?: string
   subscribes: string[]
@@ -33,6 +29,7 @@ export type FlowConfig<TInput extends ZodObject<any>> = {
 export type NoopEmit = { POST: string } | { GET: string } | string
 
 export type NoopConfig = {
+  type: 'noop'
   name: string
   description?: string
   emits: NoopEmit
@@ -40,10 +37,36 @@ export type NoopConfig = {
   flows: string[]
 }
 
-export type Flow<TInput extends ZodObject<any>> = {
-  config: FlowConfig<TInput>
-  executor: FlowExecutor<TInput>
+export type ApiRouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
+
+export type ApiRouteConfig = {
+  type: 'api'
+  name: string
+  description?: string
+  path: string
+  method: ApiRouteMethod
+  emits: string[]
+  flows: string[]
+  bodySchema?: ZodObject<any>
 }
+
+export type ApiRequest = {
+  pathParams: Record<string, string>
+  queryParams: Record<string, string | string[]>
+  body: Record<string, any>
+  headers: Record<string, string | string[]>
+}
+
+export type ApiResponse = {
+  status: number
+  headers?: Record<string, string>
+  body: string | Buffer | Record<string, any>
+}
+
+export type ApiRouteHandler = (req: ApiRequest, ctx: FlowContext) => Promise<ApiResponse>
+
+export type StepHandler<T> =
+  T extends EventConfig<any> ? EventHandler<T['input']> : T extends ApiRouteConfig ? ApiRouteHandler : never
 
 export type WistroServer = Server<any>
 export type WistroSockerServer = SocketIOServer
@@ -62,3 +85,5 @@ export type EventManager = {
   emit: <TData>(event: Event<TData>, file?: string) => Promise<void>
   subscribe: <TData>(event: string, handlerName: string, handler: Handler<TData>) => void
 }
+
+export type StepConfig = EventConfig<ZodObject<any>> | NoopConfig | ApiRouteConfig

@@ -19,7 +19,7 @@ export type TriggerNodeData = {
   action: 'webhook' | 'cron'
   cron?: string
   webhookUrl?: string
-  inputSchema?: JSONSchema7
+  bodySchema?: JSONSchema7
 }
 
 export type NodeData = BaseNodeData | TriggerNodeData | NoopNodeData

@@ -1,17 +1,27 @@
 import { applyMiddleware } from '@wistro/ui/middleware'
-import { Server as SocketIOServer } from 'socket.io'
 import bodyParser from 'body-parser'
 import { randomUUID } from 'crypto'
 import express, { Request, Response } from 'express'
 import http from 'http'
-import { Config, FlowStep } from './config.types'
+import { Server as SocketIOServer } from 'socket.io'
+import { StateAdapter } from '../state/StateAdapter'
+import {
+  ApiRequest,
+  ApiRouteHandler,
+  EmitData,
+  EventManager,
+  WistroServer,
+  WistroSockerServer,
+} from './../wistro.types'
+import { Config, Step } from './config.types'
 import { flowsEndpoint } from './flows-endpoint'
-import { Event, EventManager, WistroServer, WistroSockerServer } from './../wistro.types'
+import { isApiStep } from './guards'
 import { globalLogger, Logger } from './logger'
 
 export const createServer = async (
   config: Config,
-  flowSteps: FlowStep[],
+  steps: Step[],
+  state: StateAdapter,
   eventManager: EventManager,
   options?: {
     skipSocketServer?: boolean
@@ -25,27 +35,42 @@ export const createServer = async (
     io = new SocketIOServer(server)
   }
 
-  globalLogger.debug('[API] Registering routes', { paths: config.api.paths })
-
-  const asyncHandler = (emits: string, flows: string[]) => {
+  const asyncHandler = (step: Step, flows: string[]) => {
     return async (req: Request, res: Response) => {
       const traceId = randomUUID()
       const logger = new Logger(traceId, flows, io)
-      const event: Omit<Event<unknown>, 'logger'> = {
-        traceId,
-        flows,
-        type: emits,
-        data: req.body,
+      const module = require(step.filePath)
+      const handler = module.handler as ApiRouteHandler
+      const request: ApiRequest = {
+        body: req.body,
+        headers: req.headers as Record<string, string | string[]>,
+        pathParams: req.params,
+        queryParams: req.query as Record<string, string | string[]>,
+      }
+      const emit = async (event: EmitData) => {
+        await eventManager.emit(
+          {
+            data: event.data,
+            type: event.type,
+            traceId,
+            flows,
+            logger,
+          },
+          step.filePath,
+        )
       }
 
-      globalLogger.debug('[API] Request received', { event })
-
       try {
-        await eventManager.emit({ ...event, logger })
-        res.send({ success: true, eventType: emits, traceId })
+        const result = await handler(request, { emit, state, logger, traceId })
+
+        if (result.headers) {
+          Object.entries(result.headers).forEach(([key, value]) => res.setHeader(key, value))
+        }
+
+        res.status(result.status)
+        res.json(result.body)
       } catch (error) {
-        console.error('[API] Error emitting event', error)
-        res.status(500).send({ error: 'Internal server error' })
+        res.status(500).json({ error: 'Internal server error' })
       }
     }
   }
@@ -53,21 +78,23 @@ export const createServer = async (
   app.use(bodyParser.json())
   app.use(bodyParser.urlencoded({ extended: true }))
 
-  for (const path in config.api.paths) {
-    const { method, emits, flows } = config.api.paths[path]
+  const apiSteps = steps.filter(isApiStep)
 
-    globalLogger.debug('[API] Registering route', { method, path, emits })
+  for (const step of apiSteps) {
+    const { method, flows, path } = step.config
+
+    globalLogger.debug('[API] Registering route', step.config)
 
     if (method === 'POST') {
-      app.post(path, asyncHandler(emits, flows))
+      app.post(path, asyncHandler(step, flows))
     } else if (method === 'GET') {
-      app.get(path, asyncHandler(emits, flows))
+      app.get(path, asyncHandler(step, flows))
     } else {
       throw new Error(`Unsupported method: ${method}`)
     }
   }
 
-  flowsEndpoint(config, flowSteps, app)
+  flowsEndpoint(steps, app)
   await applyMiddleware(app)
 
   globalLogger.debug('[API] Server listening on port', config.port)
