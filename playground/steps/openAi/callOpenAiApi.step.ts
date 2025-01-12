@@ -13,7 +13,7 @@ export const config: ApiRouteConfig = {
   description: 'Call OpenAI',
   path: '/openai',
   method: 'POST',
-  emits: ['openai-response'],
+  emits: ['call-openai'],
   bodySchema: inputSchema,
   flows: ['openai'],
 }
@@ -22,7 +22,7 @@ export const handler: StepHandler<typeof config> = async (req, { logger, emit })
   logger.info('[Call OpenAI] Received callOpenAi event', req)
 
   await emit({
-    type: 'openai-response',
+    type: 'call-openai',
     data: { message: req.body.message },
   })
 

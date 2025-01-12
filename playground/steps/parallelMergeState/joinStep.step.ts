@@ -1,11 +1,13 @@
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
+import { ParallelMergeStep } from './parallelMerge.types'
 
 type Input = typeof inputSchema
 
 const inputSchema = z.object({})
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'join-step',
   subscribes: ['pms.stepA.done', 'pms.stepB.done', 'pms.stepC.done'],
   emits: ['pms.join.complete'],
@@ -13,37 +15,23 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  const traceId = ctx.traceId
-  console.log('[join-step] Checking if all partial results exist for traceId =', traceId)
+export const handler: StepHandler<typeof config> = async (_, { emit, traceId, state, logger }) => {
+  logger.info('[join-step] Handling Join Step')
 
-  const state = await ctx.state.get<
-    Partial<{
-      stepA: { msg: string; timestamp: number }
-      stepB: { msg: string; timestamp: number }
-      stepC: { msg: string; timestamp: number }
-      done: boolean
-    }>
-  >()
+  const stepA = await state.get<ParallelMergeStep>(traceId, 'stepA')
+  const stepB = await state.get<ParallelMergeStep>(traceId, 'stepB')
+  const stepC = await state.get<ParallelMergeStep>(traceId, 'stepC')
 
-  if (!state.done || !state.stepA || !state.stepB || !state.stepC) {
-    console.log('[join-step] Not all steps done yet, ignoring for now.')
+  if (!stepA || !stepB || !stepC) {
+    logger.info('[join-step] Not all steps done yet, ignoring for now.', { stepA, stepB, stepC })
     return
   }
 
-  console.log('[join-step] All steps are complete. Merging results...')
+  logger.info('[join-step] All steps are complete. Merging results...')
 
-  const merged = {
-    stepA: state.stepA,
-    stepB: state.stepB,
-    stepC: state.stepC,
-    mergedAt: new Date().toISOString(),
-  }
+  const mergedAt = new Date().toISOString()
+  const merged = { stepA, stepB, stepC, mergedAt }
 
-  await emit({
-    type: 'pms.join.complete',
-    data: merged,
-  })
-
-  await ctx.state.clear()
+  await emit({ type: 'pms.join.complete', data: merged })
+  await state.clear(traceId)
 }

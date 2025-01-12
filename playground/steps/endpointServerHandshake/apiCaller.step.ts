@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
 
 type Input = typeof inputSchema
 
@@ -7,7 +7,8 @@ const inputSchema = z.object({
   userMessage: z.string(),
 })
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'API Caller',
   subscribes: ['handshake.callApi'],
   emits: ['handshake.apiResponse'],
@@ -15,7 +16,7 @@ export const config: FlowConfig<Input> = {
   flows: ['handshake'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit) => {
+export const handler: StepHandler<typeof config> = async (input, { emit }) => {
   console.log('[API Caller] Received callApi event:', input)
 
   // For demonstration, let's fetch from a public JSON placeholder API:

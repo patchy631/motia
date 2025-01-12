@@ -10,7 +10,7 @@ type Emit = string | { type: string; label?: string; conditional?: boolean }
 type FlowStep = {
   id: string
   name: string
-  type: 'base' | 'trigger'
+  type: 'base' | 'trigger' | 'noop'
   description?: string
   subscribes?: string[]
   emits: Emit[]

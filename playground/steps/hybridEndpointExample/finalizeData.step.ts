@@ -1,11 +1,12 @@
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
 import { SharedFlowInputSchema } from './items.schema'
 
 type Input = typeof inputSchema
 
 const inputSchema = SharedFlowInputSchema
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Fanialize Data',
   subscribes: ['hybrid.analyzed'],
   emits: ['hybrid.completed'],
@@ -13,7 +14,7 @@ export const config: FlowConfig<Input> = {
   flows: ['hybrid-example'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit) => {
+export const handler: StepHandler<typeof config> = async (input, { emit }) => {
   const { items, analysis, timestamp } = input
 
   await emit({

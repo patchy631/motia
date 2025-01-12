@@ -10,6 +10,7 @@ export const NoopNode = ({ data }: { data: NoopNodeData }) => {
         {data.description && <div className="text-xs">{data.description}</div>}
       </div>
       <BaseHandle type="source" position={Position.Bottom} />
+      <BaseHandle type="target" position={Position.Top} />
     </div>
   )
 }

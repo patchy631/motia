@@ -1,4 +1,4 @@
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
 import { z } from 'zod'
 
 type Input = typeof inputSchema
@@ -12,7 +12,8 @@ const inputSchema = z.object({
   ),
 })
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Validate Data',
   subscribes: ['hybrid.received'],
   emits: ['hybrid.validated'],
@@ -20,7 +21,7 @@ export const config: FlowConfig<Input> = {
   flows: ['hybrid-example'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit) => {
+export const handler: StepHandler<typeof config> = async (input, { emit }) => {
   await emit({
     type: 'hybrid.validated',
     data: {

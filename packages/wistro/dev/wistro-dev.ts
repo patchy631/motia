@@ -7,6 +7,7 @@ import { createEventManager } from './event-manager'
 import { Config } from './config.types'
 import { buildFlows } from './flow-builder'
 import { globalLogger } from './logger'
+import { createStateAdapter } from '../state/createStateAdapter'
 
 require('ts-node').register({
   transpileOnly: true,
@@ -16,11 +17,12 @@ require('ts-node').register({
 export const dev = async (): Promise<void> => {
   const configYaml = fs.readFileSync(path.join(process.cwd(), 'config.yml'), 'utf8')
   const config: Config = parse(configYaml)
-  const flowSteps = await buildFlows()
+  const steps = await buildFlows()
   const eventManager = createEventManager()
-  const { server } = await createServer(config, flowSteps, eventManager)
+  const state = createStateAdapter(config.state)
+  const { server } = await createServer(config, steps, state, eventManager)
 
-  createFlowHandlers(flowSteps, eventManager, config.state)
+  createFlowHandlers(steps, eventManager, config.state)
 
   console.log('🚀 Server ready and listening on port', config.port)
 

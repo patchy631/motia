@@ -19,7 +19,7 @@ export const config: EventConfig<Input> = {
   flows: ['openai'],
 }
 
-export const executor: StepHandler<typeof config> = async (input, { logger, emit }) => {
+export const handler: StepHandler<typeof config> = async (input, { logger, emit }) => {
   logger.info('[Call OpenAI] Received callOpenAi event', input)
 
   await emit({

@@ -22,18 +22,17 @@ export type EventConfig<TInput extends ZodObject<any>> = {
   description?: string
   subscribes: string[]
   emits: Emit[]
+  virtualEmits?: Emit[]
   input: TInput
   flows: string[]
 }
-
-export type NoopEmit = { POST: string } | { GET: string } | string
 
 export type NoopConfig = {
   type: 'noop'
   name: string
   description?: string
-  emits: NoopEmit
-  subscribes: string[]
+  virtualEmits: Emit[]
+  virtualSubscribes: string[]
   flows: string[]
 }
 
@@ -46,6 +45,8 @@ export type ApiRouteConfig = {
   path: string
   method: ApiRouteMethod
   emits: string[]
+  virtualEmits?: Emit[]
+  virtualSubscribes?: string[]
   flows: string[]
   bodySchema?: ZodObject<any>
 }

@@ -12,6 +12,7 @@ export const config: ApiRouteConfig = {
   description: 'Initialize the booking flow',
   path: '/api/booking/initialize',
   method: 'POST',
+  virtualSubscribes: ['/api/booking/initialize'],
   emits: ['dbz.search-customer'],
   flows: ['booking'],
   bodySchema,

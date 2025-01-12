@@ -34,6 +34,7 @@ class Context:
         self.file_name = file_name
         self.state = StateAdapter(self.trace_id, args.stateConfig)
         self.logger = Logger(self.trace_id, self.flows, self.file_name)
+        self.emit = emit
 
 async def run_python_module(file_path: str, args: Any) -> None:
     try:
@@ -49,22 +50,18 @@ async def run_python_module(file_path: str, args: Any) -> None:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
-        # Check if the executor function exists
-        if not hasattr(module, 'executor'):
-            raise AttributeError(f"Function 'executor' not found in module {module_path}")
+        # Check if the handler function exists
+        if not hasattr(module, 'handler'):
+            raise AttributeError(f"Function 'handler' not found in module {module_path}")
 
         context = Context(args, file_path)
 
-        # Call the executor function with arguments
-        # Check number of parameters the executor function accepts
-        sig = inspect.signature(module.executor)
+        # Call the handler function with arguments
+        # Check number of parameters the handler function accepts
+        sig = inspect.signature(module.handler)
         param_count = len(sig.parameters)
     
-        
-        if param_count == 2:
-            result = await module.executor(args.data, emit)
-        else:
-            result = await module.executor(args.data, emit, context)
+        result = await module.handler(args.data, context)
     except Exception as error:
         print('Error running Python module:', file=sys.stderr)
 

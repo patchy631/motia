@@ -1,11 +1,13 @@
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
+import { ParallelMergeStep } from './parallelMerge.types'
 
 type Input = typeof inputSchema
 
 const inputSchema = z.object({})
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'stepB',
   subscribes: ['pms.start'],
   emits: ['pms.stepB.done'],
@@ -13,15 +15,14 @@ export const config: FlowConfig<Input> = {
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  const traceId = ctx.traceId
-  console.log('[stepB] received pms.start, traceId =', traceId)
+export const handler: StepHandler<typeof config> = async (_, { emit, traceId, state, logger }) => {
+  logger.info('[stepB] received pms.start')
 
-  const partialResultA = { msg: 'Hello from Step B', timestamp: Date.now() }
-  await ctx.state.set('stepB', partialResultA)
+  const partialResultB: ParallelMergeStep = { msg: 'Hello from Step B', timestamp: Date.now() }
+  await state.set<ParallelMergeStep>(traceId, 'stepB', partialResultB)
 
   await emit({
     type: 'pms.stepB.done',
-    data: partialResultA,
+    data: partialResultB,
   })
 }

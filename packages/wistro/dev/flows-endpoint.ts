@@ -14,7 +14,7 @@ type FlowListResponse = {
 type FlowStepResponse = {
   id: string
   name: string
-  type: 'base' | 'trigger'
+  type: 'base' | 'trigger' | 'noop'
   description?: string
   subscribes?: string[]
   emits: Emit[]
@@ -64,7 +64,8 @@ export const generateFlowsList = (steps: Step[]): FlowResponse[] => {
           type: 'trigger',
           name: step.config.name,
           description: step.config.description,
-          emits: step.config.emits,
+          emits: [...step.config.emits, ...(step.config.virtualEmits ?? [])],
+          subscribes: step.config.virtualSubscribes ?? undefined,
           action: 'webhook',
           webhookUrl: `${step.config.method} ${step.config.path}`,
           bodySchema: step?.config.bodySchema ? zodToJsonSchema(step.config.bodySchema) : undefined,
@@ -79,21 +80,32 @@ export const generateFlowsList = (steps: Step[]): FlowResponse[] => {
         //     action: 'cron',
         //     cron: step.config.cron,
         //   })
-      } else if (isEventStep(step)) {
+      } else if (isEventStep(step) || isNoopStep(step)) {
         const filePathWithoutExtension = step.filePath.replace(/\.[^/.]+$/, '')
         const tsxPath = filePathWithoutExtension + '.tsx'
         const nodeComponentPath = fs.existsSync(tsxPath) ? tsxPath : undefined
 
-        steps.push({
-          id: randomUUID(),
-          type: 'base',
-          name: step.config.name,
-          description: step.config.description,
-          emits: step.config.emits,
-          subscribes: step.config.subscribes,
-          nodeComponentPath,
-        })
-      } else if (isNoopStep(step)) {
+        if (isEventStep(step)) {
+          steps.push({
+            id: randomUUID(),
+            type: 'base',
+            name: step.config.name,
+            description: step.config.description,
+            emits: [...step.config.emits, ...(step.config.virtualEmits ?? [])],
+            subscribes: step.config.subscribes,
+            nodeComponentPath,
+          })
+        } else {
+          steps.push({
+            id: randomUUID(),
+            type: 'noop',
+            name: step.config.name,
+            description: step.config.description,
+            emits: step.config.virtualEmits,
+            subscribes: step.config.virtualSubscribes,
+            nodeComponentPath,
+          })
+        }
       }
     })
 

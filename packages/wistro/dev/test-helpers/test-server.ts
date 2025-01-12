@@ -7,6 +7,7 @@ import { createEventManager } from './../event-manager'
 import { createServer } from './../server'
 import { WistroServer, EventManager, Event } from './../../wistro.types'
 import { createFlowHandlers } from './../flow-handlers'
+import { createStateAdapter } from '../../state/createStateAdapter'
 
 type Response = Promise<{
   eventManager: EventManager
@@ -22,9 +23,14 @@ export const createTestServer = async <EData>(
   const config: Config = parse(configYaml)
   const workflowSteps = await buildFlows()
   const eventManager = createEventManager(eventSubscriber as (event: Event<unknown>) => void)
-  const { server } = await createServer({ ...config, ...(configOverrides ?? {}) }, workflowSteps, eventManager, {
-    skipSocketServer: true,
-  })
+  const stateAdapter = createStateAdapter(config)
+  const { server } = await createServer(
+    { ...config, ...(configOverrides ?? {}) },
+    workflowSteps,
+    stateAdapter,
+    eventManager,
+    { skipSocketServer: true },
+  )
 
   createFlowHandlers(workflowSteps, eventManager, config.state)
 

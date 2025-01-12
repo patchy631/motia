@@ -1,12 +1,12 @@
-import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
 import { SharedFlowInputSchema } from './items.schema'
 
 type Input = typeof inputSchema
 
 const inputSchema = SharedFlowInputSchema
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Enrich Data',
   subscribes: ['hybrid.transformed'],
   emits: ['hybrid.enriched'],
@@ -14,7 +14,7 @@ export const config: FlowConfig<Input> = {
   flows: ['hybrid-example'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit) => {
+export const handler: StepHandler<typeof config> = async (input, { emit }) => {
   const enriched = input.items.map((item) => ({
     ...item,
     enriched_by: 'node',

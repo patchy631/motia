@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { EventConfig, StepHandler } from 'wistro'
 
 type Input = typeof inputSchema
 
@@ -7,7 +7,8 @@ const inputSchema = z.object({
   message: z.string(),
 })
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Processor',
   subscribes: ['ws-server-example.start'],
   emits: ['ws-server-example.processed'],
@@ -15,8 +16,8 @@ export const config: FlowConfig<Input> = {
   flows: ['wistro-server'],
 }
 
-export const executor: FlowExecutor<Input> = async (input, emit) => {
-  console.log('[Processor] received:', input)
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  logger.info('[Processor] received:', input)
   // Just an example: reverse the message string
   const reversed = input.message ? input.message.split('').reverse().join('') : '(no input.message)'
 

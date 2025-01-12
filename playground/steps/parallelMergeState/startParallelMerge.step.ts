@@ -1,23 +1,17 @@
-import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
+import { ApiRouteConfig, StepHandler } from 'wistro'
 
-type Input = typeof inputSchema
-
-const inputSchema = z.object({})
-
-export const config: FlowConfig<Input> = {
-  name: 'Start Event',
-  subscribes: ['pms.initialize'],
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: 'Parallel Merge',
+  description: 'Triggered when a message is received from parallel merge',
+  path: '/api/parallel-merge',
+  method: 'POST',
   emits: ['pms.start'],
-  input: inputSchema,
   flows: ['parallel-merge'],
 }
 
-export const executor: FlowExecutor<Input> = async (_, emit, ctx) => {
-  await ctx.state.set<{}>('initialized', true)
+export const handler: StepHandler<typeof config> = async (_, { emit }) => {
+  await emit({ type: 'pms.start', data: {} })
 
-  await emit({
-    type: 'pms.start',
-    data: {},
-  })
+  return { status: 200, body: { message: 'Started parallel merge' } }
 }

@@ -1,4 +1,5 @@
 config = {
+    "type": "event",
     "name": "Transform Data", 
     "subscribes": ["hybrid.validated"],
     "emits": ["hybrid.transformed"],
@@ -10,7 +11,7 @@ config = {
 instance_id = id(object())  # or random, e.g., random.randint(1, 10000)
 invocation_count = 0
 
-async def executor(input, emit):
+async def handler(input, ctx):
     global invocation_count
     invocation_count += 1
 
@@ -26,7 +27,7 @@ async def executor(input, emit):
         "transformed_by": "python"
     } for item in items]
     
-    await emit({
+    await ctx.emit({
         "type": "hybrid.transformed",
         "data": {
             "items": transformed,

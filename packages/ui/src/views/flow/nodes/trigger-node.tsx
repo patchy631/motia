@@ -42,6 +42,7 @@ export const TriggerNode = ({ data }: { data: TriggerNodeData }) => {
             )}
           </div>
         </div>
+        {data.subscribes && data.subscribes.length > 0 && <BaseHandle type="target" position={Position.Top} />}
         <BaseHandle type="source" position={Position.Bottom} />
       </div>
     </div>

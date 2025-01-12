@@ -1,4 +1,5 @@
 config = {
+    "type": "event",
     "name": "Call OpenAI",
     "subscribes": ["call-openai"], 
     "emits": ["openai-response"],
@@ -6,10 +7,10 @@ config = {
     "flows": ["openai"]
 }
 
-async def executor(args, emit, ctx):
+async def handler(args, ctx):
     ctx.logger.info('[Call Python OpenAI] Received call_ai event', args);
 
-    await emit({
+    await ctx.emit({
         "type": "openai-response",
         "data": { "message": args.message },
     });

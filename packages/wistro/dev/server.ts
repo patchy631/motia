@@ -38,7 +38,7 @@ export const createServer = async (
   const asyncHandler = (step: Step, flows: string[]) => {
     return async (req: Request, res: Response) => {
       const traceId = randomUUID()
-      const logger = new Logger(traceId, flows, io)
+      const logger = new Logger(traceId, flows, step.file, io)
       const module = require(step.filePath)
       const handler = module.handler as ApiRouteHandler
       const request: ApiRequest = {
@@ -70,6 +70,8 @@ export const createServer = async (
         res.status(result.status)
         res.json(result.body)
       } catch (error) {
+        logger.error('[API] Internal server error', { error })
+        console.log(error)
         res.status(500).json({ error: 'Internal server error' })
       }
     }

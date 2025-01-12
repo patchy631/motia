@@ -1,11 +1,12 @@
+import { EventConfig, StepHandler } from 'wistro'
 import { z } from 'zod'
-import { FlowConfig, FlowExecutor } from 'wistro'
 
 type Input = typeof inputSchema
 
 const inputSchema = z.object({})
 
-export const config: FlowConfig<Input> = {
+export const config: EventConfig<Input> = {
+  type: 'event',
   name: 'Finalizer',
   subscribes: ['ws-server-example.processed'],
   emits: [],
@@ -13,8 +14,8 @@ export const config: FlowConfig<Input> = {
   flows: ['wistro-server'],
 }
 
-export const executor: FlowExecutor<Input> = async (input: unknown) => {
-  console.log('[Finalizer] finalizing data:', input)
+export const handler: StepHandler<typeof config> = async (input, { logger }) => {
+  logger.info('[Finalizer] finalizing data:', input)
   // For demonstration, there's no further emit.
   // You could do logging, database calls, etc.
 }

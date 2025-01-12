@@ -1,6 +1,7 @@
 import json
 
 config = {
+    "type": "event",
     "name": "Analyze Data",
     "subscribes": ["hybrid.enriched"],
     "emits": ["hybrid.analyzed"],
@@ -12,7 +13,7 @@ config = {
 instance_id = id(object())  # or random, e.g., random.randint(1, 10000)
 invocation_count = 0
 
-async def executor(input, emit):
+async def handler(input, ctx):
     global invocation_count
     invocation_count += 1
 
@@ -37,7 +38,7 @@ async def executor(input, emit):
     # Convert items to a JSON serializable format
     serializable_items = [item.__dict__ for item in items]
 
-    await emit({
+    await ctx.emit({
         "type": "hybrid.analyzed",
         "data": {
             "items": serializable_items,

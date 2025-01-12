@@ -2,9 +2,9 @@ import { NoopConfig } from 'wistro'
 
 export const config: NoopConfig = {
   type: 'noop',
-  name: 'userSendsMessage',
+  name: 'User Sends Message',
   description: 'User sends a message',
-  emits: { POST: '/api/hybrid-endpoint-example' },
-  subscribes: ['dbz.message-sent'],
+  virtualEmits: ['/api/booking/initialize'],
+  virtualSubscribes: ['dbz.message-sent'],
   flows: ['booking'],
 }

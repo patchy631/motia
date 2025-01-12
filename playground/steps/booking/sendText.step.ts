@@ -17,7 +17,7 @@ export const config: EventConfig<Input> = {
   flows: ['booking'],
 }
 
-export const executor: StepHandler<typeof config> = async (input, { emit }) => {
+export const handler: StepHandler<typeof config> = async (input, { emit }) => {
   try {
     const response = await fetch(`https://supreme-voltaic-flyaway.glitch.me/send-sms`, {
       method: 'POST',
