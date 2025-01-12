@@ -1,51 +1,55 @@
 ---
 sidebar_position: 1
+title: Introduction
 ---
 
-# Intro
+# Introduction
 
-Let's discover **Wistro in less than 5 minutes**.
+Welcome to **Wistro**, an **event-driven** framework for orchestrating automated tasks by combining **Steps** (units of logic) into **Flows**. Whether you're automating a simple workflow or orchestrating a complex, multi-step pipeline, Wistro makes it easier to focus on application logic instead of building custom orchestration, routing, or logging from scratch.
 
-## Getting Started
+## What Is Wistro?
 
-### Prerequisites
+Wistro is a developer-first framework where you define **Steps** in JavaScript, TypeScript, Python, Ruby, (more supported languages on the roadmap). Each **Step** subscribes to and/or emits **Events**, enabling loosely coupled logic. You can also group Steps into **Flows**—this organization helps you visualize your application and track logs in the Wistro Workbench UI.
 
-- **Node.js** (v16+ recommended)
-- **Python** (LTS recommended)
-- **pnpm** (for managing the monorepo)
+Under the hood, Wistro automates much of the infrastructure:
 
-### Setup
+- **Event Management**: Steps broadcast and listen to events, so your entire system stays decoupled but still coordinated.
+- **Automatic Routes**: If a Step is of type **API** (i.e., “api route” step), Wistro automatically creates an HTTP route for it.
+- **Scheduling**: If a Step is of type **Cron**, Wistro schedules it (no need for external cron or separate processes).
+- **UI & Logging**: An optional local UI displays flows, logs, event traces, etc., all out of the box.
 
-1. Clone the repository:
+Whether you're a solo dev scripting internal tasks or part of a large team building a production system, Wistro can simplify your event-driven workflows.
 
-   ```bash
-   git clone <repository_url>
-   cd wistro-monorepo
-   ```
+## Main Features
 
-2. Install dependencies:
+| Feature            | Description                                                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**          | Fundamental logic units. Each step has a config (type: `event`, `api`, or `cron`) plus a code handler.                     |
+| **Flows**          | Logical groupings of steps for organization, visual exploration, and logging. Often used to separate domain areas.         |
+| **Events**         | Simple messages that tie your entire workflow together. Steps may subscribe to or emit these events.                       |
+| **API Steps**      | A specialized step type that automatically creates an HTTP route when Wistro starts (no manual server needed).             |
+| **Cron Steps**     | Another specialized step type that automatically schedules itself based on cron expressions.                               |
+| **Observability**  | Real-time logs, optional UI to visualize flows & steps, see event traces, and debug messages.                              |
+| **Multi-language** | Write Steps in Node.js, Python, Ruby, etc. Wistro runs them in separate processes with a consistent event-based interface. |
 
-   ```bash
-   pnpm install
-   ```
+## How to Use These Docs
 
-3. Set up environment variables:
-   - Copy the example `.env` file:
-     ```bash
-     cp playground/.env.example playground/.env
-     ```
-   - Update the `.env` file with your credentials and API keys.
+- **Left Nav**: Topics are ordered from basic to advanced, so you can step through as you build your automation.
+- **Right Nav**: Highlights sections on the current page for quick navigation.
+- **Search**: Use the search bar (or <kbd>Ctrl+K</kbd> / <kbd>Cmd+K</kbd>) to find topics instantly.
 
-### Running the Playground
+If you’re just starting, head over to [**Installation**](./installation.md) to add Wistro to your Node.js project. Then learn how to create and configure Steps (including event, API, or cron ones) and see how flows can organize them.
 
-The playground allows you to test and refine flows built using Wistro.js.
+## Prerequisite Knowledge
 
-```bash
-pnpm run dev
-```
+We aim to keep these docs beginner-friendly. However, familiarity with basic JavaScript/TypeScript is helpful. If you use Python or Ruby Steps, knowledge of those languages also helps.
 
-This command starts the following services:
+## Join Our Community
 
-- **WistroCore**: The flow orchestrator.
-- **WistroServer**: Provides HTTP endpoints for triggering flows.
-- **Playground UI**: A React-based visualization tool for flows.
+If you have questions, issues, or want to share ideas:
+
+- Visit our **GitHub Discussions** or open an **Issue** for bugs or feature requests.
+- Join our **Discord** to chat with other Wistro devs.
+- Follow us on **X (Twitter)** or **Reddit** for announcements and Q&A.
+
+When you’re ready, continue to the [**Installation**](./installation.md) guide!

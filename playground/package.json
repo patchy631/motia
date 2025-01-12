@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@wistro/ui": "workspace:*",
+    "openai": "^4.78.1",
     "wistro": "workspace:*",
     "zod": "^3.24.1"
   },

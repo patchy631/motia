@@ -1,5 +1,6 @@
 {
-  "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802",
+  "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954",
+  "port": 3000,
   "state": {
     "adapter": "redis",
     "host": "localhost",
@@ -14,148 +15,174 @@
     "booking": {
       "steps": [
         {
-          "filePath": "./steps/booking/initializeApi.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "filePath": "./steps/booking/initialize.step.ts",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/booking/noop/userSendsMessage.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/booking/searchCustomer.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/booking/searchTicketUpgrades.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
-        },
-        {
-          "filePath": "./steps/booking/searchUpgradesApi.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/booking/sendText.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         }
       ],
-      "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+    },
+    "demo-flow": {
+      "steps": [
+        {
+          "filePath": "./steps/demoFlow/addNumbers.step.js",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+        },
+        {
+          "filePath": "./steps/demoFlow/exampleApi.step.js",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+        }
+      ],
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
     },
     "handshake": {
       "steps": [
         {
           "filePath": "./steps/endpointServerHandshake/apiCaller.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
-        },
-        {
-          "filePath": "./steps/endpointServerHandshake/handshakeApi.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/endpointServerHandshake/nodeFinalizer.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/endpointServerHandshake/nodeStarter.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         }
       ],
-      "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
     },
     "hybrid-example": {
       "steps": [
         {
           "filePath": "./steps/hybridEndpointExample/analyzeData.step.py",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/hybridEndpointExample/enrichData.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/hybridEndpointExample/finalizeData.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
-        },
-        {
-          "filePath": "./steps/hybridEndpointExample/hybridApi.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/hybridEndpointExample/transformData.step.py",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+        },
+        {
+          "filePath": "./steps/hybridEndpointExample/validateData.step.ts",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         }
       ],
-      "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
     },
     "openai": {
       "steps": [
         {
           "filePath": "./steps/openAi/callOpenAi.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/openAi/callOpenAiApi.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/openAi/call_ai.step.py",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/openAi/call_ai_ruby.step.rb",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/openAi/openAiResponse.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         }
       ],
-      "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
     },
     "parallel-merge": {
       "steps": [
         {
           "filePath": "./steps/parallelMergeState/joinComplete.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/parallelMergeState/joinStep.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/parallelMergeState/setpB.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/parallelMergeState/startParallelMerge.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/parallelMergeState/stepA.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/parallelMergeState/stepC.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         }
       ],
-      "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+    },
+    "sentiment-demo": {
+      "steps": [
+        {
+          "filePath": "./steps/sentementAnalysis/analyzeSentimentApi.step.ts",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+        },
+        {
+          "filePath": "./steps/sentementAnalysis/handleNegative.step.ts",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+        },
+        {
+          "filePath": "./steps/sentementAnalysis/handlePositive.step.ts",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+        },
+        {
+          "filePath": "./steps/sentementAnalysis/openAiAnalyzeSentement.step.ts",
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
+        }
+      ],
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
     },
     "wistro-server": {
       "steps": [
         {
           "filePath": "./steps/wistroServerExample/finalizer.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/wistroServerExample/processor.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         },
         {
           "filePath": "./steps/wistroServerExample/startServerExample.step.ts",
-          "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+          "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
         }
       ],
-      "version": "1293a6d6-5553-40e6-ae74-99a4d5aad1ed:1736812802"
+      "version": "f5820e6f-05b2-4d45-a4d3-6145e02a1587:1736702954"
     }
   }
 }
