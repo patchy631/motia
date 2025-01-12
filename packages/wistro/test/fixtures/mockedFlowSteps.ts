@@ -1,41 +1,42 @@
 import { z } from 'zod'
-import { FlowStep } from '../../dev/config.types'
+import { Step } from '../../dev/config.types'
 
-export const mockFlowSteps: FlowStep[] = [
+export const mockFlowSteps: Step[] = [
   {
     config: {
-      flows: ['flow1'],
-      name: 'Step 1',
-      description: 'First step',
-      emits: ['event1'],
-      subscribes: [],
-      input: z.object({}),
+      type: 'api',
+      name: 'Start Event',
+      description: 'Start the Wistro Server Example flow',
+      path: '/api/wistro-server-example',
+      method: 'POST',
+      emits: ['ws-server-example.start'],
+      flows: ['wistro-server'],
     },
-    file: 'path',
-    filePath: 'step1/path',
+    file: 'startServerExample.step.ts',
+    filePath: '/playground/steps/wistroServerExample/startServerExample.step.ts',
   },
   {
     config: {
-      flows: ['flow1'],
-      name: 'Step 2',
-      description: 'Second step',
-      emits: ['event2'],
-      subscribes: ['event1'],
+      type: 'event',
+      name: 'Processor',
+      subscribes: ['ws-server-example.start'],
+      emits: ['ws-server-example.processed'],
       input: z.object({}),
+      flows: ['wistro-server'],
     },
-    file: 'path',
-    filePath: 'step2/path',
+    file: 'processor.step.ts',
+    filePath: '/playground/steps/wistroServerExample/processor.step.ts',
   },
   {
     config: {
-      flows: ['flow1'],
-      name: 'Step 3',
-      description: 'Third step',
-      emits: ['event3'],
-      subscribes: ['event2'],
+      type: 'event',
+      name: 'Finalizer',
+      subscribes: ['ws-server-example.processed'],
+      emits: [],
       input: z.object({}),
+      flows: ['wistro-server'],
     },
-    file: 'path',
-    filePath: 'step3/path',
+    file: 'finalizer.step.ts',
+    filePath: '/playground/steps/wistroServerExample/finalizer.step.ts',
   },
 ]

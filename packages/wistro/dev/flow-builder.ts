@@ -1,22 +1,22 @@
 import path from 'path'
 import fs from 'fs'
 import { getPythonConfig } from './python/get-python-config'
-import { FlowStep } from './config.types'
-import { FlowConfig } from '../wistro.types'
+import { StepConfig } from '../wistro.types'
 import { globalLogger } from './logger'
+import { Step } from './config.types'
 
 require('ts-node').register({
   transpileOnly: true,
   compilerOptions: { module: 'commonjs' },
 })
 
-export const parseFlowFolder = async (folderPath: string, nextFlows: FlowStep[]): Promise<FlowStep[]> => {
+export const parseFlowFolder = async (folderPath: string, nextFlows: Step[]): Promise<Step[]> => {
   const flowFolderItems = fs.readdirSync(folderPath, { withFileTypes: true })
   const flowFiles = flowFolderItems
     .filter(({ name }) => name.endsWith('.step.ts') || name.endsWith('.step.js') || name.endsWith('.step.py'))
     .map(({ name }) => name)
   const flowRootFolders = flowFolderItems.filter((item) => item.isDirectory())
-  let flows: FlowStep[] = [...nextFlows]
+  let flows: Step[] = [...nextFlows]
 
   globalLogger.debug('[Flows] Building flows', { flowFiles, flowRootFolders })
 
@@ -36,7 +36,7 @@ export const parseFlowFolder = async (folderPath: string, nextFlows: FlowStep[])
         continue
       }
       globalLogger.debug('[Flows] processing component', { config: module.config })
-      const config = module.config as FlowConfig<any>
+      const config = module.config as StepConfig
       flows.push({ config, file, filePath: path.join(folderPath, file) })
     }
   }
@@ -52,7 +52,7 @@ export const parseFlowFolder = async (folderPath: string, nextFlows: FlowStep[])
   return flows
 }
 
-export const buildFlows = async (): Promise<FlowStep[]> => {
+export const buildFlows = async (): Promise<Step[]> => {
   // Read all flow folders under /flows directory
   const flowsDir = path.join(process.cwd(), 'steps')
 
