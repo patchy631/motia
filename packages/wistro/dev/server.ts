@@ -15,8 +15,8 @@ import {
   WistroSockerServer,
 } from './../wistro.types'
 import { Step } from './config.types'
-import { flowsEndpoint } from './flows-endpoint'
-import { isApiStep } from './guards'
+import { flowsEndpoint, generateFlowsList } from './flows-endpoint'
+import { isApiStep, isNoopStep } from './guards'
 import { globalLogger, Logger } from './logger'
 
 export const createServer = async (
@@ -89,6 +89,13 @@ export const createServer = async (
 
     globalLogger.debug('[API] Registering route', step.config)
 
+    // if (step.config.virtualSubscribes) {
+    //   for (const subscribe of step.config.virtualSubscribes) {
+    //     const { type, path } = subscribe
+    //     app.post(path, asyncHandler(step, flows))
+    //   }
+    // }
+
     if (method === 'POST') {
       app.post(path, asyncHandler(step, flows))
     } else if (method === 'GET') {
@@ -98,7 +105,31 @@ export const createServer = async (
     }
   }
 
-  flowsEndpoint(steps, app)
+  const list = generateFlowsList(steps)
+
+  flowsEndpoint(list, app)
+
+  app.post('/emit/:flowId', async (req, res) => {
+    const body: { stepId: string; data: Record<string, unknown> } = req.body
+    const { data, stepId } = body
+    const flowId = req.params.flowId
+    const flows = [flowId]
+    const traceId = randomUUID()
+    const step = list.find((flow) => flow.id === flowId)?.steps.find((step) => step.id === stepId)
+    const logger = new Logger(traceId, flows, stepId, io)
+
+    if (step && isNoopStep(step.step)) {
+      const emit = step.step.config.virtualEmit
+      const emitType = typeof emit === 'string' ? emit : emit.type
+
+      await eventManager.emit({ data, type: emitType, traceId, flows: [flowId], logger }, step.step.filePath)
+
+      res.status(200).json({ ok: true })
+    } else {
+      res.status(404).json({ error: 'Step not found' })
+    }
+  })
+
   await applyMiddleware(app)
 
   globalLogger.debug('[API] Server listening on port', lockData.port)

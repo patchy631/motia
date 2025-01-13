@@ -1,5 +1,5 @@
 {
-  "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037",
+  "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910",
   "port": 3000,
   "state": {
     "adapter": "redis",
@@ -102,26 +102,26 @@
       "steps": [
         {
           "filePath": "./steps/booking/initialize.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/booking/noop/userSendsMessage.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/booking/searchCustomer.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/booking/searchTicketUpgrades.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/booking/sendText.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         }
       ],
-      "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+      "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
     },
     "handshake": {
       "name": "Endpoint Server Handshake",
@@ -129,18 +129,18 @@
       "steps": [
         {
           "filePath": "./steps/endpointServerHandshake/apiCaller.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/endpointServerHandshake/nodeFinalizer.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/endpointServerHandshake/nodeStarter.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         }
       ],
-      "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+      "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
     },
     "hybrid-example": {
       "name": "Hybrid Endpoint Example",
@@ -148,26 +148,26 @@
       "steps": [
         {
           "filePath": "./steps/hybridEndpointExample/analyzeData.step.py",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/hybridEndpointExample/enrichData.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/hybridEndpointExample/finalizeData.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/hybridEndpointExample/transformData.step.py",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/hybridEndpointExample/validateData.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         }
       ],
-      "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+      "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
     },
     "openai": {
       "name": "OpenAI Example",
@@ -175,26 +175,30 @@
       "steps": [
         {
           "filePath": "./steps/openAi/callOpenAi.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/openAi/callOpenAiApi.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
+        },
+        {
+          "filePath": "./steps/openAi/callOpenAiJs.step.js",
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/openAi/call_ai.step.py",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/openAi/call_ai_ruby.step.rb",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/openAi/openAiResponse.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         }
       ],
-      "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+      "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
     },
     "parallel-merge": {
       "name": "Parallel Merge Example",
@@ -202,30 +206,30 @@
       "steps": [
         {
           "filePath": "./steps/parallelMergeState/joinComplete.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/parallelMergeState/joinStep.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/parallelMergeState/setpB.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/parallelMergeState/startParallelMerge.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/parallelMergeState/stepA.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/parallelMergeState/stepC.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         }
       ],
-      "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+      "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
     },
     "wistro-server": {
       "name": "Wistro Server Example",
@@ -233,18 +237,18 @@
       "steps": [
         {
           "filePath": "./steps/wistroServerExample/finalizer.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/wistroServerExample/processor.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         },
         {
           "filePath": "./steps/wistroServerExample/startServerExample.step.ts",
-          "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+          "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
         }
       ],
-      "version": "2f522c7c-6705-42cc-ab2f-d98997fc7973:1736690037"
+      "version": "26e533aa-f3c3-4fc8-bcb7-8b0b1b6b4fec:1736697910"
     }
   }
 }

@@ -3,23 +3,21 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Play } from 'lucide-react'
 import { useState } from 'react'
 import { JsonSchemaForm } from './json-schema-form'
-import { TriggerNodeData } from './nodes.types'
+import { NoopNodeData } from './nodes.types'
 
-export const TriggerForm = ({ data }: { data: TriggerNodeData }) => {
+export const TriggerForm = ({ data }: { data: NoopNodeData }) => {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<any>({})
 
   const handleRun = () => {
     setOpen(false)
 
-    if (!data.webhookUrl) return
-
-    console.log('data.webhookUrl', data.webhookUrl)
-    const [method, url] = data.webhookUrl.split(' ')
-
-    fetch(url, {
-      method,
-      body: JSON.stringify(formData),
+    fetch(`/emit/${data.flowId}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        stepId: data.id,
+        data: formData,
+      }),
       headers: { 'Content-Type': 'application/json' },
     })
     console.log('run', formData)
@@ -35,7 +33,7 @@ export const TriggerForm = ({ data }: { data: TriggerNodeData }) => {
       <Button
         onClick={onOpen}
         variant="none"
-        className="rounded-full bg-sky-600 hover:bg-sky-700 text-black"
+        className="rounded-full bg-gray-500/10 hover:bg-gray-500/20 text-black"
         size="icon"
       >
         <Play className="w-3 h-3" />
@@ -46,7 +44,7 @@ export const TriggerForm = ({ data }: { data: TriggerNodeData }) => {
           <SheetDescription>{data.description}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-2 mt-4">
-          {data.bodySchema && <JsonSchemaForm schema={data.bodySchema} formData={formData} onChange={setFormData} />}
+          {data.jsonSchema && <JsonSchemaForm schema={data.jsonSchema} formData={formData} onChange={setFormData} />}
           <div className="flex justify-end ">
             <Button onClick={handleRun}>
               <Play className="w-3 h-3" />

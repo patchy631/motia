@@ -14,6 +14,6 @@
     "baseUrl": ".",
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "wistro.mts", "**/*.tsx"],
+  "include": ["**/*.ts", "wistro.mts", "**/*.tsx", "steps/openAi/callOpenAiJs.step.js"],
   "exclude": ["node_modules", "dist", "tests"]
 }

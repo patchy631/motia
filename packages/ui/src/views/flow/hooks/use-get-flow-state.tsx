@@ -52,7 +52,7 @@ async function importFlow(flow: FlowResponse): Promise<FlowState> {
     id: step.id,
     type: step.nodeComponentPath ? step.nodeComponentPath : step.type,
     position: { x: 0, y: 0 },
-    data: step,
+    data: { ...step, flowId: flow.id },
     language: step.language,
   }))
 

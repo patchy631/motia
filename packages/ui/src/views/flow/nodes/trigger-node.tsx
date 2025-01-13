@@ -2,7 +2,6 @@ import { Position } from '@xyflow/react'
 import { Clock, Speech, Webhook } from 'lucide-react'
 import { BaseHandle } from '../../../publicComponents/base-handle'
 import { TriggerNodeData } from './nodes.types'
-import { TriggerForm } from './trigger-form'
 
 export const TriggerNode = ({ data }: { data: TriggerNodeData }) => {
   return (
@@ -14,7 +13,6 @@ export const TriggerNode = ({ data }: { data: TriggerNodeData }) => {
               <div className="text-sm font-semibold">{data.name}</div>
               {data.description && <div className="text-xs">{data.description}</div>}
             </div>
-            {data.webhookUrl && <TriggerForm data={data} />}
           </div>
           <div className="flex flex-col">
             {data.webhookUrl && (

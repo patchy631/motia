@@ -21,10 +21,11 @@ type FlowStepResponse = {
   emits: Emit[]
   action?: 'webhook' | 'cron'
   webhookUrl?: string
-  bodySchema?: any
+  jsonSchema?: any
   cron?: string
   language?: string
   nodeComponentPath?: string
+  step: Step
 }
 
 type FlowResponse = FlowListResponse & {
@@ -71,7 +72,7 @@ export const generateFlowsList = (steps: Step[]): FlowResponse[] => {
           action: 'webhook',
           language: getStepLanguage(step.filePath),
           webhookUrl: `${step.config.method} ${step.config.path}`,
-          bodySchema: step?.config.bodySchema ? zodToJsonSchema(step.config.bodySchema) : undefined,
+          step,
         })
         // } else if (isCronStep(step)) {
         //   steps.push({
@@ -98,16 +99,39 @@ export const generateFlowsList = (steps: Step[]): FlowResponse[] => {
             subscribes: step.config.subscribes,
             language: getStepLanguage(step.filePath),
             nodeComponentPath,
+            step,
           })
         } else {
+          const virtualEmit = step.config.virtualEmit
+          const emit = typeof virtualEmit === 'string' ? virtualEmit : virtualEmit.type
+          const nextStep = flowSteps.find((step) => {
+            if (isApiStep(step)) {
+              return step.config.virtualSubscribes?.includes(emit)
+            } else if (isEventStep(step)) {
+              return step.config.subscribes.includes(emit)
+            }
+          })
+
+          const jsonSchema = ((step: Step | undefined) => {
+            if (!step) return undefined
+
+            if (isApiStep(step)) {
+              return step.config.bodySchema ? zodToJsonSchema(step.config.bodySchema) : undefined
+            } else if (isEventStep(step)) {
+              return step.config.input ? zodToJsonSchema(step.config.input) : undefined
+            }
+          })(nextStep)
+
           steps.push({
             id: randomUUID(),
             type: 'noop',
             name: step.config.name,
             description: step.config.description,
-            emits: step.config.virtualEmits,
+            emits: [step.config.virtualEmit],
             subscribes: step.config.virtualSubscribes,
             nodeComponentPath,
+            jsonSchema,
+            step,
           })
         }
       }
@@ -119,16 +143,14 @@ export const generateFlowsList = (steps: Step[]): FlowResponse[] => {
   return list
 }
 
-export const flowsEndpoint = (steps: Step[], app: Express) => {
-  const list = generateFlowsList(steps)
-
+export const flowsEndpoint = (list: FlowResponse[], app: Express) => {
   app.get('/flows', async (_, res) => {
     res.status(200).send(list.map(({ id, name }) => ({ id, name })))
   })
 
   app.get('/flows/:id', async (req, res) => {
     const { id } = req.params as { id: string }
-    const flow: FlowListResponse | undefined = list.find((flow) => flow.id === id)
+    const flow = list.find((flow) => flow.id === id)
 
     if (!flow) {
       res.status(404).send({ error: 'Flow not found' })

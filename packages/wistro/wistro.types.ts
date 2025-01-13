@@ -31,8 +31,8 @@ export type NoopConfig = {
   type: 'noop'
   name: string
   description?: string
-  virtualEmits: Emit[]
-  virtualSubscribes: string[]
+  virtualEmit: Emit
+  virtualSubscribes?: string[]
   flows: string[]
 }
 
