@@ -16,9 +16,10 @@ export const dev = async (port: number): Promise<void> => {
   const steps = await buildFlows(lockData)
   const eventManager = createEventManager()
   const state = createStateAdapter(lockData.state)
-  const { server } = await createServer({ steps, state, eventManager, port })
+  const { server } = await createServer({ steps, state, eventManager })
 
   createFlowHandlers(steps, eventManager, lockData.state)
+  server.listen(port)
 
   console.log('🚀 Server ready and listening on port', port)
 

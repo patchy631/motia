@@ -1,4 +1,3 @@
-import { applyMiddleware } from '@wistro/ui/middleware'
 import bodyParser from 'body-parser'
 import { randomUUID } from 'crypto'
 import express, { Request, Response } from 'express'
@@ -10,9 +9,8 @@ import {
   ApiRouteHandler,
   EmitData,
   EventManager,
-  LockFile,
   WistroServer,
-  WistroSockerServer,
+  WistroSocketServer,
 } from './../wistro.types'
 import { Step } from './config.types'
 import { flowsEndpoint } from './flows-endpoint'
@@ -23,22 +21,16 @@ type ServerOptions = {
   steps: Step[]
   state: StateAdapter
   eventManager: EventManager
-  port: number
-  skipSocketServer?: boolean
+  disableUi?: boolean
 }
 
 export const createServer = async (
   options: ServerOptions,
-): Promise<{ server: WistroServer; socketServer?: WistroSockerServer }> => {
-  const { steps, state, eventManager, port, skipSocketServer } = options
+): Promise<{ server: WistroServer; socketServer: WistroSocketServer }> => {
+  const { steps, state, eventManager } = options
   const app = express()
   const server = http.createServer(app)
-  let io: SocketIOServer | undefined
-
-  if (!skipSocketServer) {
-    globalLogger.debug('[API] Creating socket server')
-    io = new SocketIOServer(server)
-  }
+  const io = new SocketIOServer(server)
 
   const asyncHandler = (step: Step, flows: string[]) => {
     return async (req: Request, res: Response) => {
@@ -102,9 +94,24 @@ export const createServer = async (
   }
 
   flowsEndpoint(steps, app)
-  await applyMiddleware(app)
 
-  server.listen(port)
+  if (!options.disableUi) {
+    const { applyMiddleware } = require('@wistro/ui/middleware')
+    await applyMiddleware(app)
+  }
+
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
+
+  server.on('error', (error) => {
+    console.error('Server error:', error)
+  })
+
+  await new Promise((resolve) => {
+    server.listen(port, () => {
+      console.log(`Server listening on port ${port}`)
+      resolve(null)
+    })
+  })
 
   return { server, socketServer: io }
 }

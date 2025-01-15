@@ -1,5 +1,5 @@
-import { globalLogger, Logger } from './logger'
 import { Event, EventManager, Handler } from './../wistro.types'
+import { globalLogger } from './logger'
 
 export const createEventManager = (globalSubscriber?: (event: Event<unknown>) => void): EventManager => {
   const handlers: Record<string, Handler[]> = {}

@@ -70,7 +70,7 @@ export type StepHandler<T> =
   T extends EventConfig<any> ? EventHandler<T['input']> : T extends ApiRouteConfig ? ApiRouteHandler : never
 
 export type WistroServer = Server<any>
-export type WistroSockerServer = SocketIOServer
+export type WistroSocketServer = SocketIOServer
 
 export type Event<TData> = {
   type: string

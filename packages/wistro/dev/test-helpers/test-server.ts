@@ -12,9 +12,8 @@ type Response = Promise<{
 }>
 
 export const createTestServer = async <EData>(
-  configPath: string,
+  port: number,
   eventSubscriber?: (event: Event<EData>) => void,
-  configOverrides?: Partial<{ port: number }>,
 ): Response => {
   const lockData = loadLockFile()
   const steps = await buildFlows(lockData)
@@ -24,8 +23,6 @@ export const createTestServer = async <EData>(
     steps,
     state,
     eventManager,
-    skipSocketServer: true,
-    port: 3000,
   })
 
   createFlowHandlers(steps, eventManager, lockData.state)

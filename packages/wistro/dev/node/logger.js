@@ -11,10 +11,10 @@ class Logger {
     })
   }
 
-  info = (message, args) => this.logger.info(message, args)
-  error = (message, args) => this.logger.error(message, args)
-  debug = (message, args) => this.logger.debug(message, args)
-  warn = (message, args) => this.logger.warn(message, args)
+  info = (message, args) => this.logger.info(args, message)
+  error = (message, args) => this.logger.error(args, message)
+  debug = (message, args) => this.logger.debug(args, message)
+  warn = (message, args) => this.logger.warn(args, message)
 }
 
 module.exports = { Logger }

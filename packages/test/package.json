@@ -1,0 +1,16 @@
+{
+  "name": "@wistro/test",
+  "private": true,
+  "scripts": {},
+  "dependencies": {
+    "supertest": "^7.0.0",
+    "wistro": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}

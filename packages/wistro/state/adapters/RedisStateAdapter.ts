@@ -16,7 +16,7 @@ export class RedisStateAdapter extends StateAdapter {
   constructor(config: RedisAdapterConfig) {
     super()
     this.client = new Redis(config)
-    this.prefix = 'wistro:state:'
+    this.prefix = 'wistro:state'
     if (config.ttl) {
       this.ttl = config.ttl
     }
@@ -51,6 +51,6 @@ export class RedisStateAdapter extends StateAdapter {
   }
 
   _makeKey(traceId: string, key: string) {
-    return `${this.prefix}${traceId}:${key}`
+    return `${this.prefix}:${traceId}:${key}`
   }
 }

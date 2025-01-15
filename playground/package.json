@@ -17,7 +17,11 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
+    "@types/jest": "^29.5.14",
     "@types/react": "^18.3.18",
+    "@wistro/test": "workspace:*",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
     "react": "^19.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"

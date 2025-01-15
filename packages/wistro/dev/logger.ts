@@ -16,19 +16,19 @@ class BaseLogger {
   }
 
   info(message: string, args?: any) {
-    this.logger.info(message, args)
+    this.logger.info(args, message)
   }
 
   error(message: string, args?: any) {
-    this.logger.error(message, args)
+    this.logger.error(args, message)
   }
 
   debug(message: string, args?: any) {
-    this.logger.debug(message, args)
+    this.logger.debug(args, message)
   }
 
   warn(message: string, args?: any) {
-    this.logger.warn(message, args)
+    this.logger.warn(args, message)
   }
 }
 

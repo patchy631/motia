@@ -38,6 +38,7 @@ async function runTypescriptModule(filePath, args) {
 
     // Call the function with provided arguments
     await module.handler(event.data, context)
+    await state.cleanup()
   } catch (error) {
     console.error('Error running TypeScript module:', error)
     process.exit(1)

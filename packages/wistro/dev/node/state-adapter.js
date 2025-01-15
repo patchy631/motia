@@ -1,78 +1,49 @@
 const Redis = require('ioredis')
 
 class StateAdapter {
-  ttl = 300 // Default TTL in seconds
-
-  constructor(traceId, stateConfig) {
-    this.traceId = traceId
-    this.client = new Redis(stateConfig)
+  constructor(stateConfig) {
+    this.client = new Redis(6379, 'localhost')
     this.prefix = 'wistro:state'
-    this.rootKey = this._makeRootKey()
 
     if (stateConfig.ttl) {
       this.ttl = stateConfig.ttl
     }
   }
 
-  async get(path) {
-    const fullPath = this._makePath(path)
-    const value = await this.client.call('JSON.GET', this.rootKey, fullPath)
-
-    if (typeof value === 'string') {
-      return JSON.parse(value)[0]
-    }
-    return value ?? null
+  async get(traceId, key) {
+    const fullKey = this._makeKey(traceId, key)
+    const value = await this.client.get(fullKey)
+    return value ? JSON.parse(value) : null
   }
 
-  async preparePath(path) {
-    const segments = path.split('.')
-    let currentKey = ''
-
-    for (const segment of segments) {
-      currentKey = currentKey ? `${currentKey}.${segment}` : segment
-      const exists = await this.client.call('JSON.GET', this.rootKey, currentKey)
-      if (!exists) {
-        await this.client.call('JSON.SET', this.rootKey, currentKey, '{}')
-      }
+  async set(traceId, key, value) {
+    const fullKey = this._makeKey(traceId, key)
+    if (this.ttl) {
+      await this.client.set(fullKey, JSON.stringify(value), 'EX', this.ttl)
+    } else {
+      await this.client.set(fullKey, JSON.stringify(value))
     }
   }
 
-  async set(path, value) {
-    const nextPath = this._makePath(path)
-
-    await this.preparePath(nextPath)
-
-    await this.client
-      .multi()
-      .call('JSON.SET', this.rootKey, nextPath, JSON.stringify(value))
-      .call('EXPIRE', this.rootKey, this.ttl)
-      .exec()
+  async delete(traceId, key) {
+    const fullKey = this._makeKey(traceId, key)
+    await this.client.del(fullKey)
   }
 
-  async delete(path) {
-    if (!path) {
-      await this.client.del(this.rootKey)
-      return
+  async clear(traceId) {
+    const pattern = this._makeKey(traceId, '*')
+    const keys = await this.client.keys(pattern)
+    if (keys.length > 0) {
+      await this.client.del(keys)
     }
-
-    const fullPath = this._makePath(path)
-    await this.client.call('JSON.DEL', this.rootKey, fullPath)
-  }
-
-  async clear() {
-    await this.client.del(this.rootKey)
   }
 
   async cleanup() {
     await this.client.quit()
   }
 
-  _makeRootKey() {
-    return `${this.prefix}:${this.traceId}`
-  }
-
-  _makePath(path) {
-    return `$${path ? '.' + path : ''}`
+  _makeKey(traceId, key) {
+    return `${this.prefix}:${traceId}:${key}`
   }
 }
 

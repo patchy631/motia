@@ -21,6 +21,7 @@ export const handler: StepHandler<typeof config> = async (_, { emit, traceId, st
   const partialResultA: ParallelMergeStep = { msg: 'Hello from Step A', timestamp: Date.now() }
   await state.set<ParallelMergeStep>(traceId, 'stepA', partialResultA)
 
+  await new Promise((resolve) => setTimeout(resolve, 300))
   await emit({
     type: 'pms.stepA.done',
     data: partialResultA,
