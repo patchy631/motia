@@ -1,7 +1,8 @@
-import { createWistroTester, CapturedEvent, Log } from '@wistro/test'
+import { createWistroTester } from '@wistro/test'
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
 
 describe('parallelMerge', () => {
-  // process.env.LOG_LEVEL = 'debug'
   let server: ReturnType<typeof createWistroTester>
 
   beforeEach(async () => (server = createWistroTester()))
@@ -17,7 +18,8 @@ describe('parallelMerge', () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ message: 'Started parallel merge' })
 
-    await joinComplete.pullEvents(1, { timeout: 2000 })
+    // This is important to ensure all events are handled in this test
+    await server.waitEvents()
 
     expect(joinComplete.getCapturedEvents()).toHaveLength(1)
     expect(joinComplete.getLastCapturedEvent()).toEqual({
@@ -25,7 +27,7 @@ describe('parallelMerge', () => {
       type: 'pms.join.complete',
       flows: ['parallel-merge'],
       data: {
-        mergedAt: expect.any(String),
+        mergedAt: expect.stringMatching(ISO_DATE_REGEX),
         stepA: { msg: 'Hello from Step A', timestamp },
         stepB: { msg: 'Hello from Step B', timestamp },
         stepC: { msg: 'Hello from Step C', timestamp },

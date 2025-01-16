@@ -1,34 +1,33 @@
 import request, { Response } from 'supertest'
 import { createServer, Event } from 'wistro'
-import { createEventManager } from 'wistro/dev/event-manager'
 import { buildFlows } from 'wistro/dev/flow-builder'
+import { createFlowHandlers } from 'wistro/dev/flow-handlers'
 import { loadLockFile } from 'wistro/dev/load-lock-file'
 import { createStateAdapter } from 'wistro/state/createStateAdapter'
-import { createFlowHandlers } from 'wistro/dev/flow-handlers'
-import { CapturedEvent, Log, RequestOptions } from './types'
+import { createEventManager } from './event-manager'
+import { CapturedEvent, RequestOptions } from './types'
 
 type Watcher<TData = unknown> = {
-  pullEvents(quantity: number, options?: { timeout?: number }): Promise<void>
   getCapturedEvents(): CapturedEvent<TData>[]
   getLastCapturedEvent(): CapturedEvent<TData> | undefined
   getCapturedEvent(index: number): CapturedEvent<TData> | undefined
 }
 
 interface WistroTester {
-  watchLog(callback: (event: Log) => void): Promise<VoidFunction>
   post(path: string, options: RequestOptions): Promise<Response>
   get(path: string, options: RequestOptions): Promise<Response>
   emit(event: Event<any>): Promise<void>
   watch<TData>(event: string): Promise<Watcher<TData>>
   sleep(ms: number): Promise<void>
   close(): Promise<void>
+  waitEvents(): Promise<void>
 }
 
 export const createWistroTester = (): WistroTester => {
+  const eventManager = createEventManager()
   const promise = (async () => {
     const lockData = loadLockFile()
     const steps = await buildFlows(lockData)
-    const eventManager = createEventManager()
     const state = createStateAdapter(lockData.state)
     const { server, socketServer } = await createServer({ steps, state, eventManager, disableUi: true })
 
@@ -38,13 +37,9 @@ export const createWistroTester = (): WistroTester => {
   })()
 
   return {
-    watchLog: async (callback) => {
-      const { socketServer } = await promise
-      socketServer.on('log', callback)
-
-      return () => {
-        socketServer.off('log', callback)
-      }
+    waitEvents: async () => {
+      const { eventManager } = await promise
+      await eventManager.waitEvents()
     },
     post: async (path, options) => {
       const { server } = await promise
@@ -55,11 +50,9 @@ export const createWistroTester = (): WistroTester => {
       return request(server).get(path).send(options.body)
     },
     emit: async (event) => {
-      const { eventManager } = await promise
       return eventManager.emit(event)
     },
     watch: async <TData>(event: string) => {
-      const { eventManager } = await promise
       const events: CapturedEvent<TData>[] = []
 
       eventManager.subscribe(event, '$watcher', async (event: Event<TData>) => {
@@ -67,30 +60,11 @@ export const createWistroTester = (): WistroTester => {
         events.push(rest)
       })
 
-      const watcher: Watcher<TData> = {
-        pullEvents: async (count, options) => {
-          let elapsedTime = 0
-
-          await new Promise((resolve, reject) => {
-            const intervalId = setInterval(() => {
-              elapsedTime += 10
-
-              if (events.length >= count) {
-                clearInterval(intervalId)
-                resolve(void 0)
-              } else if (elapsedTime >= (options?.timeout ?? 1000)) {
-                clearInterval(intervalId)
-                reject(new Error('Timeout waiting for event'))
-              }
-            }, 10)
-          })
-        },
+      return {
         getCapturedEvents: () => events,
         getLastCapturedEvent: () => events[events.length - 1],
         getCapturedEvent: (index) => events[index],
       }
-
-      return watcher
     },
     sleep: async (ms) => {
       return new Promise((resolve) => setTimeout(resolve, ms))

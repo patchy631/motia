@@ -19,8 +19,8 @@ export const dev = async (port: number): Promise<void> => {
   const { server } = await createServer({ steps, state, eventManager })
 
   createFlowHandlers(steps, eventManager, lockData.state)
-  server.listen(port)
 
+  server.listen(port)
   console.log('🚀 Server ready and listening on port', port)
 
   // 6) Gracefully shut down on SIGTERM

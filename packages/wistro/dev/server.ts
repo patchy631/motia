@@ -100,17 +100,8 @@ export const createServer = async (
     await applyMiddleware(app)
   }
 
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
-
   server.on('error', (error) => {
     console.error('Server error:', error)
-  })
-
-  await new Promise((resolve) => {
-    server.listen(port, () => {
-      console.log(`Server listening on port ${port}`)
-      resolve(null)
-    })
   })
 
   return { server, socketServer: io }

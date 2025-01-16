@@ -33,6 +33,7 @@ out/
 coverage/
 .nyc_output/
 test-results/*
+playground/reports/unit/
 
 # IDEs and editors
 .idea/
