@@ -61,7 +61,7 @@ pnpm run dev
 
 Wistro will:
 
-1. Scan for `.step.js` files
+1. Scan for `.step.<py, ts, js, rb>` files
 2. Register your Steps
 3. Launch a dev server (port 3000 by default)
 
