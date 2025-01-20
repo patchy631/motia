@@ -1,7 +1,7 @@
 {
   "name": "@motiadev/workbench",
   "version": "0.0.2",
-  "main": "index.tsx",
+  "main": "dist/index.js",
   "scripts": {
     "lint": "eslint .",
     "build": "rm -rf dist && tsc --build",
