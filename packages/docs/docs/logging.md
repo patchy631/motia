@@ -41,7 +41,7 @@ Each log entry automatically includes:
 ### TypeScript/JavaScript
 
 ```typescript
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 
 export const handler: StepHandler<typeof config> = async (input, { logger }) => {
   // Basic logging
@@ -149,7 +149,7 @@ logging:
 ### Custom Logger
 
 ```typescript
-import { Logger } from '@motia/core'
+import { Logger } from '@motiadev/core'
 
 class CustomLogger extends Logger {
   constructor(traceId: string, flows: string[], file: string) {

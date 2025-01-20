@@ -1,4 +1,4 @@
-import { mockedFlows } from '../../test/fixtures/mockedFlowSteps'
+import { mockedFlows } from '../../test/fixtures/mocked-flow-steps'
 import { generateFlowsList } from '../flows-endpoint'
 
 describe('generateFlowsList', () => {

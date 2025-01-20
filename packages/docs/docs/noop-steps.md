@@ -84,9 +84,9 @@ You can enhance your NoOp steps with custom React components for better visualiz
 ```typescript
 // customNode.step.tsx
 import React from 'react'
-import { BaseHandle, BaseNodeProps, Position } from '@motia/workbench'
+import { BaseHandle, EventNodeProps, Position } from '@motiadev/workbench'
 
-export default (_: BaseNodeProps) => {
+export default (_: EventNodeProps) => {
   return (
     <div className="p-3 px-6 flex flex-col max-w-[300px] bg-blue-500 border-white rounded-full text-white border border-solid text-center text-sm">
       <div>Custom Processing</div>
@@ -115,9 +115,9 @@ NoOp steps are particularly useful for testing flows in development. Here's a co
 ```typescript
 // startTest.step.tsx
 import React from 'react'
-import { BaseHandle, BaseNodeProps, Position } from '@motia/workbench'
+import { BaseHandle, EventNodeProps, Position } from '@motiadev/workbench'
 
-export default (_: BaseNodeProps) => {
+export default (_: EventNodeProps) => {
   return (
     <div className="p-4 bg-green-500 rounded-full text-white text-center">
       <div>Start Test Flow</div>
@@ -141,9 +141,9 @@ export const config: NoopConfig = {
 ```typescript
 // monitor.step.tsx
 import React from 'react'
-import { BaseHandle, BaseNodeProps, Position } from '@motia/workbench'
+import { BaseHandle, EventNodeProps, Position } from '@motiadev/workbench'
 
-export default (_: BaseNodeProps) => {
+export default (_: EventNodeProps) => {
   return (
     <div className="p-4 bg-yellow-500 rounded-full text-white text-center">
       <div>Monitoring Progress</div>
@@ -168,9 +168,9 @@ export const config: NoopConfig = {
 ```typescript
 // endTest.step.tsx
 import React from 'react'
-import { BaseHandle, BaseNodeProps, Position } from '@motia/workbench'
+import { BaseHandle, EventNodeProps, Position } from '@motiadev/workbench'
 
-export default (_: BaseNodeProps) => {
+export default (_: EventNodeProps) => {
   return (
     <div className="p-4 bg-red-500 rounded-full text-white text-center">
       <div>End Test Flow</div>
@@ -216,7 +216,7 @@ export const config: NoopConfig = {
 1. **Core Imports**
 
    ```typescript
-   import { BaseHandle, BaseNodeProps, Position } from '@motia/workbench'
+   import { BaseHandle, EventNodeProps, Position } from '@motiadev/workbench'
    ```
 
 2. **Handle Placement**

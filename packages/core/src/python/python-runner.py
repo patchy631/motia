@@ -2,10 +2,10 @@ import sys
 import json
 import importlib.util
 import traceback
-import inspect
 import os
 from logger import Logger
-from state_adapter import StateManagerConfig, create_internal_state_manager, StateManagerError
+from rpc import RpcSender
+from rpc_state_manager import RpcStateManager
 
 from typing import Any
 
@@ -18,25 +18,17 @@ def parse_args(arg: str) -> Any:
         print('Error parsing args:', arg)
         return arg
 
-# get the FD from ENV
-NODEIPCFD = int(os.environ["NODE_CHANNEL_FD"])
-
-async def emit(text: Any):
-  'sends a Node IPC message to parent proccess'
-  # encode message as json string + newline in bytes
-  bytesMessage = (json.dumps(text) + "\n").encode('utf-8')
-  # send message
-  os.write(NODEIPCFD, bytesMessage)
-
 class Context:
     def __init__(self, args: Any, file_name: str):
         self.trace_id = args.traceId
         self.flows = args.flows
         self.file_name = file_name
-        config = StateManagerConfig(state_manager_url=args.stateConfig.stateManagerUrl)
-        self.state = create_internal_state_manager(config)
-        self.logger = Logger(self.trace_id, self.flows, self.file_name)
-        self.emit = emit
+        self.sender = RpcSender()
+        self.state = RpcStateManager(self.sender)
+        self.logger = Logger(self.trace_id, self.flows, self.file_name, self.sender)
+
+    async def emit(self, event: Any):
+        await self.sender.send('emit', event)
 
 async def run_python_module(file_path: str, args: Any) -> None:
     try:
@@ -57,13 +49,12 @@ async def run_python_module(file_path: str, args: Any) -> None:
             raise AttributeError(f"Function 'handler' not found in module {module_path}")
 
         context = Context(args, file_path)
-
-        # Call the handler function with arguments
-        # Check number of parameters the handler function accepts
-        sig = inspect.signature(module.handler)
-        param_count = len(sig.parameters)
-    
+        context.sender.init()
+        
         await module.handler(args.data, context)
+        
+        # exit with 0 to indicate success
+        sys.exit(0)
     except Exception as error:
         print('Error running Python module:', file=sys.stderr)
 

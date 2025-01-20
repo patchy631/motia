@@ -7,7 +7,7 @@ Motia Snap is a command-line interface tool to get your Motia project setup.
 To install the CLI globally, run:
 
 ```sh
-npm install -g @motia/snap
+npm install -g @motiadev/snap
 ```
 
 ## Usage

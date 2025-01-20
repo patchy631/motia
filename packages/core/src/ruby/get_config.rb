@@ -71,7 +71,6 @@ begin
   config = extract_config(file_path)
   send_message(config)
   
-  warn "Successfully extracted and sent config from #{file_path}"
   exit(0)
 rescue => e
   warn "Error: #{e.message}"

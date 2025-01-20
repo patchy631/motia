@@ -1,2 +1,2 @@
-export { createMotiaTester } from './tester'
-export { CapturedEvent } from './types'
+export { createMotiaTester } from './src/tester'
+export { CapturedEvent } from './src/types'

@@ -1,4 +1,4 @@
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 import { SharedFlowInputSchema } from './items.schema'
 
 type Input = typeof inputSchema

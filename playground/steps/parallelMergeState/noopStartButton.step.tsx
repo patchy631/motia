@@ -1,20 +1,14 @@
+import { BaseNode, Button, NoopNodeProps } from '@motiadev/workbench'
 import React from 'react'
-import { BaseNode, BaseNodeProps, Button } from '@motia/workbench'
 
-export default (data: BaseNodeProps) => {
-  const [count, setCount] = React.useState(0)
-
+export default (data: NoopNodeProps) => {
   function start() {
-    fetch('/api/parallel-merge', {
-      method: 'POST',
-    })
+    fetch('/api/parallel-merge', { method: 'POST' })
   }
 
   return (
-    <BaseNode variant={'noop'} {...data}>
-      <div className="flex flex-row items-center gap-2">
-        <Button onClick={() => fetch('/api/parallel-merge', { method: 'POST' })}>Start Flow</Button>
-      </div>
+    <BaseNode title="Start" variant="noop" {...data} disableTargetHandle>
+      <Button onClick={start}>Start Flow</Button>
     </BaseNode>
   )
 }

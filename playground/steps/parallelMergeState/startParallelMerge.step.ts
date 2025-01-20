@@ -1,4 +1,4 @@
-import { ApiRouteConfig, StepHandler } from '@motia/core'
+import { ApiRouteConfig, StepHandler } from '@motiadev/core'
 
 export const config: ApiRouteConfig = {
   type: 'api',

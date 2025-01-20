@@ -1,4 +1,4 @@
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 import { z } from 'zod'
 import equal from 'deep-equal'
 
@@ -22,7 +22,7 @@ export const config: EventConfig<Input> = {
 export const handler: StepHandler<typeof config> = async (input, { traceId, logger, state }) => {
   logger.info('[Test motia state with TS] received check-state-change event', input)
 
-  const value = await state.get(traceId, input.key)
+  const value = await state.get<any>(traceId, input.key)
 
   if (!equal(value.data, input.expected, { strict: true })) {
     logger.error(`[Test motia state with TS] state value is not as expected`, { value, expected: input.expected })

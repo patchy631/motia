@@ -1,12 +1,7 @@
-import {
-  createServer,
-  createStepHandlers,
-  createEventManager,
-  globalLogger,
-  createInternalStateManager,
-} from '@motia/core'
+import { createServer, createStepHandlers, createEventManager, globalLogger, createStateAdapter } from '@motiadev/core'
+import { applyMiddleware } from '@motiadev/workbench/middleware'
+import { generateLockedData } from './generate-locked-data'
 import path from 'path'
-import { generateLockedData } from './generate/locked-data'
 
 require('ts-node').register({
   transpileOnly: true,
@@ -14,21 +9,22 @@ require('ts-node').register({
 })
 
 export const dev = async (port: number): Promise<void> => {
-  const rootDir = path.join(process.cwd())
-  const lockedData = await generateLockedData(rootDir)
+  const lockedData = await generateLockedData(process.cwd())
   const steps = [...lockedData.steps.active, ...lockedData.steps.dev]
   const eventManager = createEventManager()
-  const stateManagerConfig = {
-    // TODO: allow for host configuration
-    stateManagerUrl: `http://localhost:${port}/state-manager`,
-  }
-  const state = createInternalStateManager(stateManagerConfig)
-  const { server } = await createServer({ steps, rootDir, state, flows: lockedData.flows, eventManager })
+  const state = createStateAdapter({
+    adapter: 'default',
+    filePath: path.join(process.cwd(), '.motia'),
+  })
+  const { app, server } = await createServer({ steps, state, flows: lockedData.flows, eventManager })
 
-  createStepHandlers(steps, eventManager, stateManagerConfig)
+  createStepHandlers(steps, eventManager, state)
 
   server.listen(port)
   console.log('🚀 Server ready and listening on port', port)
+  console.log(`🔗 Open http://localhost:${port}/ to open workbench 🛠️`)
+
+  await applyMiddleware(app)
 
   // 6) Gracefully shut down on SIGTERM
   process.on('SIGTERM', async () => {

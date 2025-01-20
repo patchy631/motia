@@ -1,11 +1,17 @@
 {
-  "name": "@motia/test",
-  "private": true,
-  "scripts": {},
+  "name": "@motiadev/test",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsc"
+  },
+  "peerDependencies": {
+    "@motiadev/core": "workspace:*",
+    "@motiadev/snap": "workspace:*"
+  },
   "dependencies": {
-    "supertest": "^7.0.0",
-    "@motia/core": "workspace:*",
-    "@motia/snap": "workspace:*"
+    "supertest": "^7.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

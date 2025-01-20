@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 import { ParallelMergeStep } from './parallelMerge.types'
 
 type Input = typeof inputSchema
@@ -19,10 +19,11 @@ export const config: EventConfig<Input> = {
 export const handler: StepHandler<typeof config> = async (_, { emit, traceId, state, logger }) => {
   logger.info('[stepA] received pms.start')
 
+  await new Promise((resolve) => setTimeout(resolve, 300))
+
   const partialResultA: ParallelMergeStep = { msg: 'Hello from Step A', timestamp: Date.now() }
   await state.set<ParallelMergeStep>(traceId, 'stepA', partialResultA)
 
-  await new Promise((resolve) => setTimeout(resolve, 300))
   await emit({
     type: 'pms.stepA.done',
     data: partialResultA,

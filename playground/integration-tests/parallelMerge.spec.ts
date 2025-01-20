@@ -1,4 +1,4 @@
-import { createMotiaTester } from '@motia/test'
+import { createMotiaTester } from '@motiadev/test'
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
 

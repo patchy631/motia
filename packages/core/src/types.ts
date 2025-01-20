@@ -4,9 +4,10 @@ import { Server as SocketIOServer } from 'socket.io'
 import { Logger } from './logger'
 
 export type InternalStateManager = {
-  get: (traceId: string, key: string) => Promise<{ data: unknown }>
-  set: (traceId: string, key: string, value: unknown) => Promise<void>
-  delete: (traceId: string, key: string) => Promise<void>
+  get<T>(traceId: string, key: string): Promise<T | null>
+  set<T>(traceId: string, key: string, value: T): Promise<void>
+  delete(traceId: string, key: string): Promise<void>
+  clear(traceId: string): Promise<void>
 }
 
 export type EmitData = { type: string; data: Record<string, unknown> }
@@ -77,7 +78,7 @@ export type StepHandler<T> =
 export type MotiaServer = Server<any>
 export type MotiaSocketServer = SocketIOServer
 
-export type Event<TData> = {
+export type Event<TData = unknown> = {
   type: string
   data: TData
   traceId: string

@@ -47,7 +47,7 @@ Each workflow execution gets a unique state space identified by its `traceId`. T
 ### TypeScript/JavaScript
 
 ```typescript
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 
 export const handler: StepHandler<typeof config> = async (input, { state, traceId }) => {
   // Store state
@@ -125,7 +125,7 @@ state:
 ### Custom State Adapters
 
 ```typescript
-import { StateAdapter } from '@motia/core'
+import { StateAdapter } from '@motiadev/core'
 
 class CustomStateAdapter extends StateAdapter {
   async get<T>(traceId: string, key: string): Promise<T | null> {

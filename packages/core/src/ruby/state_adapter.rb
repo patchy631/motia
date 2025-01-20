@@ -54,6 +54,9 @@ def create_internal_state_manager(state_manager_url:)
     },
     delete: ->(trace_id, key) { 
       handler.call('delete', { traceId: trace_id, key: key })
+    },
+    clear: ->(trace_id) {
+      handler.call('clear', { traceId: trace_id })
     }
   }
 end

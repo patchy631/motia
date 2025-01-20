@@ -1,27 +1,27 @@
 export const getStepLanguage = (fileExtension?: string): string | undefined => {
   if (!fileExtension) return
 
-  if (fileExtension.match(/js/)) {
+  if (fileExtension.endsWith('.js')) {
     return 'javascript'
   }
 
-  if (fileExtension.match(/ts/)) {
+  if (fileExtension.endsWith('.ts')) {
     return 'typescript'
   }
 
-  if (fileExtension.match(/py/)) {
+  if (fileExtension.endsWith('.py')) {
     return 'python'
   }
 
-  if (fileExtension.match(/go/)) {
+  if (fileExtension.endsWith('.go')) {
     return 'go'
   }
 
-  if (fileExtension.match(/rb/)) {
+  if (fileExtension.endsWith('.rb')) {
     return 'ruby'
   }
 
-  if (fileExtension.match(/php/)) {
+  if (fileExtension.endsWith('.php')) {
     return 'php'
   }
 

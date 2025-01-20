@@ -1,12 +1,13 @@
-import json
 import time
 from typing import Any, Dict, Optional
+from rpc import RpcSender
 
 class Logger:
-    def __init__(self, trace_id: str, flows: list[str], file_path: str):
+    def __init__(self, trace_id: str, flows: list[str], file_path: str, sender: RpcSender):
         self.trace_id = trace_id
         self.flows = flows
         self.file_name = file_path.split('/')[-1]
+        self.sender = sender
 
     def _log(self, level: str, message: str, args: Optional[Dict[str, Any]] = None) -> None:
         log_entry = {
@@ -26,7 +27,7 @@ class Logger:
                 args = {"data": args}
             log_entry.update(args)
 
-        print(json.dumps(log_entry, separators=(',', ':')))
+        self.sender.send_no_wait('log', log_entry)
 
     def info(self, message: str, args: Optional[Any] = None) -> None:
         self._log("info", message, args)

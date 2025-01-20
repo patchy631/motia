@@ -9,15 +9,15 @@
     "test": "jest --silent"
   },
   "dependencies": {
-    "@motia/core": "workspace:*",
-    "@motia/snap": "workspace:*",
-    "@motia/workbench": "workspace:*",
+    "@motiadev/core": "workspace:*",
+    "@motiadev/snap": "workspace:*",
+    "@motiadev/workbench": "workspace:*",
     "deep-equal": "^2.2.3",
     "openai": "^4.78.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@motia/test": "workspace:*",
+    "@motiadev/test": "workspace:*",
     "@types/deep-equal": "^1.0.4",
     "@types/jest": "^29.5.14",
     "@types/react": "^18.3.18",

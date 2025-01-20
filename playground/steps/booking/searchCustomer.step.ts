@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 
 type Input = typeof inputSchema
 

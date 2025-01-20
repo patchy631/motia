@@ -1,12 +1,10 @@
 import { globalLogger } from './logger'
 import { Event, EventManager, Handler } from './types'
 
-export const createEventManager = (globalSubscriber?: (event: Event<unknown>) => void): EventManager => {
+export const createEventManager = (): EventManager => {
   const handlers: Record<string, Handler[]> = {}
 
   const emit = async <TData>(event: Event<TData>, file?: string) => {
-    globalSubscriber?.(event)
-
     const eventHandlers = handlers[event.type] ?? []
     const { logger, ...rest } = event
 
