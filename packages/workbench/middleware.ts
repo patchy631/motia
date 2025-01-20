@@ -1,13 +1,15 @@
-import autoprefixer from 'autoprefixer'
-import type { Express, NextFunction, Request, Response } from 'express'
-import fs from 'fs'
-import path from 'path'
-import tailwindcss from 'tailwindcss'
-import tailwindcssConfig from './tailwind.config'
 
-export const applyMiddleware = async (app: Express) => {
+
+export const applyMiddleware = async (app: any) => {
   // NOTE: this is needed since vite is an ESM https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated
+  const tailwindcssConfig = await import('./tailwind.config')
+  const fs = await import('fs')
+  const path = await import('path')
+  const { default: Express } = await import('express')
   const { createServer } = await import('vite')
+  const { default: autoprefixer } = await import('autoprefixer')
+  const { default: tailwindcss } = await import('tailwindcss')
+
   const vite = await createServer({
     appType: 'spa',
     root: __dirname,
@@ -30,7 +32,7 @@ export const applyMiddleware = async (app: Express) => {
 
   app.use(vite.middlewares)
 
-  app.use('*', async (req: Request, res: Response, next: NextFunction) => {
+  app.use('*', async (req: typeof Express.request, res: typeof Express.response, next: any) => {
     const url = req.originalUrl
 
     console.log('[UI] Request', { url })

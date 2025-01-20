@@ -1,7 +1,7 @@
 {
   "name": "@motiadev/core",
   "main": "dist/index.js",
-  "version": "0.0.2",
+  "version": "0.0.6",
   "scripts": {
     "move:python": "cp src/python/*.py dist/src/python",
     "move:rb": "cp src/ruby/*.rb dist/src/ruby",
