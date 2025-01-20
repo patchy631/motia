@@ -1,4 +1,4 @@
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 import { z } from 'zod'
 import { promises as fs } from 'fs'
 import path from 'path'

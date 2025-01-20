@@ -1,4 +1,4 @@
-import { ApiRouteConfig, StepHandler } from '@motia/core'
+import { ApiRouteConfig, StepHandler } from '@motiadev/core'
 import { z } from 'zod'
 
 // Define the expected request body schema

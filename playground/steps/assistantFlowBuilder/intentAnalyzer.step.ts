@@ -1,6 +1,5 @@
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 import { z } from 'zod'
-import axios from 'axios'
 
 const inputSchema = z.object({
   message: z.string(),
@@ -33,15 +32,14 @@ export const handler: StepHandler<typeof config> = async (input, { emit, logger,
       keyPrefix: process.env.ANTHROPIC_API_KEY.substring(0, 4) + '...',
     })
 
-    const response = await axios({
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'post',
-      url: 'https://api.anthropic.com/v1/messages',
       headers: {
         'anthropic-version': '2023-06-01',
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'content-type': 'application/json',
       },
-      data: {
+      body: JSON.stringify({
         messages: [
           {
             role: 'user',
@@ -51,9 +49,8 @@ export const handler: StepHandler<typeof config> = async (input, { emit, logger,
         model: 'claude-3-5-sonnet-latest',
         max_tokens: 2048,
         system: 'Analyze workflow requests and return JSON responses.',
-      },
-      validateStatus: null, // Don't throw on non-2xx
-    })
+      }),
+    }).then((res) => res.json())
 
     // Log the full response for debugging
     logger.debug('[Intent Analyzer] Raw API Response:', {

@@ -1,4 +1,4 @@
-import { ApiRouteConfig, StepHandler } from '@motia/core'
+import { ApiRouteConfig, StepHandler } from '@motiadev/core'
 import { z } from 'zod'
 
 const querySchema = z.object({
@@ -29,7 +29,16 @@ export const handler: StepHandler<typeof config> = async (req, { logger, state }
   logger.info(`[Chat Status Handler] Checking status', ${messageId}`)
 
   try {
-    const flowState = await state.get(messageId, 'flowState')
+    const flowState = await state.get<{
+      currentPhase: string
+      error: string | null
+      analysis: {
+        requirements: {
+          needsClarification: boolean
+          clarificationQuestions: string[]
+        }
+      }
+    }>(messageId, 'flowState')
     logger.info(`[Chat Status Handler] Retrieved flow state:', ${flowState}`)
 
     if (!flowState) {

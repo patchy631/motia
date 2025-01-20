@@ -1,6 +1,5 @@
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 import { z } from 'zod'
-import axios from 'axios'
 
 const inputSchema = z.object({
   messageId: z.string().uuid(),
@@ -96,15 +95,16 @@ ${documentation.map((doc) => doc.content).join('\n\n')}`
       docCount: documentation.length,
     })
 
-    const response = await axios({
+    const headers = new Headers({
+      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    })
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'post',
-      url: 'https://api.anthropic.com/v1/messages',
-      headers: {
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      data: {
+      headers,
+      body: JSON.stringify({
         model: 'claude-3-5-sonnet-latest',
         messages: [
           {
@@ -114,8 +114,8 @@ ${documentation.map((doc) => doc.content).join('\n\n')}`
         ],
         max_tokens: 2048,
         temperature: 0, // Ensure consistent output
-      },
-    })
+      }),
+    }).then((res) => res.json())
 
     const rawResponse = response.data?.content?.[0]?.text
     if (!rawResponse) {

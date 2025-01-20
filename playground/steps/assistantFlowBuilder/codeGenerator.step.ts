@@ -1,6 +1,5 @@
-import { EventConfig, StepHandler } from '@motia/core'
+import { EventConfig, StepHandler } from '@motiadev/core'
 import { z } from 'zod'
-import axios from 'axios'
 
 // The payload expected by this step
 const inputSchema = z.object({
@@ -92,15 +91,15 @@ export const handler: StepHandler<typeof config> = async (input, { emit, logger,
         .replace('{emits}', JSON.stringify(step.emits))
         .replace('{implementation}', JSON.stringify(step.implementation, null, 2))
 
-      const response = await axios({
+      const headers = new Headers();
+      headers.append('anthropic-version', '2023-06-01');
+      headers.append('x-api-key', process.env.ANTHROPIC_API_KEY ?? '');
+      headers.append('content-type', 'application/json');
+      
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'post',
-        url: 'https://api.anthropic.com/v1/messages',
-        headers: {
-          'anthropic-version': '2023-06-01',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'content-type': 'application/json',
-        },
-        data: {
+        headers,
+        body: JSON.stringify({
           messages: [
             {
               role: 'user',
@@ -110,9 +109,8 @@ export const handler: StepHandler<typeof config> = async (input, { emit, logger,
           model: 'claude-3-5-sonnet-latest',
           max_tokens: 2048,
           system: 'Generate the code based on the message.',
-        },
-        validateStatus: null, // Don't throw on non-2xx
-      })
+        }),
+      }).then((res) => res.json())
 
       // We expect the code text in response.data.content[0].text
       if (!response.data?.content || !response.data.content[0]?.text) {
