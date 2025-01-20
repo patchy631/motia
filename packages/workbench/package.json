@@ -4,6 +4,7 @@
   "main": "index.tsx",
   "scripts": {
     "lint": "eslint .",
+    "compile": "tsc --build",
     "build": "rm -rf dist && vite build"
   },
   "dependencies": {

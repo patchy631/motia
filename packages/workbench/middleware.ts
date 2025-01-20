@@ -3,11 +3,12 @@ import type { Express, NextFunction, Request, Response } from 'express'
 import fs from 'fs'
 import path from 'path'
 import tailwindcss from 'tailwindcss'
-import { createServer as createViteServer } from 'vite'
 import tailwindcssConfig from './tailwind.config'
 
 export const applyMiddleware = async (app: Express) => {
-  const vite = await createViteServer({
+  // NOTE: this is needed since vite is an ESM https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated
+  const { createServer } = await import('vite')
+  const vite = await createServer({
     appType: 'spa',
     root: __dirname,
 
