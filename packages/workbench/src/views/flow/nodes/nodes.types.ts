@@ -23,7 +23,6 @@ export type ApiNodeData = {
   description?: string
   emits: Array<string | { type: string; label?: string }>
   subscribes?: string[]
-  action: 'webhook'
   webhookUrl?: string
   bodySchema?: JSONSchema7
 }
