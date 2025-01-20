@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import yaml from 'yaml'
-import { LockedData, Step, getNodeFileConfig, getPythonConfig, getRubyConfig } from '@motiadev/core'
+import { LockedData, Step, getPythonConfig, getRubyConfig } from '@motiadev/core'
 
 const version = `${randomUUID()}:${Math.floor(Date.now() / 1000)}`
 const baseFlowRegex = new RegExp(/flows\"?\s?.*\s*\[([^\]]+)\]/)
@@ -10,9 +10,7 @@ const baseFlowRegex = new RegExp(/flows\"?\s?.*\s*\[([^\]]+)\]/)
 // Helper function to read config.yml
 const readConfig = (configPath: string): any => {
   if (!fs.existsSync(configPath)) {
-    console.warn(`Config file not found at ${configPath}`)
-
-    return {};
+    throw new Error(`Config file not found at ${configPath}`)
   }
   const configContent = fs.readFileSync(configPath, 'utf-8')
   return yaml.parse(configContent)
@@ -32,7 +30,13 @@ const extractStepConfig = (filePath: string) => {
   }
 
   if (isNode) {
-    return getNodeFileConfig(filePath)
+    const module = require(path.resolve(filePath))
+
+    if (!module.config) {
+      throw new Error(`No config found in step ${filePath}`)
+    }
+
+    return module.config
   }
 }
 
@@ -46,16 +50,11 @@ const collectFlows = async (baseDir: string): Promise<Step[]> => {
 
     if (item.isDirectory()) {
       steps = steps.concat(await collectFlows(itemPath))
-    } else if (!!item.name.match(/\.step\.(ts|js|py|rb)$/)) {
+    } else if (!!item.name.match(/.step.(ts)|(js)|(py$)|(rb)/)) {
       const fileContent = fs.readFileSync(itemPath, 'utf-8')
       const flowMatch = fileContent.match(baseFlowRegex)
 
       const config = await extractStepConfig(itemPath)
-
-      if (!config) {
-        console.warn(`No config found in step ${itemPath}, step skipped`)
-        continue
-      }
 
       if (flowMatch) {
         steps.push({

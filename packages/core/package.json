@@ -1,6 +1,5 @@
 {
   "name": "@motiadev/core",
-  "version": "0.0.1",
   "main": "dist/index.js",
   "scripts": {
     "move:python": "cp src/python/*.py dist/src/python",
@@ -11,7 +10,6 @@
   },
   "dependencies": {
     "body-parser": "^1.20.3",
-    "esbuild": "^0.24.2",
     "express": "^4.21.2",
     "ioredis": "^5.4.2",
     "pino": "^9.6.0",

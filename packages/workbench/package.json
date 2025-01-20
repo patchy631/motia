@@ -1,6 +1,5 @@
 {
   "name": "@motiadev/workbench",
-  "version": "0.0.1",
   "main": "index.tsx",
   "scripts": {
     "lint": "eslint ."
