@@ -12,9 +12,9 @@
     "outDir": "./dist",
     "rootDir": ".",
     "baseUrl": ".",
-    "declaration": true
+    "declaration": true,
+    "jsx": "react-jsx",
   },
   "include": ["**/*.ts", "**/*.js"],
-  "jsx": "react-jsx",
   "exclude": ["node_modules", "dist"]
 }

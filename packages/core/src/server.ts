@@ -8,6 +8,7 @@ import { isApiStep } from './guards'
 import { globalLogger, Logger } from './logger'
 import { StateAdapter } from './state/state-adapter'
 import { ApiRequest, ApiRouteHandler, EmitData, EventManager, LockedData, Step } from './types'
+import { getModuleExport } from './node/get-module-export'
 
 type ServerOptions = {
   steps: Step[]
@@ -35,8 +36,7 @@ export const createServer = async (options: ServerOptions): Promise<ServerOutput
 
       logger.debug('[API] Received request, processing step', { path: req.path, step })
 
-      const module = require(step.filePath)
-      const handler = module.handler as ApiRouteHandler
+      const handler = (await getModuleExport(step.filePath, 'handler')) as ApiRouteHandler;
       const request: ApiRequest = {
         body: req.body,
         headers: req.headers as Record<string, string | string[]>,
