@@ -1,22 +1,9 @@
-import {
-  BaseEdge as BaseReactFlowEdge,
-  EdgeProps,
-  getSmoothStepPath,
-} from '@xyflow/react'
+import { BaseEdge as BaseReactFlowEdge, EdgeProps, getSmoothStepPath } from '@xyflow/react'
 import React from 'react'
 
 export const BaseEdge: React.FC<EdgeProps> = (props) => {
-  const {
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-  } = props
+  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data } = props
 
-  // getSmoothStepPath returns an array: [edgePath, labelX, labelY, etc.]
-  // We just need edgePath here.
   const [edgePath] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -24,19 +11,19 @@ export const BaseEdge: React.FC<EdgeProps> = (props) => {
     targetY,
     sourcePosition,
     targetPosition,
-    borderRadius: 20, // <— Tweak this for roundness
-    offset: 10,       // <— How far the line extends before curving
+    borderRadius: 20,
+    offset: 10,
   })
 
   return (
     <BaseReactFlowEdge
       path={edgePath}
       style={{
-        stroke: 'rgba(100, 100, 100)',
+        stroke: data?.variant === 'virtual' ? 'rgb(147, 169, 197)' : 'rgb(133, 176, 132)',
         strokeWidth: 0.5,
         shapeRendering: 'geometricPrecision',
         fill: 'none',
-        mixBlendMode: 'screen',  // or 'screen'
+        mixBlendMode: 'screen',
       }}
       className="edge-animated"
     />

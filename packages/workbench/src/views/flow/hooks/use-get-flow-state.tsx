@@ -5,7 +5,7 @@ import { ApiFlowNode } from '../nodes/api-flow-node'
 import { NoopFlowNode } from '../nodes/noop-flow-node'
 import { EventFlowNode } from '../nodes/event-flow-node'
 
-type Emit = string | { type: string; label?: string; conditional?: boolean }
+type Emit = string | { type: string; label?: string }
 
 type FlowStep = {
   id: string
@@ -14,7 +14,8 @@ type FlowStep = {
   description?: string
   subscribes?: string[]
   emits: Emit[]
-  action: 'webhook'
+  virtualEmits?: Emit[]
+  action?: 'webhook'
   webhookUrl?: string
   language?: string
   nodeComponentPath?: string
@@ -24,6 +25,14 @@ export type FlowResponse = {
   id: string
   name: string
   steps: FlowStep[]
+  edges: FlowEdge[]
+}
+
+type FlowEdge = {
+  id: string
+  source: string
+  target: string
+  data: EdgeData
 }
 
 type FlowState = {
@@ -39,6 +48,7 @@ async function importFlow(flow: FlowResponse): Promise<FlowState> {
     noop: NoopFlowNode,
   }
 
+  // Load custom node components if they exist
   for (const step of flow.steps) {
     if (step.nodeComponentPath) {
       const module = await import(/* @vite-ignore */ step.nodeComponentPath)
@@ -46,7 +56,7 @@ async function importFlow(flow: FlowResponse): Promise<FlowState> {
     }
   }
 
-  // we need to check all subscribes and emits to connect the nodes using edges
+  // Create nodes from steps
   const nodes: Node<NodeData>[] = flow.steps.map((step) => ({
     id: step.id,
     type: step.nodeComponentPath ? step.nodeComponentPath : step.type,
@@ -55,37 +65,11 @@ async function importFlow(flow: FlowResponse): Promise<FlowState> {
     language: step.language,
   }))
 
-  const edges: Edge<EdgeData>[] = []
-
-  // For each node that emits events
-  flow.steps.forEach((sourceNode) => {
-    const emits = sourceNode.emits || []
-
-    // Check all other nodes that subscribe to those events
-    flow.steps.forEach((targetNode) => {
-      const subscribes = targetNode.subscribes || []
-
-      // For each matching emit->subscribe, create an edge
-      emits.forEach((emit) => {
-        const emitType = typeof emit === 'string' ? emit : emit.type
-
-        if (subscribes.includes(emitType)) {
-          const label = typeof emit !== 'string' ? emit.label : undefined
-          const variant = typeof emit !== 'string' && emit.conditional ? 'conditional' : 'default'
-          const data: EdgeData = { variant, label }
-
-          edges.push({
-            id: `${sourceNode.id}-${targetNode.id}`,
-            type: 'base',
-            source: sourceNode.id,
-            target: targetNode.id,
-            label,
-            data,
-          })
-        }
-      })
-    })
-  })
+  // Use the edges provided by the API, adding required ReactFlow properties
+  const edges: Edge<EdgeData>[] = flow.edges.map((edge) => ({
+    ...edge,
+    type: 'base',
+  }))
 
   return { nodes, edges, nodeTypes }
 }

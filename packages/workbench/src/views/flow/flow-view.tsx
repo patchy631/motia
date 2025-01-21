@@ -1,4 +1,4 @@
-import { Background, BackgroundVariant, ReactFlow, Node } from '@xyflow/react'
+import { Background, BackgroundVariant, ReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { BaseEdge } from './base-edge'
 import { ArrowHead } from './arrow-head'

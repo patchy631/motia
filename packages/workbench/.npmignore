@@ -1,0 +1,11 @@
+src/
+public/
+
+/*.json
+/*.js
+/*.html
+/*.tsx
+/*.ts
+/*.sh
+/*.md
+/*.tsbuildinfo

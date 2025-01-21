@@ -1,4 +1,6 @@
 import { useListFlows } from '@/hooks/use-list-flows'
+import { Workflow } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import {
   Sidebar,
   SidebarContent,
@@ -11,15 +13,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from './ui/sidebar'
-import { Workflow } from 'lucide-react'
-import { Link, useMatchRoute } from '@tanstack/react-router'
 
 export const AppSidebar = () => {
   const { flows } = useListFlows()
-  const matchRoute = useMatchRoute()
 
-  const isActive = (flowId: string) => {
-    return !!matchRoute({ to: '/flow/$id', params: { id: flowId } })
+  const isActive = (_flowId: string) => {
+    return false // TODO: Implement this
   }
 
   return (
@@ -34,8 +33,7 @@ export const AppSidebar = () => {
                 <SidebarMenuItem key={flow.id}>
                   <SidebarMenuButton asChild className="cursor-pointer" isActive={isActive(flow.id)}>
                     <Link
-                      to="/flow/$id"
-                      params={{ id: flow.id }}
+                      to={`/flow/${flow.id}`}
                       className="flex items-center gap-2"
                       data-testid={`flow-link-${flow.id}`}
                     >

@@ -1,5 +1,4 @@
 import { createServer, createStepHandlers, createEventManager, globalLogger, createStateAdapter } from '@motiadev/core'
-import { applyMiddleware } from '@motiadev/workbench/middleware'
 import { generateLockedData } from './generate-locked-data'
 import path from 'path'
 
@@ -24,6 +23,7 @@ export const dev = async (port: number): Promise<void> => {
   console.log('🚀 Server ready and listening on port', port)
   console.log(`🔗 Open http://localhost:${port}/ to open workbench 🛠️`)
 
+  const { applyMiddleware } = require('@motiadev/workbench/dist/middleware')
   await applyMiddleware(app)
 
   // 6) Gracefully shut down on SIGTERM

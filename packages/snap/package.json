@@ -1,5 +1,6 @@
 {
   "name": "@motiadev/snap",
+  "version": "0.0.9",
   "bin": {
     "motia": "dist/src/cli.js"
   },
@@ -9,6 +10,7 @@
   "dependencies": {
     "@motiadev/core": "workspace:*",
     "@motiadev/workbench": "workspace:*",
+    "dotenv": "^16.4.7",
     "commander": "^13.0.0",
     "ts-node": "^10.9.2",
     "yaml": "^2.7.0"
