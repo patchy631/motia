@@ -36,10 +36,11 @@ export const createServer = async (options: ServerOptions): Promise<ServerOutput
 
   const cleanupCronJobs = setupCronHandlers(allSteps, eventManager, io)
 
-  const asyncHandler = (step: Step, flows: string[]) => {
+  const asyncHandler = (step: Step) => {
     return async (req: Request, res: Response) => {
       const traceId = randomUUID()
-      const logger = new Logger(traceId, flows, step.config.name, io)
+
+      const logger = new Logger(traceId, step.config.flows, step.config.name, io)
 
       logger.debug('[API] Received request, processing step', { path: req.path, step })
 
@@ -51,7 +52,7 @@ export const createServer = async (options: ServerOptions): Promise<ServerOutput
         queryParams: req.query as Record<string, string | string[]>,
       }
       const emit = async ({ data, type }: EmitData) => {
-        await eventManager.emit({ data, type, traceId, flows, logger }, step.filePath)
+        await eventManager.emit({ data, type, traceId, flows: step.config.flows, logger }, step.filePath)
       }
 
       try {
@@ -77,13 +78,13 @@ export const createServer = async (options: ServerOptions): Promise<ServerOutput
   const apiSteps = allSteps.filter(isApiStep)
 
   for (const step of apiSteps) {
-    const { method, flows, path } = step.config
+    const { method, path } = step.config
     globalLogger.debug('[API] Registering route', step.config)
 
     if (method === 'POST') {
-      app.post(path, asyncHandler(step, flows))
+      app.post(path, asyncHandler(step))
     } else if (method === 'GET') {
-      app.get(path, asyncHandler(step, flows))
+      app.get(path, asyncHandler(step))
     } else {
       throw new Error(`Unsupported method: ${method}`)
     }

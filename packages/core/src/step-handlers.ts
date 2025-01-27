@@ -19,7 +19,7 @@ export const createStepHandlers = (steps: Step[], eventManager: EventManager, st
         globalLogger.debug('[step handler] received event', { event: rest, step: step.config.name })
 
         try {
-          await callStepFile(filePath, step.config.name, event, eventManager, state)
+          await callStepFile(filePath, step, event, eventManager, state)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           globalLogger.error(`[step handler] error calling step`, {

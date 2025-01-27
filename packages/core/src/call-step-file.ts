@@ -1,5 +1,6 @@
+// packages/core/src/call-step-file.ts
 import { RpcProcessor } from './step-handler-rpc-processor'
-import { Event, EventManager, InternalStateManager } from './types'
+import { Event, EventManager, InternalStateManager, Step } from './types'
 import { spawn } from 'child_process'
 import path from 'path'
 
@@ -35,12 +36,12 @@ const getLanguageBasedRunner = (
 
 export const callStepFile = <TData>(
   stepPath: string,
-  step: string,
+  step: Step,
   event: Event<TData>,
   eventManager: EventManager,
   state: InternalStateManager,
 ): Promise<void> => {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const jsonData = JSON.stringify({ ...event })
     const { runner, command } = getLanguageBasedRunner(stepPath)
 
@@ -62,8 +63,8 @@ export const callStepFile = <TData>(
         {
           ...input,
           traceId: event.traceId,
-          flows: event.flows,
           logger: event.logger,
+          flows: step.config.flows,
         },
         stepPath,
       )
@@ -75,12 +76,12 @@ export const callStepFile = <TData>(
       try {
         const message = JSON.parse(data.toString())
         event.logger.log(message)
-      } catch {
-        event.logger.info(Buffer.from(data).toString(), { step })
+      } catch (error) {
+        event.logger.info(Buffer.from(data).toString(), { step: step.config.name })
       }
     })
 
-    child.stderr?.on('data', (data) => event.logger.error(Buffer.from(data).toString(), { step }))
+    child.stderr?.on('data', (data) => event.logger.error(Buffer.from(data).toString(), { step: step.config.name }))
 
     child.on('close', (code) => {
       if (code !== 0) {
