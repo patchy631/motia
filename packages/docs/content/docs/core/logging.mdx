@@ -18,12 +18,12 @@ Motia provides a powerful logging system that works across different runtime env
 
 Motia supports four standard log levels:
 
-| Log Type    | Description |
-| -------- | ------- |
-| info  | General information about step execution    |
-| error | Error conditions and exceptions     |
-| debug    | Detailed debugging information |
-| warn    | Warning conditions    |
+| Log Type | Description |
+| -------- | ----------- |
+| info     | General information about step execution, workflow progress, and successful operations |
+| error    | Critical issues, exceptions, failed operations, and system errors |
+| debug    | Detailed debugging information and diagnostic data for troubleshooting |
+| warn     | Potential issues, edge cases, or situations requiring attention |
 
 ### Log Context
 
@@ -70,34 +70,38 @@ Each log entry automatically includes:
 
     export const handler: StepHandler<typeof config> = async (input, { logger }) => {
       // Basic logging
-      logger.info('Processing payment')
+      logger.info('Starting payment processing')
 
-      // Logging with context
-      logger.info('Payment processed', {
+      // Logging with context and structured data
+      logger.info('Payment processed successfully', {
         amount: input.amount,
         currency: input.currency,
       })
 
-      // Error logging
+      // Error logging with enhanced context
       try {
         await processPayment(input)
       } catch (error) {
-        logger.error('Payment failed', {
+        logger.error('Payment processing failed', {
           error: error.message,
           code: error.code,
+          stack: error.stack,
+          input: JSON.stringify(input)
         })
       }
 
-      // Debug logging
-      logger.debug('Payment details', {
+      // Debug logging with enhanced details
+      logger.debug('Payment processing details', {
         rawInput: input,
         timestamp: Date.now(),
       })
 
-      // Warning logging
+      // Warning logging with thresholds
       if (input.amount > 10000) {
-        logger.warn('Large payment detected', {
+        logger.warn('Large payment amount detected', {
           amount: input.amount,
+          threshold: 10000,
+          currency: input.currency
         })
       }
     }
@@ -209,6 +213,10 @@ Each log entry automatically includes:
   - Step start/completion
   - Important business events
   - State changes
+  - Successful operations
+  - Key workflow transitions
+  - API calls and responses
+  - Data transformations
   </Tab>
   <Tab value='error'>
   **Use `error` for**:
@@ -216,6 +224,10 @@ Each log entry automatically includes:
   - Exceptions
   - API failures
   - Business rule violations
+  - Data integrity issues
+  - Security violations
+  - System resource exhaustion
+  - Critical configuration issues
   </Tab>
   <Tab value='debug'>
   **Use `debug` for**:
@@ -236,14 +248,14 @@ Each log entry automatically includes:
 ### Structured Logging
 
 ```typescript
-// Good
+// Good - Structured and searchable
 logger.info('Payment processed', {
   paymentId: '123',
   amount: 100,
   status: 'success',
 })
 
-// Avoid
+// Avoid - Harder to parse and search
 logger.info(`Payment ${paymentId} processed: amount=${amount}`)
 ```
 
@@ -282,16 +294,18 @@ export const handler: StepHandler<typeof config> = async (input, { logger, trace
 
 ```typescript
 export const handler: StepHandler<typeof config> = async (input, { logger }) => {
-  const startTime = Date.now()
+  const startTime = performance.now()
 
   // Process payment
   const result = await processPayment(input)
 
   // Log performance metrics
   logger.info('Payment processing completed', {
-    duration: Date.now() - startTime,
+    duration: performance.now() - startTime,
     steps: result.steps.length,
     dataSize: JSON.stringify(input).length,
+    memoryUsage: process.memoryUsage().heapUsed,
+    timestamp: new Date().toISOString()
   })
 }
 ```
@@ -345,9 +359,11 @@ try {
 ### Metrics to Track
 
 - Log volume by level
-- Error rates
-- Warning patterns
+- Error rates and patterns
+- Warning frequencies
 - Performance metrics
+- Resource utilization
+- Business metrics
 
 ### Log Analysis
 
@@ -358,6 +374,8 @@ logger.error('API failure', {
   statusCode: 500,
   retryCount: 3,
   errorType: 'TIMEOUT',
+  latency: 5000,
+  region: 'us-west-2'
 })
 
 // Monitor performance
@@ -368,5 +386,7 @@ logger.info('Operation complete', {
     memory: process.memoryUsage(),
     cpu: process.cpuUsage(),
   },
+  timestamp: new Date().toISOString(),
+  environment: process.env.NODE_ENV
 })
 ```

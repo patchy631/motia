@@ -16,17 +16,33 @@ This guide shows how to define a **minimal [step](/docs/core/defining-steps)** a
     npx motia create -t default
     ```
 
-    If you wish to initialize the project in a separate folder add `-n <fodler name>`
+    If you wish to initialize the project in a separate folder add `-n <folder name>`
+
+    ```bash
+    npx motia create -t default -n my-project
+    ```
 
     <Callout>
-      if you don't want to use the default template you can remove the `-t default` portion, or see the list of available templates by executing the command `npx motia templates`
+      If you don't want to use the default template, you can remove the `-t default` portion, or see the list of available templates by executing `npx motia templates`
     </Callout>
+
+    You should see the following files in your project:
+
+    <Files>
+      <Folder name="steps" defaultOpen>
+        <File name="one.step.ts" />
+        <File name="two.step.ts" />
+        <File name="api.step.ts" />
+      </Folder>
+      <File name="package.json" />
+    </Files>
   </Tab>
   <Tab value="Manual">
-    <Callout>For these instructions we recommend using `pnpm` but you can use your preferred package manager (yarn, npm, etc...)</Callout>
+    <Callout>For these instructions we recommend using `pnpm`, but you can use your preferred package manager (yarn, npm, etc.)</Callout>
 
+    Add the following dependencies to your project:
     ```package-install
-    motia
+    @motiadev/core @motiadev/workbench zod
     ```
 
     Add the following script to your **package.json** in order to initialize the development server and workbench:
@@ -39,15 +55,9 @@ This guide shows how to define a **minimal [step](/docs/core/defining-steps)** a
     }
     ```
 
-    Add the following dependencies to your project:
+    <Callout>If your steps will be developed using **TypeScript** or **vanilla JavaScript**, you will need Zod to define your step input schema</Callout>
 
-    ```package-install
-    @motiadev/core @motiadev/workbench zod
-    ```
-
-    <Callout>If your steps are going to be developed using **typescript** or **vanilla.js** you will need zod in order to define your step input schema</Callout>
-
-    If you want to use **typescript** add the following dependencies
+    If you want to use **TypeScript**, add the following dependencies:
 
     ```package-install
     ts-node typescript -D
@@ -69,9 +79,13 @@ This guide shows how to define a **minimal [step](/docs/core/defining-steps)** a
 
 Create a file named **addNumbers.step.js** in your project, **store it inside the steps folder**:
 
-```js
-// file: steps/addNumbers.step.js
+<Files>
+  <Folder name="steps" defaultOpen>
+    <File name="addNumbers.step.js" />
+  </Folder>
+</Files>
 
+```js
 exports.config = {
   type: 'event', // "event", "api", or "cron"
   name: 'AddNumbers',
@@ -90,7 +104,7 @@ exports.handler = async (input, { emit }) => {
 ```
 
 This step **listens** for the event `"add-numbers"` and **emits** `"numbers-added"`.
-It’s the simplest possible example with **no** extra dependencies or logs.
+It's the simplest possible example with **no** extra dependencies or logs.
 
 </Step>
 <Step>
@@ -104,22 +118,50 @@ pnpm run dev
 
 Motia will:
 
-1. Scan for `.step.<py, ts, js, rb>` files inside the **steps** folder
+1. Scan for `.step.<py|ts|js|rb>` files inside the **steps** folder
 2. Register your Steps
 3. Launch a dev server (port **3000** by default)
 
-## 4. Test your step
-
-You can test your step without an api step by using the **motia** cli
+<Callout>You can change the port by passing the `--port` flag to the `dev` command</Callout>
 
 ```bash
-npx motia emit --topic test-state --message '{}'
+pnpm run dev --port 3001
 ```
+</Step>
+<Step>
+### Test your step
+
+You can test your step using the **Motia** CLI:
+
+<Tabs items={['cli', 'curl']}>
+  <Tab value='cli'>
+  If you used the automated project setup with the default template, you can test your step by emitting the following event:
+  ```bash
+  npx motia emit --topic test-state --message '{}'
+  ```
+
+  If you used the add number example, you can test your step by emitting the following event:
+  ```bash
+  npx motia emit --topic add-numbers --message '{"a": 5, "b": 3}'
+  ```
+  </Tab>
+  <Tab value='curl'>
+  If you used the automated project setup with the default template, you can test your step by emitting the following event:
+  ```bash
+  curl -X POST http://localhost:3001/default \
+    -H "Content-Type: application/json" \
+    -d '{}'
+  ```
+
+  <Callout type="warn">You can't test the add number example using curl, you will need to use the CLI, using an api endpoint requires an api step.</Callout>
+  </Tab>
+</Tabs>
 
 Motia will:
 
 1. Emit a new event with the provided topic and message
 2. The event manager will detect the new event and match it against your registered step
-3. It will log the journey of the raised event
+3. Execute your step with the provided input
+4. Log the journey of the event, including the emitted `numbers-added` event
 </Step>
 </Steps>

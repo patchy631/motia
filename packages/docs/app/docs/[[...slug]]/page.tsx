@@ -16,6 +16,7 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Card, Cards } from 'fumadocs-ui/components/card';
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
 
 
 export default async function Page(props: {
@@ -42,6 +43,9 @@ export default async function Page(props: {
           Card, 
           Cards,
           Callout,
+          File,
+          Folder,
+          Files,
           Tab,
           Tabs,
           DescriptionTable,

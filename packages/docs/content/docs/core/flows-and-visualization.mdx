@@ -3,11 +3,11 @@ sidebar_position: 9
 title: Flows & Visualization
 ---
 
-**Flows** let you group multiple **steps** under a single name, making it easier to visually map out how events move across **steps**. While flows are technically optional, they're very useful for:
+**Flows** let you group multiple **steps** under a single name, making it easier to visually map out how events move across your application. While flows are technically optional, they're invaluable for:
 
-- **Clarity**: Understand how **steps** interact with each other.
-- **Visualization**: Visual explanation of how events travel across your **steps**.
-- **Observability**: Group logs and events by flow name.
+- **Clarity**: Understand how **steps** interact with each other at a glance
+- **Visualization**: Get a visual representation of event flow across your **steps**
+- **Observability**: Group logs and events by flow name for easier debugging
 
 <Steps>
   <Step>
@@ -42,7 +42,7 @@ title: Flows & Visualization
   // ... handler definition
   ```
 
-  <Callout>You can associate a **step** with multiple flows, simply provide a comma separated list of flow names, for example: `['billing-flow', 'analytics-flow']`</Callout>
+  <Callout>You can associate a **step** with multiple flows by providing an array of flow names, for example: `['billing-flow', 'analytics-flow']`</Callout>
   </Step>
   <Step>
   ### Visualizing Your Flows
@@ -75,13 +75,13 @@ title: Flows & Visualization
       </Tabs>
     </Step>
     <Step>
-      [Open](http://localhost:3000) Motia Workbench in your browser (often `http://localhost:3000` or `http://127.0.0.1:3000`).
+      [Open](http://localhost:3000) Motia Workbench in your browser (typically at `http://localhost:3000` or `http://127.0.0.1:3000`).
     </Step>
     <Step>
-      **Look for** your flow name on the left side bar and click it. You’ll see each **step** represented as a node, with lines showing how events connect.
+      **Navigate** to your flow name on the left sidebar and click it. You'll see a visual graph where each **step** is represented as a node, with connecting lines showing event flow patterns.
     </Step>
     <Step>
-      **Click** on a **step** node to see its config details, e.g. the name, emits, subscribes, etc...
+      **Click** on any **step** node to inspect its configuration details, including name, emits, subscribes, and other properties.
     </Step>
   </Steps>
 
@@ -90,19 +90,19 @@ title: Flows & Visualization
   <Step>
     ### Flow Diagram Basics
 
-    Motia Workbench plots your **steps** in a node graph:
+    Motia Workbench visualizes your application as an interactive node graph:
 
-    - **steps** appear as nodes that subscribe to one or more topics and possibly emit new events under a give topic.
-    - **edges** connect **steps**,
-    - in the top right corner you will see all legends, hover on one item in the legends list to highlight the step type or edge type
+    - **Steps** are displayed as nodes that subscribe to and emit events
+    - **Edges** (connecting lines) show event flow between steps
+    - The top-right corner contains a legend - hover over any item to highlight corresponding step types or edge types in the diagram
   </Step>
   <Step>
     ### Flow-Specific Logs
 
-    In your terminal (or in the logs panel of **Motia Workbench**), all event activties performed by **steps** are logged and grouped by `traceId`. This makes it easier to debug and monitor your **steps** when events are emitted.
+    In your terminal (or in the logs panel of **Motia Workbench**), all event activities performed by **steps** are logged and grouped by `traceId`. This makes it easy to trace and debug event flows through your application.
   </Step>
 </Steps>
 
 <Callout>
-Follow the **[quick start](/docs/quick-start)** guide if you haven’t set up Motia yet.
+New to Motia? Follow the **[quick start](/docs/quick-start)** guide to get set up.
 </Callout>

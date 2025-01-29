@@ -3,8 +3,6 @@ sidebar_position: 6
 title: State Management
 ---
 
-## Overview
-
 Motia provides a robust state management system for maintaining workflow state across steps. The system:
 
 - Is distributed by default using Redis

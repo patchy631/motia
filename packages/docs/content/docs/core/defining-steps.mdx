@@ -3,7 +3,7 @@ sidebar_position: 3
 title: Defining Steps
 ---
 
-The anatomy of a **Steps**, steps are broken down into the following components:
+The anatomy of a **Step** - steps are composed of the following key components:
 
 ## Config
 
@@ -33,7 +33,7 @@ An exported **config** object describing the following details
       type: 'string[]',
     },
     description: {
-      description: 'A small description of your step, this is not required, but it will be helpful for the workfbench flow visualization tool',
+      description: 'A small description of your step, this is not required, but it will be helpful for the workbench flow visualization tool',
       type: 'string',
     }
   }}
@@ -245,7 +245,7 @@ An exported **config** object describing the following details
 
 ## Handler
 
-A **handler** function that processes an optional input and can **emit** new events, handlers are executed when a topic is emitted.
+A **handler** function that processes an optional input and can **emit** new events. Handlers are executed when their subscribed topics are emitted. The handler receives the input data and a context object containing utilities like emit, state management, and logging.
 
 <Tabs  items={['TS', 'JS', 'Python', 'Ruby']}>
   <Tab value='TS'>
@@ -255,7 +255,10 @@ A **handler** function that processes an optional input and can **emit** new eve
     // ... step config
 
     export const handler: StepHandler<typeof config> = async (input, { emit, traceId, state, logger }: FlowContext) => {
-      // ... do some logic here
+      // emit: Function to emit new events
+      // traceId: Unique identifier for tracing the flow execution
+      // state: Access to state management
+      // logger: Structured logging utility
     }
     ```
   </Tab>
@@ -286,5 +289,5 @@ A **handler** function that processes an optional input and can **emit** new eve
 </Tabs>
 
 <Callout>
-Follow the **[quick start](/docs/quick-start)** guide if you haven’t set up Motia yet.
+Follow the **[quick start](/docs/quick-start)** guide if you haven't set up Motia yet.
 </Callout>
