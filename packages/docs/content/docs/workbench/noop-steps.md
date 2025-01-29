@@ -4,7 +4,7 @@ title: NoOp Steps
 ---
 
 # NoOp Steps
-
+TODO: Need to show examples with images on this page
 NoOp (No Operation) steps are a powerful feature in Motia that serve multiple purposes:
 
 1. Modeling external processes, webhooks and integrations

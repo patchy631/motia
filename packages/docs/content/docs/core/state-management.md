@@ -5,7 +5,8 @@ title: State Management
 
 Motia provides a robust state management system for maintaining workflow state across steps. The system:
 
-- Is distributed by default using Redis
+TODO: I thought this was defaulting to file based, not redis?
+- Is distributed by default using Redis 
 - Supports atomic operations
 - Provides TTL-based cleanup
 - Maintains state isolation between flows
@@ -41,7 +42,7 @@ Each workflow execution gets a unique state space identified by its `traceId`. T
 ## Using State in Steps
 
 ### TypeScript/JavaScript
-
+TODO: These should be the tabbed based component right? To be consistent with other pages?
 ```typescript
 import { EventConfig, StepHandler } from '@motiadev/core'
 
@@ -222,7 +223,7 @@ redis-cli TTL "motia:state:{traceId}"
 ```
 
 ### Common Issues
-
+TODO: This section is weak. Either need to make it much more robust or remove it
 1. **State Not Found**
 
    - Check TTL expiration

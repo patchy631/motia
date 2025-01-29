@@ -4,7 +4,7 @@ title: Step Visualization And Overrides
 ---
 
 # Step Visualization
-
+TODO: Need to show examples with images on this page
 Every step in Motia can have a custom visualization in the workbench by providing a React component. This allows you to:
 
 - Create more intuitive flow diagrams
