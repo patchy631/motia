@@ -58,7 +58,7 @@ export const metadata: Metadata = {
       {
         rel: 'mask-icon',
         url: '/safari-pinned-tab.svg',
-        color: '#3b82f6',
+        color: '#18181b',
       },
     ],
   },
@@ -89,12 +89,13 @@ export const metadata: Metadata = {
     'slack-app-id': 'YOUR_SLACK_APP_ID', // If you have a Slack app
 
     // PWA related
-    'theme-color': '#3b82f6',
+    'theme-color': '#18181b',
     'application-name': 'motia',
     'apple-mobile-web-app-title': 'motia',
     'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
     'mobile-web-app-capable': 'yes',
+    'msapplication-TileColor': '#18181b',
     'msapplication-config': '/browserconfig.xml',
     'format-detection': 'telephone=no',
 
