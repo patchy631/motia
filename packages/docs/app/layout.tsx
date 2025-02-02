@@ -95,7 +95,6 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'default',
     'mobile-web-app-capable': 'yes',
-    'msapplication-TileColor': '#3b82f6',
     'msapplication-config': '/browserconfig.xml',
     'format-detection': 'telephone=no',
 
