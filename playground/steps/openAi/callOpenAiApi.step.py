@@ -1,3 +1,5 @@
+from my_module import *
+
 config = {
     'type': 'api',
     'name': 'Call OpenAI',
@@ -15,6 +17,9 @@ async def handler(req, context):
         'topic': 'call-openai',
         'data': {'message': req.body.message}
     })
+
+    greet("Alice")
+    farewell("Alice")
 
     return {
         'status': 200,

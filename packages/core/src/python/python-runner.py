@@ -1,13 +1,12 @@
 import sys
 import json
 import importlib.util
-import traceback
-import asyncio
 import os
+import asyncio
+import traceback
 from logger import Logger
 from rpc import RpcSender
 from rpc_state_manager import RpcStateManager
-
 from typing import Any
 
 def parse_args(arg: str) -> Any:
@@ -33,22 +32,33 @@ class Context:
 
 async def run_python_module(file_path: str, rpc: RpcSender, args: Any) -> None:
     try:
-        # Construct path relative to steps directory
-        flows_dir = os.path.join(os.getcwd(), 'steps')
-        module_path = os.path.join(flows_dir, file_path)
+        # Get the directory containing the module file
+        module_dir = os.path.dirname(os.path.abspath(file_path))
+        
+        # Add module directory to Python path
+        if module_dir not in sys.path:
+            sys.path.insert(0, module_dir)
+            
+        # Get the flows directory (parent of steps)
+        flows_dir = os.path.dirname(module_dir)
+        if flows_dir not in sys.path:
+            sys.path.insert(0, flows_dir)
+
         contextInFirstArg = args.contextInFirstArg
 
         # Load the module dynamically
-        spec = importlib.util.spec_from_file_location("dynamic_module", module_path)
+        spec = importlib.util.spec_from_file_location("dynamic_module", file_path)
         if spec is None or spec.loader is None:
-            raise ImportError(f"Could not load module from {module_path}")
+            raise ImportError(f"Could not load module from {file_path}")
             
         module = importlib.util.module_from_spec(spec)
+        # Add module's directory as its __package__
+        module.__package__ = os.path.basename(module_dir)
         spec.loader.exec_module(module)
 
         # Check if the handler function exists
         if not hasattr(module, 'handler'):
-            raise AttributeError(f"Function 'handler' not found in module {module_path}")
+            raise AttributeError(f"Function 'handler' not found in module {file_path}")
 
         context = Context(args, rpc)
 
@@ -57,13 +67,12 @@ async def run_python_module(file_path: str, rpc: RpcSender, args: Any) -> None:
         else:
             result = await module.handler(args.data, context)
 
-        if (result):
+        if result:
             await rpc.send('result', result)
 
         rpc.close()
-
-        # We need this to close the process
         rpc.send_no_wait('close', None)
+        
     except Exception as error:
         print(f'Error running Python module: {error}', file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
@@ -79,7 +88,5 @@ if __name__ == "__main__":
 
     rpc = RpcSender()
     loop = asyncio.get_event_loop()
-    # Create and gather tasks
     tasks = asyncio.gather(rpc.init(), run_python_module(file_path, rpc, parse_args(arg)))
-    # Run until tasks complete
     loop.run_until_complete(tasks)
