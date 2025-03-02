@@ -94,8 +94,8 @@ Ready to get started in minutes? Follow these simple steps using **pnpm** and th
 
 ## Next Steps
 
-*   **Dive into the Documentation:** Explore the [full Motia documentation](/docs) to understand core concepts, step types, state management, and more.
-*   **Explore Examples:** Check out practical [examples](/docs/examples) to see Motia in action and get inspiration for your own workflows and agents.
+*   **Dive into the Documentation:** Explore the [full Motia documentation](https://motia.dev/docs) to understand core concepts, step types, state management, and more.
+*   **Explore Examples:** Check out practical [examples](https://motia.dev/docs/real-world-use-cases) to see Motia in action and get inspiration for your own workflows and agents.
 *   **Join the Community:** Connect with other Motia users and the development team on our [Discord server](https://discord.gg/sXbs97D8) and contribute to the project on [GitHub](https://github.com/MotiaDev/motia).
 
 ## We're excited to see what you build with Motia!
