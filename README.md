@@ -1,146 +1,105 @@
-# Motia Monorepo
+# Motia: Code-First Framework for Intelligent Workflows and Agentic Systems
 
-This repository hosts the development of **Motia.js**, a framework for building event-driven business automation flows. The repository is structured to facilitate the iterative development and testing of the core framework and includes a playground environment for real-world use cases.
+[![Motia on GitHub](https://img.shields.io/github/stars/MotiaDev/motia?style=social)](https://github.com/MotiaDev/motia) [![Join our Discord](https://img.shields.io/discord/1322278831184281721?label=Discord&logo=discord&logoColor=white)](https://discord.gg/sXbs97D8)
 
-## Overview
+**Unleash the power of event-driven workflows and intelligent agents with Motia – the code-first framework designed for developers.**
 
-Motia.js aims to simplify the creation and scaling of event-driven flows by:
+Motia simplifies the creation, testing, and deployment of robust, scalable, and observable automations and agentic systems. Forget wrestling with complex infrastructure and focus on what truly matters: **your business logic.**
 
-- Providing a **core framework** for defining flows as collections of testable components.
-- Supporting **real-time event handling** with loose coupling between components.
-- Offering tools for **UI-based flow visualization**.
-- Enabling seamless **integration with external APIs** like Google Drive and OpenAI.
+## Why Choose Motia?
 
-### Aspirational Vision
+Motia is built for developers who want to build **intelligent, event-driven systems rapidly and reliably.** Here's what makes Motia the ideal choice:
 
-Motia.js strives to be:
+*   **🚀 Zero Infrastructure Hassle:** Say goodbye to message queues, brokers, and complex configurations. Motia handles the underlying infrastructure, letting you concentrate on building your workflows, not managing plumbing. Get started in minutes, not days.
 
-- **Developer-Friendly**: Easy to adopt and extend.
-- **Production-Ready**: Scales gracefully from prototypes to enterprise-grade flows.
-- **Integration-First**: Works seamlessly with third-party tools and services.
+*   **🧩 Code-First, Modular Steps:** Define your workflow logic as reusable, self-contained steps written in **JavaScript, TypeScript, Python, or Ruby**. Mix and match languages within the same flow for ultimate flexibility and leverage your team's diverse skills.
 
-## Repository Structure
+*   **🧠 Ideal for Intelligent Agents & Workflows:** Motia's event-driven architecture and modular steps are perfectly suited for building sophisticated agents and intelligent automations.  Whether you're creating GenAI-powered workflows, complex decision-making systems, or data processing pipelines, Motia provides the ideal foundation.
 
-```
-.
-├── packages/                   # Core framework and supporting tools
-│   ├── motia/                  # The Motia.js framework
-│   │   ├── src/                # Source code
-│   │   ├── dist/               # Compiled output
-│   │   ├── package.json        # Package metadata
-│   │   └── README.md           # Framework-specific documentation
-│   └── other-packages/         # Placeholder for future packages
-├── playground/                 # Sandbox environment for testing
-│   ├── src/                    # Source code for testing and examples
-│   │   ├── flows/          # Flow implementations
-│   │   ├── traffic/            # Traffic definitions (inbound/outbound)
-│   │   ├── ui/                 # Custom UI components
-│   │   └── index.js            # Playground entry point
-│   ├── .env.example            # Environment variable template
-│   └── README.md               # Playground-specific documentation
-├── pnpm-workspace.yaml         # Monorepo configuration
-├── package.json                # Top-level package metadata
-├── README.md                   # Monorepo overview (this file)
-└── CONTRIBUTING.md             # Guidelines for contributing
-```
+    *   **Create Agent Components as Steps:**  Encapsulate agent logic, tool integrations, and decision-making processes within individual steps.
+    *   **Orchestrate Agent Interactions with Flows:**  Design complex agentic workflows by connecting steps to create sophisticated sequences of actions and reactions.
+    *   **Test and Evaluate Agent Behavior Visually:**  The Motia Workbench provides real-time visualization and testing tools to observe and refine your agents' behavior and ensure they perform as expected.
+    *   **Iterate and Evolve Agents Rapidly:** Motia's modularity and observability make it easy to iterate on agent logic, experiment with different approaches, and continuously improve your intelligent systems.
 
-## Getting Started
+*   **📊 Built-in Observability & Debugging:**  Gain deep insights into your workflows with the **Motia Workbench**. Visualize your flows, stream live logs, and test steps in real-time. Debugging complex event-driven systems has never been easier.
 
-### Prerequisites
+*   **⚡️ Instant APIs & Scheduling:** Expose your workflows as HTTP endpoints with API Steps or schedule tasks with Cron Steps – all out-of-the-box. No extra configuration needed to make your workflows accessible and automated.
 
-- **Node.js** (v16+ recommended)
-- **Python** (LTS recommended)
-- **pnpm** (for managing the monorepo)
+*   **🧪 Streamlined Testing & Evaluation:** Motia provides built-in testing utilities and the Workbench to thoroughly test your steps and flows.  Evaluate agent behavior, ensure workflow reliability, and catch issues early in development.  The visual testing in the Workbench is invaluable for understanding complex agent interactions.
 
-### Setup
+*   **✨ Extensible & Customizable:** Motia is designed to be flexible. Create custom UI components for your steps in the Workbench, build custom state adapters, and extend the framework to meet your specific needs.
 
-1. Clone the repository:
+*   **🧑‍💻 Developer-First Experience:**  From the intuitive CLI and code-first approach to the powerful Workbench and comprehensive documentation, Motia is built to maximize developer productivity and make building complex systems enjoyable.
 
-   ```bash
-   git clone <repository_url>
-   cd motia-monorepo
-   ```
+## Motia Workbench: Your Visual Control Center
 
-2. Install dependencies:
+The Motia Workbench is your browser-based development environment. It's where you'll bring your workflows to life:
 
-   ```bash
-   pnpm install
-   ```
+![Motia Workbench Interface](./assets/workbench-example.png)
 
-3. Install Motia CLI globally:
+*   **Interactive Flow Visualization:** See your steps connected in a dynamic, visual graph. Understand event flow and step interactions at a glance.
+*   **Real-time Testing:** Trigger API endpoints and emit events directly from the UI to test your flows and agents in real-time.
+*   **Live Log Streaming:**  Monitor logs in real-time within the Workbench, making debugging and observing execution a breeze.
+*   **Step Customization:**  Create custom UI components for your steps to enhance visualization and tailor the Workbench to your workflows.
 
-   ```bash
-   npm install -g motia
-   ```
+## Minimal Quick Start
 
-4. Set up environment variables:
-   - Copy the example `.env` file:
-     ```bash
-     cp playground/.env.example playground/.env
-     ```
-   - Update the `.env` file with your credentials and API keys.
+Ready to get started in minutes? Follow these simple steps using **pnpm** and the automated project creation:
 
-### Running the Playground
+1.  **Create a new project using the Motia CLI:**
 
-The playground allows you to test and refine flows built using Motia.js.
+    ```bash
+    npx motia create -t default -n my-motia-project
+    ```
+    *(Replace `my-motia-project` with your desired project name)*
 
-```bash
-pnpm run dev
-```
+    This command will:
+    * Create a new folder `my-motia-project`
+    * Set up a basic Motia project with example steps
+    * Install dependencies using pnpm
 
-This command starts the following services:
+2.  **Navigate into your new project directory:**
 
-- **MotiaCore**: The flow orchestrator.
-- **MotiaServer**: Provides HTTP endpoints for triggering flows.
-- **Playground UI**: A React-based visualization tool for flows.
+    ```bash
+    cd my-motia-project
+    ```
 
-## How to Contribute
+3.  **Start the Motia development server:**
 
-### Development Flow
+    ```bash
+    pnpm run dev
+    ```
 
-1. Create a new branch for your changes:
+    This will launch the Motia server and the Workbench UI (typically at `http://localhost:3000`).
 
-   ```bash
-   git checkout -b feature/<your-feature-name>
-   ```
+4.  **Open the Motia Workbench in your browser (usually `http://localhost:3000`)**. You should see a pre-built flow named "default" with example steps visualized.
 
-2. Make changes to the codebase.
+5.  **Test an example API Step:** In your terminal, use `curl` to trigger the example API endpoint (often `/default` in the default template):
 
-   - Framework changes: Update `packages/core`.
-   - Flow examples: Update `playground/src/flows`.
+    ```bash
+    curl -X POST http://localhost:3000/default \
+    -H "Content-Type: application/json" \
+    -d '{}'
+    ```
 
-3. Run tests:
+    Alternatively, use the Motia CLI to emit an event (for event-based steps in the template):
 
-   ```bash
-   pnpm run test
-   ```
+    ```bash
+    npx motia emit --topic test-state --message '{}'
+    ```
 
-4. Commit and push your changes:
+    Check the Workbench logs – you should see logs indicating the step execution and event flow!
 
-   ```bash
-   git commit -m "Add <your-feature-description>"
-   git push origin feature/<your-feature-name>
-   ```
+**Congratulations! You've just created and run your first Motia workflow using the automated project setup.**
 
-5. Open a pull request on GitHub.
+## Next Steps
 
-### Code Guidelines
+*   **Dive into the Documentation:** Explore the [full Motia documentation](/docs) to understand core concepts, step types, state management, and more.
+*   **Explore Examples:** Check out practical [examples](/docs/examples) to see Motia in action and get inspiration for your own workflows and agents.
+*   **Join the Community:** Connect with other Motia users and the development team on our [Discord server](https://discord.gg/sXbs97D8) and contribute to the project on [GitHub](https://github.com/MotiaDev/motia).
 
-- Follow the existing code style (Prettier and ESLint are configured).
-- Write unit tests for new features and components.
-- Keep commits focused and descriptive.
-
-## Roadmap
-
-- Expand the set of example flows.
-- Enhance the visualization capabilities of the playground.
-- Improve documentation for public release.
-- Publish `motia` to npm with comprehensive guides and examples.
-
-## License
-
-This project is licensed under [LICENSE_NAME].
+## We're excited to see what you build with Motia!
 
 ---
 
-For any questions or feedback, feel free to open an issue on GitHub!
+**License:** [MIT](LICENSE)
