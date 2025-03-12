@@ -19,7 +19,7 @@ Motia simplifies the creation, testing, and deployment of robust, scalable, and 
 
 ## Why Choose Motia?
 
-Motia is built for developers who want to build **intelligent, event-driven systems rapidly and reliably.** Here's what makes Motia the ideal choice:
+Motia is built for developers who want to build ** agentic and intelligent, event-driven systems rapidly and reliably.** Here's what makes Motia the ideal choice:
 
 *   **🚀 Zero Infrastructure** 
 
