@@ -4,6 +4,7 @@ import HeroSection from '@/app/(home)/components/HeroSection';
 import FeaturesSection from '@/app/(home)/components/FeaturesSection';
 import WorkbenchSection from '@/app/(home)/components/WorkbenchSection';
 import GetStartedSection from '@/app/(home)/components/GetStartedSection';
+import MotiaHubSection from './components/MotiaHubSection';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 
 export default function HomePage() {
@@ -14,6 +15,7 @@ export default function HomePage() {
       <HeroSection copied={copied} onCopy={copyToClipboard} />
       <FeaturesSection />
       <WorkbenchSection />
+      <MotiaHubSection />
       <GetStartedSection copied={copied} onCopy={copyToClipboard} />
     </div>
   );

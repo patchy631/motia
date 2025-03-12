@@ -1,47 +1,62 @@
-# Motia: Code-First Framework for Intelligent Workflows and Agentic Systems
+<p align="center">
+  <a href="http://www.theunwindai.com">
+    <img src="assets/PNGs/logo-white.png" width="900px" alt="motia">
+  </a>
+</p>
+
+Multi-Language, Opinionated, Code-First Framework For Agents and Intelligent Automations. Create Agents With Code, Visualize With UI.
+
+<p align="center">
+  <a href="http://www.theunwindai.com">
+    <img src="assets/flow.png" width="900px" alt="motia">
+  </a>
+</p>
 
 [![Motia on GitHub](https://img.shields.io/github/stars/MotiaDev/motia?style=social)](https://github.com/MotiaDev/motia) [![Join our Discord](https://img.shields.io/discord/1322278831184281721?label=Discord&logo=discord&logoColor=white)](https://discord.gg/nJFfsH5d6v)
 
-**Unleash the power of event-driven workflows and intelligent agents with Motia – the code-first framework designed for developers.**
 
-Motia simplifies the creation, testing, and deployment of robust, scalable, and observable automations and agentic systems. Forget wrestling with complex infrastructure and focus on what truly matters: **your business logic.**
+Motia simplifies the creation, testing, and deployment of robust, scalable, and observable agents and automations. Let motia handle the infrastructure and orchistration while you focus on what truly matters: **your business logic.**
 
 ## Why Choose Motia?
 
 Motia is built for developers who want to build **intelligent, event-driven systems rapidly and reliably.** Here's what makes Motia the ideal choice:
 
-*   **🚀 Zero Infrastructure Hassle:** Say goodbye to message queues, brokers, and complex configurations. Motia handles the underlying infrastructure, letting you concentrate on building your workflows, not managing plumbing. Get started in minutes, not days.
+*   **🚀 Zero Infrastructure** 
 
-*   **💻 Code-First Approach:** Define your workflows and agent logic using code, providing you with full control, versioning, and familiar development workflows. Motia embraces code-first principles for maximum flexibility and developer empowerment.
+*   **💻 Code-First Approach**
 
-*   **🧩 Modular & Reusable Steps:** Build your workflows from reusable, self-contained steps. This modular architecture promotes code organization, maintainability, and allows you to easily compose complex workflows from smaller, manageable units.
+*   **🤝 Flexible Control:** Fully agentic, intelligent automation or hard-coded logic
 
-*   **🌐 Choose Your Language: JavaScript, TypeScript, Python, & Ruby:** Develop your steps in the languages you and your team are most comfortable with. Motia supports JavaScript, TypeScript, Python, and Ruby, allowing you to leverage existing skills and codebases.
+*   **🧩 Modular & Reusable Steps** 
 
-*   **📦 Import Any Dependency:**  Seamlessly integrate external libraries and packages within your steps.  Whether it's npm, pip, or RubyGems, you can leverage the rich ecosystems of each language to power your workflow logic and agent capabilities.
+*   **🌐 Choose Your Language: JavaScript, TypeScript, Python, & Ruby:** 
 
-*   **🔀 Mix & Match Languages in a Single Flow:**  Achieve ultimate flexibility by combining steps written in different languages within the same workflow. Leverage the strengths of each language and create truly polyglot automation solutions.
+*   **📦 Import Any Dependency**  NPM, PiPy, RubyGems
 
-*   **🧠 Ideal for Intelligent Agents & Workflows:** Motia's event-driven architecture and modular steps are perfectly suited for building sophisticated agents and intelligent automations.  Whether you're creating GenAI-powered workflows, complex decision-making systems, or data processing pipelines, Motia provides the ideal foundation.
+*   **🔀 Mix & Match Languages in a Single Flow**  
 
-    *   **Create Agent Components as Steps:**  Encapsulate agent logic, tool integrations, and decision-making processes within individual steps, leveraging the rich ecosystems of JavaScript, Python, and Ruby.
-    *   **Orchestrate Agent Interactions with Flows:**  Design complex agentic workflows by connecting steps to create sophisticated sequences of actions and reactions, easily integrating steps written in different languages.
-    *   **Test and Evaluate Agent Behavior Visually:**  The Motia Workbench provides real-time visualization and testing tools to observe and refine your agents' behavior and ensure they perform as expected, regardless of the underlying step language.
-    *   **Iterate and Evolve Agents Rapidly:** Motia's modularity and observability make it easy to iterate on agent logic, experiment with different approaches, and continuously improve your intelligent systems, taking advantage of the strengths of each supported language.
+*   **📊 Built-in Observability & Debugging**
 
-*   **📊 Built-in Observability & Debugging:**  Gain deep insights into your workflows with the **Motia Workbench**. Visualize your flows, stream live logs, and test steps in real-time. Debugging complex event-driven systems has never been easier, even with workflows combining multiple languages.
+*   **⚡️ Instant APIs, Webhook and Scheduled Triggers:** Human in the loop is built in
 
-*   **⚡️ Instant APIs & Scheduling:** Expose your workflows as HTTP endpoints with API Steps or schedule tasks with Cron Steps – all out-of-the-box. No extra configuration needed to make your workflows accessible and automated, regardless of the step implementation language.
+*   **🧪 Streamlined Testing & Evaluation** 
 
-*   **🧪 Streamlined Testing & Evaluation:** Motia provides built-in testing utilities and the Workbench to thoroughly test your steps and flows.  Evaluate agent behavior, ensure workflow reliability, and catch issues early in development.  The visual testing in the Workbench is invaluable for understanding complex agent interactions, even across polyglot workflows.
+*   **✨ Extensible & Customizable** 
 
-*   **✨ Extensible & Customizable:** Motia is designed to be flexible. Create custom UI components for your steps in the Workbench, build custom state adapters, and extend the framework to meet your specific needs, leveraging your preferred language for each extension point.
+*   **🧑‍💻 Developer-First Experience:**  
 
-*   **🧑‍💻 Developer-First Experience:**  From the intuitive CLI and code-first approach to the powerful Workbench and comprehensive documentation, Motia is built to maximize developer productivity and make building complex systems enjoyable, no matter your language preference.
+
+## Ideal for Intelligent Agents & Workflows
+Motia's event-driven architecture and modular steps are perfectly suited for building sophisticated agents and intelligent automations.  Whether you're creating GenAI-powered workflows, complex decision-making systems, or data processing pipelines, Motia provides the ideal foundation.
+
+*   **Create Agent Components as Steps:**  Encapsulate agent logic, tool integrations, and decision-making processes within individual steps, leveraging the rich ecosystems of JavaScript, Python, and Ruby.
+*   **Orchestrate Agent Interactions with Flows:**  Design complex agentic workflows by connecting steps to create sophisticated sequences of actions and reactions, easily integrating steps written in different languages.
+*   **Test and Evaluate Agent Behavior Visually:**  The Motia Workbench provides real-time visualization and testing tools to observe and refine your agents' behavior and ensure they perform as expected, regardless of the underlying step language.
+*   **Iterate and Evolve Agents Rapidly:** Motia's modularity and observability make it easy to iterate on agent logic, experiment with different approaches, and continuously improve your intelligent systems, taking advantage of the strengths of each supported language.
 
 ## Motia Workbench: Your Visual Control Center
 
-The Motia Workbench is your browser-based development environment. It's where you'll bring your workflows to life:
+The Motia Workbench is your browser-based development environment.
 
 ![Motia Workbench Interface](./assets/workbench-example.png)
 
@@ -78,8 +93,6 @@ Ready to get started in minutes? Follow these simple steps using **pnpm** and th
     pnpm run dev
     ```
 
-    This will launch the Motia server and the Workbench UI (typically at `http://localhost:3000`).
-
 4.  **Open the Motia Workbench in your browser (usually `http://localhost:3000`)**. You should see a pre-built flow named "default" with example steps visualized.
 
 5.  **Test an example API Step:** In your terminal, use `curl` to trigger the example API endpoint (often `/default` in the default template):
@@ -99,6 +112,49 @@ Ready to get started in minutes? Follow these simple steps using **pnpm** and th
     Check the Workbench logs – you should see logs indicating the step execution and event flow!
 
 **Congratulations! You've just created and run your first Motia workflow using the automated project setup.**
+
+## Start building your AI powered agents with simple steps
+* Configure a simple to emit/subscribe, assign to a flow and inculde runtime validation
+* Define a function to handle when the step is triggered
+* Import any package
+
+```TypeScript
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+import type { EventConfig, StepHandler } from 'motia';
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+export const config: EventConfig = {
+  type: 'event',
+  name: 'Auto-Reply to Support Emails',
+  subscribes: ['email.received'],
+  emits: ['email.send'],
+  flows: ['email-support'],
+  input: z.object({ subject: z.string(), body: z.string(), from: z.string() }),
+};
+
+export const handler: StepHandler<typeof config> = async (inputData, context) => {
+    const { subject, body, from } = inputData;
+    const { emit, logger } = context;
+
+    const sentimentResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: `Analyze the sentiment of the following text: ${body}` }],
+    });
+
+    const sentiment = sentimentResponse.choices[0].message.content;
+
+    logger.info('[EmailAutoReply] Sentiment analysis', { sentiment });
+
+    emit({
+        type: 'email.send',
+        data: { from, subject, body, sentiment },
+    });
+};
+```
 
 ## Next Steps
 
