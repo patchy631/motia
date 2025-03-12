@@ -46,7 +46,7 @@ Motia is built for developers who want to build ** agentic and intelligent, even
 *   **🧑‍💻 Developer-First Experience:**  
 
 
-## Ideal for Intelligent Agents & Workflows
+## Ideal for Agents & Intelligent Automations
 Motia's event-driven architecture and modular steps are perfectly suited for building sophisticated agents and intelligent automations.  Whether you're creating GenAI-powered workflows, complex decision-making systems, or data processing pipelines, Motia provides the ideal foundation.
 
 *   **Create Agent Components as Steps:**  Encapsulate agent logic, tool integrations, and decision-making processes within individual steps, leveraging the rich ecosystems of JavaScript, Python, and Ruby.
