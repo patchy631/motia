@@ -1,13 +1,13 @@
 <p align="center">
-  <a href="http://www.theunwindai.com">
-    <img src="assets/PNGs/logo-white.png" width="900px" alt="motia">
+  <a href="http://motia.dev">
+    <img src="assets/PNGs/icon.png" width="180px" alt="motia">
   </a>
 </p>
 
 Multi-Language, Opinionated, Code-First Framework For Agents and Intelligent Automations. Create Agents With Code, Visualize With UI.
 
 <p align="center">
-  <a href="http://www.theunwindai.com">
+  <a href="http://motia.dev">
     <img src="assets/flow.png" width="900px" alt="motia">
   </a>
 </p>
