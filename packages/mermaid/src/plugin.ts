@@ -4,6 +4,13 @@ import { MermaidService } from './mermaid-service'
 import { setupMermaidEndpoint } from './mermaid-endpoint'
 import { MermaidPluginOptions } from './types'
 
+// Define a limited Flow type for type safety
+type FlowLike = {
+  name: string;
+  steps: any[];
+  [key: string]: any;
+}
+
 /**
  * Mermaid plugin for Motia
  */
@@ -37,6 +44,18 @@ export class MermaidPlugin implements MotiaPlugin {
         });
       });
       
+      // Access the locked data to update all flows on startup
+      const lockedData = app.locals.lockedData;
+      if (lockedData && typeof lockedData.flows === 'object' && lockedData.flows !== null) {
+        // Generate diagrams for all existing flows
+        Object.entries(lockedData.flows).forEach(([flowName, flow]) => {
+          // Type safety check
+          if (flow && typeof flow === 'object' && Array.isArray((flow as any).steps)) {
+            this.onFlowUpdate(flowName, flow as FlowLike);
+          }
+        });
+      }
+      
       // No logging - the plugin manager will handle this
     } catch (error) {
       // Add a diagnostic endpoint even if initialization fails
@@ -59,8 +78,8 @@ export class MermaidPlugin implements MotiaPlugin {
    * @param flowName Name of the flow
    * @param flow Flow data
    */
-  onFlowUpdate(flowName: string, flow: Flow): void {
-    this.mermaidService.updateFlow(flowName, flow);
+  onFlowUpdate(flowName: string, flow: Flow | FlowLike): void {
+    this.mermaidService.updateFlow(flowName, flow as Flow);
   }
   
   /**

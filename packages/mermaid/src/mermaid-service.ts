@@ -9,12 +9,17 @@ export class MermaidService {
   private isTestEnvironment: boolean
 
   constructor(private readonly baseDir: string, diagramsPath?: string) {
-    // If a specific diagrams path is provided, use it
+    // Always use the project root (user's current directory), not the package directory
+    const projectRoot = process.cwd();
+    
+    // If a specific diagrams path is provided, resolve it relative to project root
     if (diagramsPath) {
-      this.diagramsPath = diagramsPath;
+      // Ensure an absolute path (resolve relative paths against project root)
+      this.diagramsPath = path.isAbsolute(diagramsPath)
+        ? diagramsPath
+        : path.resolve(projectRoot, diagramsPath);
     } else {
-      // Otherwise use the project root, not the package directory
-      const projectRoot = process.cwd();
+      // Default location in project root
       this.diagramsPath = path.join(projectRoot, 'motia-mermaid.json');
     }
     

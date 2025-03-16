@@ -44,6 +44,9 @@ export const createServer = async (
   const server = http.createServer(app)
   const io = new SocketIOServer(server)
   const loggerFactory = new LoggerFactory(config.isVerbose, io)
+  
+  // Store lockedData in app.locals for plugins to access
+  app.locals.lockedData = lockedData
 
   const allSteps = [...systemSteps, ...lockedData.activeSteps]
   const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory)
