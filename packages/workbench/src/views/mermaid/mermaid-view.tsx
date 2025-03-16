@@ -64,13 +64,22 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
           apiStyleFill: '#fb923c', // API - orange
           eventStyleFill: '#60a5fa', // Event - blue
           cronStyleFill: '#4ade80', // Cron - green
-          noopStyleFill: '#94a3b8', // Noop - gray
+          noopStyleFill: '#3f3a50', // Noop - darker gray for better contrast with text
+          
+          // Text colors to ensure readability
+          textColor: '#ffffff', // Default bright text for all nodes
+          nodeTextColor: '#ffffff', // Ensure node text is always white
+          edgeTextColor: '#cbd5e1', // Slightly muted text for edge labels
           
           // General styling
           nodeBorder: '#2d2b3a',
           clusterBkg: '#1e1b2e',
           clusterBorder: '#2d2b3a',
-          titleColor: '#e2e8f0'
+          titleColor: '#e2e8f0',
+          
+          // Font weight and size for better readability
+          fontSize: '16px',
+          fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
         }
       })
 
