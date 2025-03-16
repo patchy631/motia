@@ -48,11 +48,11 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
-    setScale(prevScale => Math.min(prevScale + 0.05, 2.5)) // Reduced increment
+    setScale(prevScale => Math.min(prevScale + 0.05, 3.0)) // Increased max zoom
   }, [])
 
   const handleZoomOut = useCallback(() => {
-    setScale(prevScale => Math.max(prevScale - 0.05, 0.5)) // Reduced increment
+    setScale(prevScale => Math.max(prevScale - 0.05, 0.15)) // Reduced minimum zoom to see more
   }, [])
 
   const handleResetView = useCallback(() => {
@@ -62,10 +62,34 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   const handleFitToScreen = useCallback(() => {
     if (!containerRef.current) return
-
-    // This is a simple implementation; for a better fit,
-    // you'd need to measure the diagram SVG dimensions
-    handleResetView()
+    
+    // Find the SVG element
+    const svgElement = document.querySelector('#mermaid-diagram svg') as SVGSVGElement;
+    if (!svgElement) {
+      // If SVG not found, just reset view
+      handleResetView();
+      return;
+    }
+    
+    // Get container and SVG dimensions
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const svgRect = svgElement.getBoundingClientRect();
+    
+    // Add padding
+    const padding = 40;
+    const containerWidth = containerRect.width - padding;
+    const containerHeight = containerRect.height - padding;
+    
+    // Calculate scale to fit
+    const scaleX = containerWidth / svgRect.width;
+    const scaleY = containerHeight / svgRect.height;
+    
+    // Use the smaller scale to ensure the entire diagram fits
+    const fitScale = Math.min(scaleX, scaleY);
+    
+    // Set scale and center position
+    setScale(Math.min(Math.max(fitScale, 0.15), 1.0)); // Cap at 1.0 for fit to screen
+    setPosition({ x: 0, y: 0 }); // Reset position to center
   }, [handleResetView])
 
   // Pan handlers
@@ -98,7 +122,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
     // Apply the zoom, making sure to stay within limits
     setScale(prevScale => {
       const newScale = prevScale + zoomIncrement
-      return Math.min(Math.max(newScale, 0.5), 2.5)
+      return Math.min(Math.max(newScale, 0.15), 3.0) // Updated zoom limits
     })
   }, [])
 
