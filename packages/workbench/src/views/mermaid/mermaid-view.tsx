@@ -36,6 +36,8 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   useEffect(() => {
     if (diagram) {
+      console.log('Mermaid diagram to render:', diagram); // Debug the diagram syntax
+      
       // Configure mermaid
       mermaid.initialize({
         startOnLoad: true,
@@ -43,7 +45,8 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
         securityLevel: 'loose',
         flowchart: {
           htmlLabels: true,
-          curve: 'basis'
+          curve: 'basis',
+          useMaxWidth: false
         },
         themeVariables: {
           // Customizing colors to match workbench theme
@@ -57,6 +60,12 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
       })
 
       try {
+        // Create a pre element with the diagram code for debugging
+        const debugContainer = document.getElementById('mermaid-debug')
+        if (debugContainer) {
+          debugContainer.textContent = diagram
+        }
+        
         // Use mermaid.render instead of init for more reliable rendering
         const container = document.getElementById('mermaid-container')
         if (container) {
@@ -73,6 +82,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
                 svg.style.width = '100%'
                 svg.style.maxWidth = '100%'
                 svg.style.height = 'auto'
+                svg.style.minHeight = '400px'
               }
             })
             .catch(err => {
@@ -120,6 +130,14 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
         </h2>
         <div className="bg-zinc-800 p-6 rounded-lg shadow-lg max-w-6xl w-full">
           <div className="overflow-auto" id="mermaid-container"></div>
+        </div>
+        
+        {/* Debug section */}
+        <div className="mt-8 w-full max-w-6xl">
+          <details className="text-xs">
+            <summary className="text-gray-400 cursor-pointer hover:text-gray-300">Show Mermaid Syntax</summary>
+            <pre className="mt-2 p-4 bg-zinc-950 rounded text-gray-400 overflow-auto" id="mermaid-debug"></pre>
+          </details>
         </div>
       </div>
     </div>
