@@ -3,7 +3,6 @@ import { FlowResponse } from '@/views/flow/hooks/use-get-flow-state'
 import mermaid from 'mermaid'
 import { Code, ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 interface MermaidViewProps {
   flow: FlowResponse
@@ -13,16 +12,16 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
   const [diagram, setDiagram] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Zoom and pan state
   const [scale, setScale] = useState<number>(1)
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState<boolean>(false)
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
-  
+
   // Refs
   const containerRef = useRef<HTMLDivElement>(null)
-  
+
   // Fetch the mermaid diagram
   useEffect(() => {
     setLoading(true)
@@ -46,67 +45,67 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
     fetchMermaidDiagram()
   }, [flow.name])
-  
+
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
-    setScale(prevScale => Math.min(prevScale + 0.1, 2.5))
+    setScale(prevScale => Math.min(prevScale + 0.05, 2.5)) // Reduced increment
   }, [])
-  
+
   const handleZoomOut = useCallback(() => {
-    setScale(prevScale => Math.max(prevScale - 0.1, 0.5))
+    setScale(prevScale => Math.max(prevScale - 0.05, 0.5)) // Reduced increment
   }, [])
-  
+
   const handleResetView = useCallback(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
   }, [])
-  
+
   const handleFitToScreen = useCallback(() => {
     if (!containerRef.current) return
-    
+
     // This is a simple implementation; for a better fit,
     // you'd need to measure the diagram SVG dimensions
     handleResetView()
   }, [handleResetView])
-  
+
   // Pan handlers
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(true)
     setDragStart({ x: e.clientX, y: e.clientY })
   }, [])
-  
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return
-    
-    const dx = e.clientX - dragStart.x
-    const dy = e.clientY - dragStart.y
-    
+
+    const dx = (e.clientX - dragStart.x) * 1.5 // Added multiplier for faster pan
+    const dy = (e.clientY - dragStart.y) * 1.5 // Added multiplier for faster pan
+
     setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }))
     setDragStart({ x: e.clientX, y: e.clientY })
   }, [isDragging, dragStart])
-  
+
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
   }, [])
-  
+
   // Mouse wheel zoom handler
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault()
+
+    // Calculate zoom increment based on delta - reduced sensitivity
+    const zoomIncrement = 0.05 * Math.sign(e.deltaY) * -1
     
-    // Zoom in or out based on wheel direction
-    if (e.deltaY < 0) {
-      // Zoom in
-      setScale(prevScale => Math.min(prevScale + 0.1, 2.5))
-    } else {
-      // Zoom out
-      setScale(prevScale => Math.max(prevScale - 0.1, 0.5))
-    }
+    // Apply the zoom, making sure to stay within limits
+    setScale(prevScale => {
+      const newScale = prevScale + zoomIncrement
+      return Math.min(Math.max(newScale, 0.5), 2.5)
+    })
   }, [])
 
   useEffect(() => {
     if (diagram) {
       console.log('Mermaid diagram to render:', diagram); // Debug the diagram syntax
-      
+
       // Configure mermaid
       mermaid.initialize({
         startOnLoad: true,
@@ -125,26 +124,26 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
           primaryTextColor: '#fff',
           primaryBorderColor: '#4f46e5',
           secondaryColor: '#1e1b2e',
-          tertiaryColor: '#15131E', 
+          tertiaryColor: '#15131E',
           lineColor: '#64748b',
-          
+
           // Node colors by type (matching our class styling)
           apiStyleFill: '#fb923c', // API - orange
           eventStyleFill: '#60a5fa', // Event - blue
           cronStyleFill: '#4ade80', // Cron - green
           noopStyleFill: '#3f3a50', // Noop - darker gray for better contrast with text
-          
+
           // Text colors to ensure readability
           textColor: '#ffffff', // Default bright text for all nodes
           nodeTextColor: '#ffffff', // Ensure node text is always white
           edgeTextColor: '#cbd5e1', // Slightly muted text for edge labels
-          
+
           // General styling
           nodeBorder: '#2d2b3a',
           clusterBkg: '#1e1b2e',
           clusterBorder: '#2d2b3a',
           titleColor: '#e2e8f0',
-          
+
           // Font weight and size for better readability
           fontSize: '16px',
           fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
@@ -157,17 +156,17 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
         if (debugContainer) {
           debugContainer.textContent = diagram
         }
-        
+
         // Use mermaid.render instead of init for more reliable rendering
         const container = document.getElementById('mermaid-diagram')
         if (container) {
           // Generate a unique ID for this render
           const id = `mermaid-${Date.now()}`
-          
+
           mermaid.render(id, diagram)
             .then(result => {
               container.innerHTML = result.svg
-              
+
               // Add some post-processing to make links interactive if needed
               const svg = container.querySelector('svg')
               if (svg) {
@@ -221,46 +220,46 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
           <Code size={18} className="text-indigo-400" />
           Flow Diagram: <span className="text-indigo-400 font-semibold">{flow.name}</span>
         </h2>
-        
+
         {/* Zoom controls */}
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleZoomOut}
             className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
             title="Zoom out"
           >
             <ZoomOut size={16} />
           </Button>
-          
+
           <div className="text-zinc-400 text-xs min-w-12 text-center">
             {Math.round(scale * 100)}%
           </div>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleZoomIn}
             className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
             title="Zoom in"
           >
             <ZoomIn size={16} />
           </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleFitToScreen}
             className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
             title="Fit to screen"
           >
             <Maximize size={16} />
           </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleResetView}
             className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
             title="Reset view"
@@ -269,9 +268,9 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
           </Button>
         </div>
       </div>
-      
+
       {/* Zoomable diagram container */}
-      <div 
+      <div
         className="flex-1 bg-[#1D1A2A] border border-zinc-800 rounded-lg shadow-lg overflow-hidden relative"
         ref={containerRef}
         onMouseDown={handleMouseDown}
@@ -281,17 +280,17 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
         onWheel={handleWheel}
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
-        <div 
+        <div
           className="absolute inset-0 transition-transform duration-100"
-          style={{ 
+          style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-            transformOrigin: 'center center' 
+            transformOrigin: 'center center'
           }}
         >
           <div id="mermaid-diagram" className="min-h-[400px] flex items-center justify-center"></div>
         </div>
       </div>
-      
+
       {/* Debug section */}
       <div className="mt-6 w-full">
         <details className="text-xs">
