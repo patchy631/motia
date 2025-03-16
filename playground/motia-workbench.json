@@ -112,5 +112,29 @@
       "x": 126.5,
       "y": 236
     }
+  },
+  "cron-example": {
+    "steps/cronExample/handlePeriodicJob.step.ts": {
+      "x": 52.5,
+      "y": 236
+    },
+    "steps/cronExample/periodicJob.step.ts": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  "motia-server": {
+    "steps/wistroServerExample/finalizer.step.ts": {
+      "x": 67,
+      "y": 412
+    },
+    "steps/wistroServerExample/processor.step.ts": {
+      "x": 61,
+      "y": 236
+    },
+    "steps/wistroServerExample/startServerExample.step.ts": {
+      "x": 0,
+      "y": 0
+    }
   }
 }
