@@ -128,7 +128,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   useEffect(() => {
     if (diagram) {
-      console.log('Mermaid diagram to render:', diagram); // Debug the diagram syntax
+      // Initialize and render the mermaid diagram
 
       // Configure mermaid
       mermaid.initialize({

@@ -45,34 +45,34 @@ export class MermaidService {
   generateFlowDiagram(flowName: string, steps: Step[]): string {
     // Start mermaid flowchart with top-down direction
     let diagram = `flowchart TD\n`;
-    
+
     // Add class definitions for styling with explicit text color
     diagram += `    classDef apiStyle fill:#f96,stroke:#333,stroke-width:2px,color:#fff\n`;
     diagram += `    classDef eventStyle fill:#69f,stroke:#333,stroke-width:2px,color:#fff\n`;
     diagram += `    classDef cronStyle fill:#9c6,stroke:#333,stroke-width:2px,color:#fff\n`;
     diagram += `    classDef noopStyle fill:#3f3a50,stroke:#333,stroke-width:2px,color:#fff\n`;
-    
+
     // Check if we have any steps
     if (!steps || steps.length === 0) {
       return diagram + "    empty[No steps in this flow]";
     }
-    
+
     // Create node definitions with proper format
     steps.forEach(step => {
       const nodeId = this.getNodeId(step)
       const nodeLabel = this.getNodeLabel(step)
       const nodeStyle = this.getNodeStyle(step)
-      
+
       diagram += `    ${nodeId}${nodeLabel}${nodeStyle}\n`
     });
-    
+
     // Build a new string for connections to avoid side effects
     let connectionsStr = '';
-    
+
     // Create connections between nodes
     steps.forEach(sourceStep => {
       const sourceId = this.getNodeId(sourceStep)
-      
+
       if (isApiStep(sourceStep)) {
         if (sourceStep.config.emits && Array.isArray(sourceStep.config.emits)) {
           connectionsStr += this.generateConnections(sourceStep.config.emits, sourceStep, steps, sourceId);
@@ -100,75 +100,75 @@ export class MermaidService {
         }
       }
     });
-    
+
     // Add connections to the diagram
     diagram += connectionsStr;
-    
+
     return diagram;
   }
-  
+
   private generateConnections(emits: Emit[], sourceStep: Step, steps: Step[], sourceId: string): string {
     let connections = '';
-    
+
     if (!emits || !Array.isArray(emits) || emits.length === 0) {
       return connections;
     }
-    
+
     emits.forEach(emit => {
       const topic = typeof emit === 'string' ? emit : emit.topic;
       const label = typeof emit === 'string' ? topic : (emit.label || topic);
-      
+
       steps.forEach(targetStep => {
         // Check for regular subscribes in event steps
-        if (isEventStep(targetStep) && 
-            targetStep.config.subscribes && 
-            Array.isArray(targetStep.config.subscribes) && 
-            targetStep.config.subscribes.includes(topic)) {
+        if (isEventStep(targetStep) &&
+          targetStep.config.subscribes &&
+          Array.isArray(targetStep.config.subscribes) &&
+          targetStep.config.subscribes.includes(topic)) {
           const targetId = this.getNodeId(targetStep);
           connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
-        } 
+        }
         // Check for virtual subscribes in noop steps
-        else if (isNoopStep(targetStep) && 
-                  targetStep.config.virtualSubscribes && 
-                  Array.isArray(targetStep.config.virtualSubscribes) && 
-                  targetStep.config.virtualSubscribes.includes(topic)) {
+        else if (isNoopStep(targetStep) &&
+          targetStep.config.virtualSubscribes &&
+          Array.isArray(targetStep.config.virtualSubscribes) &&
+          targetStep.config.virtualSubscribes.includes(topic)) {
           const targetId = this.getNodeId(targetStep);
           connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
         }
         // Check if API steps have virtualSubscribes
-        else if (isApiStep(targetStep) && 
-                  targetStep.config.virtualSubscribes && 
-                  Array.isArray(targetStep.config.virtualSubscribes) && 
-                  targetStep.config.virtualSubscribes.includes(topic)) {
+        else if (isApiStep(targetStep) &&
+          targetStep.config.virtualSubscribes &&
+          Array.isArray(targetStep.config.virtualSubscribes) &&
+          targetStep.config.virtualSubscribes.includes(topic)) {
           const targetId = this.getNodeId(targetStep);
           connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
         }
       });
     });
-    
+
     return connections;
   }
-  
+
   private getNodeId(step: Step): string {
     // Create a valid mermaid node ID from the file path
     return step.filePath.replace(/[^a-zA-Z0-9]/g, '_')
   }
-  
+
   private getNodeLabel(step: Step): string {
     // Get display name for node
     const displayName = step.config.name || path.basename(step.filePath, path.extname(step.filePath));
     // Add node type prefix to help distinguish types
     let prefix = '';
-    
+
     if (isApiStep(step)) prefix = '🌐 ';
-    else if (isEventStep(step)) prefix = '📢 '; // Changed from bell to megaphone for events
+    else if (isEventStep(step)) prefix = '⚡ ';
     else if (isCronStep(step)) prefix = '⏰ ';
     else if (isNoopStep(step)) prefix = '⚙️ ';
-    
+
     // Create a node label with the step name
     return `["${prefix}${displayName}"]`
   }
-  
+
   private getNodeStyle(step: Step): string {
     // Apply style class based on step type
     if (isApiStep(step)) return ':::apiStyle'
@@ -177,24 +177,8 @@ export class MermaidService {
     if (isNoopStep(step)) return ':::noopStyle'
     return ''
   }
-  
+
   updateFlow(flowName: string, flow: Flow): void {
-    // Debug log to help troubleshoot flow data
-    console.debug(`Generating mermaid diagram for flow: ${flowName} with ${flow.steps.length} steps`);
-    
-    // Log step information to help diagnose connection issues
-    flow.steps.forEach(step => {
-      if (isApiStep(step)) {
-        console.debug(`API Step ${step.config.name || step.filePath}: emits=${JSON.stringify(step.config.emits)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
-      } else if (isEventStep(step)) {
-        console.debug(`Event Step ${step.config.name || step.filePath}: subscribes=${JSON.stringify(step.config.subscribes)}, emits=${JSON.stringify(step.config.emits)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
-      } else if (isCronStep(step)) {
-        console.debug(`Cron Step ${step.config.name || step.filePath}: emits=${JSON.stringify(step.config.emits)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
-      } else if (isNoopStep(step)) {
-        console.debug(`Noop Step ${step.config.name || step.filePath}: virtualSubscribes=${JSON.stringify(step.config.virtualSubscribes)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
-      }
-    });
-    
     const diagram = this.generateFlowDiagram(flowName, flow.steps)
     this.saveDiagram(flowName, diagram)
   }
