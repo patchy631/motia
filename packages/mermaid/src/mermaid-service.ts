@@ -12,18 +12,12 @@ export class MermaidService {
     this.diagramsPath = path.join(baseDir, 'motia-mermaid.json')
     // Check if we're in a test environment by checking if the directory exists
     this.isTestEnvironment = baseDir.startsWith('/test') || !fs.existsSync(baseDir)
-    
-    console.log(`Initializing MermaidService with baseDir: ${baseDir}`)
-    console.log(`Mermaid diagrams file will be at: ${this.diagramsPath}`)
-    console.log(`Is test environment: ${this.isTestEnvironment}`)
-    
     this.ensureDiagramsFile()
   }
 
   private ensureDiagramsFile(): void {
     if (this.isTestEnvironment) {
       // In test environment, don't try to access the file system
-      console.log('Test environment detected, skipping file system operations')
       return
     }
 
@@ -31,17 +25,12 @@ export class MermaidService {
       // First ensure directory exists
       const diagramsDir = path.dirname(this.diagramsPath)
       if (!fs.existsSync(diagramsDir)) {
-        console.log(`Creating directory: ${diagramsDir}`)
         fs.mkdirSync(diagramsDir, { recursive: true })
       }
 
       // Then ensure file exists
       if (!fs.existsSync(this.diagramsPath)) {
-        console.log(`Creating mermaid diagrams file at ${this.diagramsPath}`)
         fs.writeFileSync(this.diagramsPath, JSON.stringify({}, null, 2))
-        console.log('Successfully created mermaid diagrams file')
-      } else {
-        console.log(`Mermaid diagrams file already exists at ${this.diagramsPath}`)
       }
     } catch (error) {
       console.warn(`Could not create mermaid diagrams file at ${this.diagramsPath}:`, error)

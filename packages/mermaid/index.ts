@@ -5,7 +5,6 @@ import { MermaidPlugin } from './src/plugin'
  * @returns A new Mermaid plugin instance
  */
 export function createPlugin(): MermaidPlugin {
-  console.log('Creating new MermaidPlugin instance from createPlugin')
   return new MermaidPlugin();
 }
 
@@ -15,6 +14,3 @@ export const createMermaidPlugin = createPlugin;
 // Export plugin class and related types
 export { MermaidPlugin } from './src/plugin'
 export type { MermaidPluginOptions } from './src/types'
-
-// Log that the module was loaded
-console.log('Mermaid plugin module loaded, exports:', Object.keys(module.exports));

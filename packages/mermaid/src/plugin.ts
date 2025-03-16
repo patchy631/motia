@@ -18,7 +18,6 @@ export class MermaidPlugin implements MotiaPlugin {
    * @param options Plugin options
    */
   initialize(app: Express, options: MermaidPluginOptions = {}): void {
-    console.log('Initializing mermaid plugin');
     const baseDir = options.baseDir || process.cwd();
     
     try {
@@ -27,29 +26,30 @@ export class MermaidPlugin implements MotiaPlugin {
       // Set up API endpoints
       setupMermaidEndpoint(app, this.mermaidService);
       
-      // Add a simple test endpoint to check if the plugin is loaded
+      // Add a diagnostic endpoint
       app.get('/mermaid-plugin-status', (req, res) => {
         res.json({
-          status: 'Mermaid plugin is loaded and running',
+          status: 'Plugin loaded',
+          name: this.name,
           serviceInitialized: !!this.mermaidService,
           time: new Date().toISOString()
         });
       });
       
-      globalLogger.info('Mermaid plugin initialized successfully');
-      console.log('Mermaid plugin initialized successfully');
+      // No logging - the plugin manager will handle this
     } catch (error) {
-      globalLogger.error(`Failed to initialize mermaid plugin: ${error instanceof Error ? error.message : String(error)}`);
-      console.error('Mermaid plugin initialization error:', error);
-      
-      // Even if there's an error, add a diagnostic endpoint
+      // Add a diagnostic endpoint even if initialization fails
       app.get('/mermaid-plugin-status', (req, res) => {
         res.json({
-          status: 'Mermaid plugin initialization failed',
+          status: 'Initialization failed',
+          name: this.name,
           error: error instanceof Error ? error.message : String(error),
           time: new Date().toISOString()
         });
       });
+      
+      // Re-throw the error for the plugin manager to handle
+      throw error;
     }
   }
   

@@ -136,5 +136,27 @@
       "x": 0,
       "y": 0
     }
+  },
+  "hybrid-example": {
+    "steps/hybridEndpointExample/analyzeData.step.py": {
+      "x": 93,
+      "y": 608
+    },
+    "steps/hybridEndpointExample/enrichData.step.ts": {
+      "x": 98,
+      "y": 432
+    },
+    "steps/hybridEndpointExample/finalizeData.step.ts": {
+      "x": 91,
+      "y": 784
+    },
+    "steps/hybridEndpointExample/hybridApi.step.ts": {
+      "x": 0,
+      "y": 0
+    },
+    "steps/hybridEndpointExample/transformData.step.py": {
+      "x": 85.5,
+      "y": 256
+    }
   }
 }

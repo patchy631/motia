@@ -24,9 +24,9 @@ export class PluginManager {
       // Add to registered plugins
       this.plugins.push(plugin)
       
-      globalLogger.info(`Plugin registered: ${plugin.name}`)
+      // No logging here - we'll do a single log entry for all plugins
     } catch (error) {
-      globalLogger.error(`Failed to register plugin ${plugin.name}: ${error instanceof Error ? error.message : String(error)}`)
+      // Silent fail with error re-throw
       throw error // Re-throw to allow caller to handle
     }
   }
@@ -95,62 +95,75 @@ export class PluginManager {
    * and attempt to load and register them.
    */
   autoDiscoverPlugins(): void {
-    console.log('Starting plugin auto-discovery')
-    globalLogger.info('Starting plugin auto-discovery')
-    
+    // We'll use a single log line at the end to summarize what was loaded
     try {
-      // This is a simplified approach - in a real implementation
-      // you'd want more robust plugin discovery
       const fs = require('fs')
       const path = require('path')
       
       // Check node_modules for @motiadev packages
       const nodeModulesDir = path.join(process.cwd(), 'node_modules', '@motiadev')
-      console.log(`Looking for plugins in ${nodeModulesDir}`)
       
       if (!fs.existsSync(nodeModulesDir)) {
-        console.log('No @motiadev modules found in node_modules directory')
-        globalLogger.debug('No @motiadev modules found in node_modules directory')
-        return // No @motiadev modules installed
+        return
       }
       
       const dirs = fs.readdirSync(nodeModulesDir)
-      console.log(`Found @motiadev modules: ${dirs.join(', ')}`)
-      globalLogger.debug(`Found @motiadev modules: ${dirs.join(', ')}`)
       
-      // Look through all @motiadev packages
-      for (const dir of dirs) {
+      // List of patterns or package names that identify plugins
+      const pluginPatterns = [
+        'mermaid',          // Exact match for mermaid plugin
+        /^.*-plugin$/       // Pattern match for -plugin suffix
+      ]
+      
+      // Filter potential plugin packages
+      const potentialPlugins = dirs.filter((dir: string) => {
+        return pluginPatterns.some(pattern => {
+          if (typeof pattern === 'string') {
+            return pattern === dir
+          } else if (pattern instanceof RegExp) {
+            return pattern.test(dir)
+          }
+          return false
+        })
+      })
+      
+      if (potentialPlugins.length === 0) {
+        return
+      }
+      
+      // Load plugins and register them
+      const loadedPlugins: string[] = []
+      
+      for (const dir of potentialPlugins) {
         try {
-          console.log(`Attempting to load @motiadev/${dir}...`)
-          
-          // Try to load the module
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const pluginModule = require(`@motiadev/${dir}`)
           
-          console.log(`Found @motiadev/${dir} module with exports: ${Object.keys(pluginModule).join(', ')}`)
-          globalLogger.debug(`Found @motiadev/${dir} module with exports: ${Object.keys(pluginModule).join(', ')}`)
-          
-          // Check if it exports a createPlugin function
           if (typeof pluginModule.createPlugin === 'function') {
-            console.log(`Creating plugin instance from @motiadev/${dir}`)
             const plugin = pluginModule.createPlugin()
             this.registerPlugin(plugin)
-            console.log(`Auto-discovered and registered plugin: ${plugin.name}`)
-            globalLogger.info(`Auto-discovered plugin: ${plugin.name}`)
-          } else {
-            console.log(`Module @motiadev/${dir} does not export a createPlugin function`)
+            loadedPlugins.push(plugin.name)
           }
         } catch (error) {
-          console.error(`Failed to load plugin from @motiadev/${dir}:`, error)
-          globalLogger.debug(`Failed to load plugin from @motiadev/${dir}: ${error instanceof Error ? error.message : String(error)}`)
+          // Silently fail - errors with plugin loading shouldn't disrupt the application
         }
       }
       
-      // Log all registered plugins
-      console.log(`Plugin discovery complete. Registered plugins: ${this.plugins.map(p => p.name).join(', ') || 'none'}`)
+      // Log a single summary line if any plugins were loaded
+      if (loadedPlugins.length > 0) {
+        const pluginNames = loadedPlugins.join(', ')
+        
+        // Add some visual separation with a plugin banner
+        console.log('\n➜ [PLUGINS] ' + '─'.repeat(50))
+        console.log(`➜ [PLUGINS] Loaded: ${pluginNames}`)
+        console.log('➜ [PLUGINS] ' + '─'.repeat(50) + '\n')
+        
+        // Also log to the regular logger for completeness
+        const logger = globalLogger.child({ component: 'PluginManager' })
+        logger.debug(`Loaded plugins: ${pluginNames}`)
+      }
     } catch (error) {
-      console.error('Plugin discovery error:', error)
-      globalLogger.error(`Error auto-discovering plugins: ${error instanceof Error ? error.message : String(error)}`)
+      // No logging - silent failure
     }
   }
 }
