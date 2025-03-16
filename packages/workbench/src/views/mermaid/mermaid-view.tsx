@@ -48,11 +48,11 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
-    setScale(prevScale => Math.min(prevScale + 0.02, 3.0)) // Reduced increment from 0.05 to 0.02
+    setScale((prevScale) => Math.min(prevScale + 0.02, 3.0))
   }, [])
 
   const handleZoomOut = useCallback(() => {
-    setScale(prevScale => Math.max(prevScale - 0.02, 0.15)) // Reduced increment from 0.05 to 0.02
+    setScale((prevScale) => Math.max(prevScale - 0.02, 0.15))
   }, [])
 
   const handleResetView = useCallback(() => {
@@ -62,34 +62,34 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   const handleFitToScreen = useCallback(() => {
     if (!containerRef.current) return
-    
+
     // Find the SVG element
-    const svgElement = document.querySelector('#mermaid-diagram svg') as SVGSVGElement;
+    const svgElement = document.querySelector('#mermaid-diagram svg') as SVGSVGElement
     if (!svgElement) {
       // If SVG not found, just reset view
-      handleResetView();
-      return;
+      handleResetView()
+      return
     }
-    
+
     // Get container and SVG dimensions
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const svgRect = svgElement.getBoundingClientRect();
-    
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const svgRect = svgElement.getBoundingClientRect()
+
     // Add padding
-    const padding = 40;
-    const containerWidth = containerRect.width - padding;
-    const containerHeight = containerRect.height - padding;
-    
+    const padding = 40
+    const containerWidth = containerRect.width - padding
+    const containerHeight = containerRect.height - padding
+
     // Calculate scale to fit
-    const scaleX = containerWidth / svgRect.width;
-    const scaleY = containerHeight / svgRect.height;
-    
+    const scaleX = containerWidth / svgRect.width
+    const scaleY = containerHeight / svgRect.height
+
     // Use the smaller scale to ensure the entire diagram fits
-    const fitScale = Math.min(scaleX, scaleY);
-    
+    const fitScale = Math.min(scaleX, scaleY)
+
     // Set scale and center position
-    setScale(Math.min(Math.max(fitScale, 0.15), 1.0)); // Cap at 1.0 for fit to screen
-    setPosition({ x: 0, y: 0 }); // Reset position to center
+    setScale(Math.min(Math.max(fitScale, 0.15), 1.0)) // Cap at 1.0 for fit to screen
+    setPosition({ x: 0, y: 0 }) // Reset position to center
   }, [handleResetView])
 
   // Pan handlers
@@ -98,15 +98,18 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
     setDragStart({ x: e.clientX, y: e.clientY })
   }, [])
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!isDragging) return
 
-    const dx = (e.clientX - dragStart.x) * 1.5 // Added multiplier for faster pan
-    const dy = (e.clientY - dragStart.y) * 1.5 // Added multiplier for faster pan
+      const dx = (e.clientX - dragStart.x) * 1.5 // Added multiplier for faster pan
+      const dy = (e.clientY - dragStart.y) * 1.5 // Added multiplier for faster pan
 
-    setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }))
-    setDragStart({ x: e.clientX, y: e.clientY })
-  }, [isDragging, dragStart])
+      setPosition((prev) => ({ x: prev.x + dx, y: prev.y + dy }))
+      setDragStart({ x: e.clientX, y: e.clientY })
+    },
+    [isDragging, dragStart],
+  )
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -118,9 +121,9 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
     // Calculate zoom increment based on delta - significantly reduced sensitivity
     const zoomIncrement = 0.02 * Math.sign(e.deltaY) * -1 // Reduced from 0.05 to 0.02
-    
+
     // Apply the zoom, making sure to stay within limits
-    setScale(prevScale => {
+    setScale((prevScale) => {
       const newScale = prevScale + zoomIncrement
       return Math.min(Math.max(newScale, 0.15), 3.0) // Updated zoom limits
     })
@@ -140,7 +143,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
           curve: 'basis',
           useMaxWidth: false,
           rankSpacing: 80,
-          nodeSpacing: 50
+          nodeSpacing: 50,
         },
         themeVariables: {
           // Customizing colors to match workbench theme
@@ -170,8 +173,8 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
           // Font weight and size for better readability
           fontSize: '16px',
-          fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-        }
+          fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        },
       })
 
       try {
@@ -187,8 +190,9 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
           // Generate a unique ID for this render
           const id = `mermaid-${Date.now()}`
 
-          mermaid.render(id, diagram)
-            .then(result => {
+          mermaid
+            .render(id, diagram)
+            .then((result) => {
               container.innerHTML = result.svg
 
               // Add some post-processing to make links interactive if needed
@@ -200,7 +204,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
                 svg.style.minHeight = '400px'
               }
             })
-            .catch(err => {
+            .catch((err) => {
               console.error('Mermaid rendering error:', err)
               setError(`Diagram syntax error: ${err instanceof Error ? err.message : String(err)}`)
             })
@@ -216,9 +220,18 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
     return (
       <div className="w-full h-full flex items-center justify-center">
         <div className="text-zinc-400 flex items-center gap-2">
-          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg
+            className="animate-spin h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           Loading diagram...
         </div>
@@ -258,9 +271,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
             <ZoomOut size={16} />
           </Button>
 
-          <div className="text-zinc-400 text-xs min-w-12 text-center">
-            {Math.round(scale * 100)}%
-          </div>
+          <div className="text-zinc-400 text-xs min-w-12 text-center">{Math.round(scale * 100)}%</div>
 
           <Button
             variant="ghost"
@@ -309,7 +320,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
           className="absolute inset-0 transition-transform duration-100"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-            transformOrigin: 'center center'
+            transformOrigin: 'center center',
           }}
         >
           <div id="mermaid-diagram" className="min-h-[400px] flex items-center justify-center"></div>
@@ -320,12 +331,24 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
       <div className="mt-6 w-full">
         <details className="text-xs">
           <summary className="text-gray-500 cursor-pointer hover:text-gray-300 inline-flex items-center gap-1.5 py-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M14 4h6v6M10 20H4v-6M22 14v6h-6M2 10V4h6" />
             </svg>
             <span>View Mermaid Source</span>
           </summary>
-          <pre className="mt-2 p-4 bg-zinc-950 border border-zinc-800/50 rounded text-gray-400 overflow-auto text-xs" id="mermaid-debug"></pre>
+          <pre
+            className="mt-2 p-4 bg-zinc-950 border border-zinc-800/50 rounded text-gray-400 overflow-auto text-xs"
+            id="mermaid-debug"
+          ></pre>
         </details>
       </div>
     </div>

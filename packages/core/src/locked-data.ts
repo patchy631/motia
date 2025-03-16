@@ -38,20 +38,20 @@ export class LockedData {
       'step-removed': [],
       'step-updated': [],
     }
-    
+
     // Register handlers to update mermaid diagrams when flows change
     this.on('flow-created', (flowName) => {
       if (this.flows[flowName]) {
         this.mermaidService.updateFlow(flowName, this.flows[flowName])
       }
     })
-    
+
     this.on('flow-updated', (flowName) => {
       if (this.flows[flowName]) {
         this.mermaidService.updateFlow(flowName, this.flows[flowName])
       }
     })
-    
+
     this.on('flow-removed', (flowName) => {
       this.mermaidService.removeDiagram(flowName)
     })

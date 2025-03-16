@@ -6,14 +6,14 @@ export const setupMermaidEndpoint = (app: Express, mermaidService: MermaidServic
   app.get('/flows/:id/mermaid', (req, res) => {
     const { id } = req.params
     const diagram = mermaidService.getDiagram(id)
-    
+
     if (diagram) {
       res.status(200).send({ diagram })
     } else {
       res.status(404).send({ error: 'Mermaid diagram not found for this flow' })
     }
   })
-  
+
   // Get all mermaid diagrams
   app.get('/flows/mermaid', (req, res) => {
     const diagrams = mermaidService.getAllDiagrams()

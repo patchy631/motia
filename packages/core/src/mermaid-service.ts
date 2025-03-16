@@ -44,109 +44,115 @@ export class MermaidService {
 
   generateFlowDiagram(flowName: string, steps: Step[]): string {
     // Start mermaid flowchart with top-down direction
-    let diagram = `flowchart TD\n`;
+    let diagram = `flowchart TD\n`
 
     // Add class definitions for styling with explicit text color
-    diagram += `    classDef apiStyle fill:#f96,stroke:#333,stroke-width:2px,color:#fff\n`;
-    diagram += `    classDef eventStyle fill:#69f,stroke:#333,stroke-width:2px,color:#fff\n`;
-    diagram += `    classDef cronStyle fill:#9c6,stroke:#333,stroke-width:2px,color:#fff\n`;
-    diagram += `    classDef noopStyle fill:#3f3a50,stroke:#333,stroke-width:2px,color:#fff\n`;
+    diagram += `    classDef apiStyle fill:#f96,stroke:#333,stroke-width:2px,color:#fff\n`
+    diagram += `    classDef eventStyle fill:#69f,stroke:#333,stroke-width:2px,color:#fff\n`
+    diagram += `    classDef cronStyle fill:#9c6,stroke:#333,stroke-width:2px,color:#fff\n`
+    diagram += `    classDef noopStyle fill:#3f3a50,stroke:#333,stroke-width:2px,color:#fff\n`
 
     // Check if we have any steps
     if (!steps || steps.length === 0) {
-      return diagram + "    empty[No steps in this flow]";
+      return diagram + '    empty[No steps in this flow]'
     }
 
     // Create node definitions with proper format
-    steps.forEach(step => {
+    steps.forEach((step) => {
       const nodeId = this.getNodeId(step)
       const nodeLabel = this.getNodeLabel(step)
       const nodeStyle = this.getNodeStyle(step)
 
       diagram += `    ${nodeId}${nodeLabel}${nodeStyle}\n`
-    });
+    })
 
     // Build a new string for connections to avoid side effects
-    let connectionsStr = '';
+    let connectionsStr = ''
 
     // Create connections between nodes
-    steps.forEach(sourceStep => {
+    steps.forEach((sourceStep) => {
       const sourceId = this.getNodeId(sourceStep)
 
       if (isApiStep(sourceStep)) {
         if (sourceStep.config.emits && Array.isArray(sourceStep.config.emits)) {
-          connectionsStr += this.generateConnections(sourceStep.config.emits, sourceStep, steps, sourceId);
+          connectionsStr += this.generateConnections(sourceStep.config.emits, sourceStep, steps, sourceId)
         }
         if (sourceStep.config.virtualEmits && Array.isArray(sourceStep.config.virtualEmits)) {
-          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId);
+          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId)
         }
       } else if (isEventStep(sourceStep)) {
         if (sourceStep.config.emits && Array.isArray(sourceStep.config.emits)) {
-          connectionsStr += this.generateConnections(sourceStep.config.emits, sourceStep, steps, sourceId);
+          connectionsStr += this.generateConnections(sourceStep.config.emits, sourceStep, steps, sourceId)
         }
         if (sourceStep.config.virtualEmits && Array.isArray(sourceStep.config.virtualEmits)) {
-          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId);
+          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId)
         }
       } else if (isCronStep(sourceStep)) {
         if (sourceStep.config.emits && Array.isArray(sourceStep.config.emits)) {
-          connectionsStr += this.generateConnections(sourceStep.config.emits, sourceStep, steps, sourceId);
+          connectionsStr += this.generateConnections(sourceStep.config.emits, sourceStep, steps, sourceId)
         }
         if (sourceStep.config.virtualEmits && Array.isArray(sourceStep.config.virtualEmits)) {
-          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId);
+          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId)
         }
       } else if (isNoopStep(sourceStep)) {
         if (sourceStep.config.virtualEmits && Array.isArray(sourceStep.config.virtualEmits)) {
-          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId);
+          connectionsStr += this.generateConnections(sourceStep.config.virtualEmits, sourceStep, steps, sourceId)
         }
       }
-    });
+    })
 
     // Add connections to the diagram
-    diagram += connectionsStr;
+    diagram += connectionsStr
 
-    return diagram;
+    return diagram
   }
 
   private generateConnections(emits: Emit[], sourceStep: Step, steps: Step[], sourceId: string): string {
-    let connections = '';
+    let connections = ''
 
     if (!emits || !Array.isArray(emits) || emits.length === 0) {
-      return connections;
+      return connections
     }
 
-    emits.forEach(emit => {
-      const topic = typeof emit === 'string' ? emit : emit.topic;
-      const label = typeof emit === 'string' ? topic : (emit.label || topic);
+    emits.forEach((emit) => {
+      const topic = typeof emit === 'string' ? emit : emit.topic
+      const label = typeof emit === 'string' ? topic : emit.label || topic
 
-      steps.forEach(targetStep => {
+      steps.forEach((targetStep) => {
         // Check for regular subscribes in event steps
-        if (isEventStep(targetStep) &&
+        if (
+          isEventStep(targetStep) &&
           targetStep.config.subscribes &&
           Array.isArray(targetStep.config.subscribes) &&
-          targetStep.config.subscribes.includes(topic)) {
-          const targetId = this.getNodeId(targetStep);
-          connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
+          targetStep.config.subscribes.includes(topic)
+        ) {
+          const targetId = this.getNodeId(targetStep)
+          connections += `    ${sourceId} -->|${label}| ${targetId}\n`
         }
         // Check for virtual subscribes in noop steps
-        else if (isNoopStep(targetStep) &&
+        else if (
+          isNoopStep(targetStep) &&
           targetStep.config.virtualSubscribes &&
           Array.isArray(targetStep.config.virtualSubscribes) &&
-          targetStep.config.virtualSubscribes.includes(topic)) {
-          const targetId = this.getNodeId(targetStep);
-          connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
+          targetStep.config.virtualSubscribes.includes(topic)
+        ) {
+          const targetId = this.getNodeId(targetStep)
+          connections += `    ${sourceId} -->|${label}| ${targetId}\n`
         }
         // Check if API steps have virtualSubscribes
-        else if (isApiStep(targetStep) &&
+        else if (
+          isApiStep(targetStep) &&
           targetStep.config.virtualSubscribes &&
           Array.isArray(targetStep.config.virtualSubscribes) &&
-          targetStep.config.virtualSubscribes.includes(topic)) {
-          const targetId = this.getNodeId(targetStep);
-          connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
+          targetStep.config.virtualSubscribes.includes(topic)
+        ) {
+          const targetId = this.getNodeId(targetStep)
+          connections += `    ${sourceId} -->|${label}| ${targetId}\n`
         }
-      });
-    });
+      })
+    })
 
-    return connections;
+    return connections
   }
 
   private getNodeId(step: Step): string {
@@ -156,14 +162,14 @@ export class MermaidService {
 
   private getNodeLabel(step: Step): string {
     // Get display name for node
-    const displayName = step.config.name || path.basename(step.filePath, path.extname(step.filePath));
+    const displayName = step.config.name || path.basename(step.filePath, path.extname(step.filePath))
     // Add node type prefix to help distinguish types
-    let prefix = '';
+    let prefix = ''
 
-    if (isApiStep(step)) prefix = '🌐 ';
-    else if (isEventStep(step)) prefix = '⚡ ';
-    else if (isCronStep(step)) prefix = '⏰ ';
-    else if (isNoopStep(step)) prefix = '⚙️ ';
+    if (isApiStep(step)) prefix = '🌐 '
+    else if (isEventStep(step)) prefix = '⚡ '
+    else if (isCronStep(step)) prefix = '⏰ '
+    else if (isNoopStep(step)) prefix = '⚙️ '
 
     // Create a node label with the step name
     return `["${prefix}${displayName}"]`
