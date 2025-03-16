@@ -239,14 +239,15 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   return (
     <div className="w-full h-full bg-[#15131E] p-6 overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+      <div className="relative flex justify-center mb-6">
+        {/* Title - now centered */}
         <h2 className="text-lg font-medium text-white/70 flex items-center gap-2">
           <Code size={18} className="text-indigo-400" />
           Flow Diagram: <span className="text-indigo-400 font-semibold">{flow.name}</span>
         </h2>
 
-        {/* Zoom controls */}
-        <div className="flex items-center gap-2">
+        {/* Zoom controls - positioned absolutely at the right */}
+        <div className="absolute right-0 top-0 flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
