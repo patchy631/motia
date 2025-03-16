@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { FlowResponse } from '@/views/flow/hooks/use-get-flow-state'
 import mermaid from 'mermaid'
+import { Code } from 'lucide-react'
 
 interface MermaidViewProps {
   flow: FlowResponse
@@ -46,16 +47,30 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
         flowchart: {
           htmlLabels: true,
           curve: 'basis',
-          useMaxWidth: false
+          useMaxWidth: false,
+          rankSpacing: 80,
+          nodeSpacing: 50
         },
         themeVariables: {
           // Customizing colors to match workbench theme
-          primaryColor: '#333',
+          primaryColor: '#6366f1', // Indigo for primary elements
           primaryTextColor: '#fff',
-          primaryBorderColor: '#555',
-          lineColor: '#666',
-          secondaryColor: '#333',
-          tertiaryColor: '#222'
+          primaryBorderColor: '#4f46e5',
+          secondaryColor: '#1e1b2e',
+          tertiaryColor: '#15131E', 
+          lineColor: '#64748b',
+          
+          // Node colors by type (matching our class styling)
+          apiStyleFill: '#fb923c', // API - orange
+          eventStyleFill: '#60a5fa', // Event - blue
+          cronStyleFill: '#4ade80', // Cron - green
+          noopStyleFill: '#94a3b8', // Noop - gray
+          
+          // General styling
+          nodeBorder: '#2d2b3a',
+          clusterBkg: '#1e1b2e',
+          clusterBorder: '#2d2b3a',
+          titleColor: '#e2e8f0'
         }
       })
 
@@ -123,20 +138,26 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
   }
 
   return (
-    <div className="w-full h-full bg-zinc-900 p-6 overflow-auto">
+    <div className="w-full h-full bg-[#15131E] p-6 overflow-auto">
       <div className="flex flex-col items-center">
-        <h2 className="text-xl font-semibold text-white mb-6">
-          Flow: <span className="text-blue-400">{flow.name}</span>
+        <h2 className="text-lg font-medium text-white/70 mb-6 flex items-center gap-2">
+          <Code size={18} className="text-indigo-400" />
+          Flow Diagram: <span className="text-indigo-400 font-semibold">{flow.name}</span>
         </h2>
-        <div className="bg-zinc-800 p-6 rounded-lg shadow-lg max-w-6xl w-full">
-          <div className="overflow-auto" id="mermaid-container"></div>
+        <div className="bg-[#1D1A2A] border border-zinc-800 p-6 rounded-lg shadow-lg max-w-6xl w-full">
+          <div className="overflow-auto min-h-[400px] flex items-center justify-center" id="mermaid-container"></div>
         </div>
         
         {/* Debug section */}
-        <div className="mt-8 w-full max-w-6xl">
+        <div className="mt-6 w-full max-w-6xl">
           <details className="text-xs">
-            <summary className="text-gray-400 cursor-pointer hover:text-gray-300">Show Mermaid Syntax</summary>
-            <pre className="mt-2 p-4 bg-zinc-950 rounded text-gray-400 overflow-auto" id="mermaid-debug"></pre>
+            <summary className="text-gray-500 cursor-pointer hover:text-gray-300 inline-flex items-center gap-1.5 py-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 4h6v6M10 20H4v-6M22 14v6h-6M2 10V4h6" />
+              </svg>
+              <span>View Mermaid Source</span>
+            </summary>
+            <pre className="mt-2 p-4 bg-zinc-950 border border-zinc-800/50 rounded text-gray-400 overflow-auto text-xs" id="mermaid-debug"></pre>
           </details>
         </div>
       </div>

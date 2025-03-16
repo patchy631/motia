@@ -6,6 +6,7 @@ import { useParams } from 'react-router'
 import { useFlowUpdateListener } from '../hooks/use-flow-update-listener'
 import { Button } from '@/components/ui/button'
 import { GitBranch, Code } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type ViewMode = 'graph' | 'mermaid'
 
@@ -33,24 +34,34 @@ export const Flow = () => {
   return (
     <div className="w-full h-screen relative">
       {/* View switcher */}
-      <div className="absolute top-4 left-4 z-10 flex space-x-2">
+      <div className="absolute top-4 left-4 z-10 flex bg-zinc-900/80 backdrop-blur-sm rounded-md shadow-md p-1">
         <Button 
-          variant={viewMode === 'graph' ? 'default' : 'outline'}
+          variant="ghost"
           size="sm"
           onClick={() => setViewMode('graph')}
-          className="flex items-center gap-2"
+          className={cn(
+            "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
+            viewMode === 'graph' 
+              ? "bg-[#242036] text-white" 
+              : "text-gray-400 hover:text-white hover:bg-zinc-800"
+          )}
         >
-          <GitBranch size={16} />
-          Graph View
+          <GitBranch size={14} />
+          Graph
         </Button>
         <Button 
-          variant={viewMode === 'mermaid' ? 'default' : 'outline'}
+          variant="ghost"
           size="sm"
           onClick={() => setViewMode('mermaid')}
-          className="flex items-center gap-2"
+          className={cn(
+            "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
+            viewMode === 'mermaid' 
+              ? "bg-[#242036] text-white" 
+              : "text-gray-400 hover:text-white hover:bg-zinc-800"
+          )}
         >
-          <Code size={16} />
-          Mermaid View
+          <Code size={14} />
+          Mermaid
         </Button>
       </div>
 
