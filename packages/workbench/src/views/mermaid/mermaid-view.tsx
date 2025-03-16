@@ -29,11 +29,42 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
     const fetchMermaidDiagram = async () => {
       try {
+        console.log(`Fetching mermaid diagram for flow: ${flow.name}`)
         const response = await fetch(`/flows/${flow.name}/mermaid`)
+        
+        // Log the response for debugging
+        console.log('Response status:', response.status)
+        console.log('Response headers:', response.headers)
+        
+        // Check if the response is JSON
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text()
+          console.error('Non-JSON response:', text.substring(0, 100) + '...')
+          
+          // If it looks like an HTML response, it's likely a development server issue
+          if (text.includes('<!doctype html>') || text.includes('<html')) {
+            throw new Error('Received HTML instead of JSON. Please make sure the backend server is running and correctly configured.')
+          } else {
+            throw new Error('Received non-JSON response from server. Make sure all required plugins are installed.')
+          }
+        }
+        
         if (!response.ok) {
           throw new Error(`Failed to fetch mermaid diagram: ${response.statusText}`)
         }
+        
         const data = await response.json()
+        console.log('Received diagram data:', data)
+        
+        if (!data.diagram && !data.error) {
+          throw new Error('Diagram data is missing in the response')
+        }
+        
+        if (data.error) {
+          throw new Error(data.error)
+        }
+        
         setDiagram(data.diagram)
       } catch (err) {
         console.error('Error fetching mermaid diagram:', err)
@@ -245,6 +276,30 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
         <div className="text-red-400 bg-red-950/30 p-4 rounded-lg max-w-md">
           <h3 className="font-semibold mb-2">Error</h3>
           <p>{error}</p>
+          
+          {/* Additional help text based on error message */}
+          {error.includes('HTML instead of JSON') && (
+            <div className="mt-4 pt-4 border-t border-red-800">
+              <p className="text-sm text-red-300">
+                Make sure the backend server is running on port 3000 and 
+                that your request is correctly proxied to the server.
+              </p>
+            </div>
+          )}
+          
+          {(error.includes('required plugins') || error.includes('Not Found')) && (
+            <div className="mt-4 pt-4 border-t border-red-800">
+              <p className="text-sm text-red-300">
+                This feature requires additional plugins to be installed and properly linked.
+                Make sure the plugin is:
+              </p>
+              <ol className="list-decimal ml-5 mt-2 text-sm text-red-300 space-y-1">
+                <li>Listed in your dependencies</li>
+                <li>Correctly built (run pnpm build)</li> 
+                <li>Server is restarted after adding the plugin</li>
+              </ol>
+            </div>
+          )}
         </div>
       </div>
     )

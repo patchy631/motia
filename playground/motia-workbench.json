@@ -75,8 +75,8 @@
       "y": 0
     },
     "steps/booking/noop/userSendsMessage.step.ts": {
-      "x": 3.5,
-      "y": 588
+      "x": -124.26442306155158,
+      "y": 577.3529647448706
     },
     "steps/booking/searchCustomer.step.ts": {
       "x": 179.75,
@@ -87,8 +87,8 @@
       "y": 1014
     },
     "steps/booking/searchUpgradesApi.step.ts": {
-      "x": 0,
-      "y": 778
+      "x": -127.76442306155158,
+      "y": 774.9579899271059
     },
     "steps/booking/sendText.step.ts": {
       "x": 203.25,

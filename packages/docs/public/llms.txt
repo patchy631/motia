@@ -2639,7 +2639,7 @@ You should see a new folder created with the following files inside:
 
       3.  **Install Core Packages:**
           ```package-install
-          motia motia zod
+            motia zod
           ```
 
       4.  **Add `dev` Script to `package.json`:**
@@ -2896,6 +2896,984 @@ Become part of a growing community of developers and automation enthusiasts!
 
 We're excited to see what you'll build with Motia!
 
+-   [github-integration-workflow](/docs/real-world-use-cases/github-integration-workflow.md): Documentation for github-integration-workflow.
+---
+title: GitHub Integration Workflow
+description: Build an automated GitHub issue and PR management system with AI-powered classification and routing
+---
+
+## Live Example
+
+Try out the code directly in your browser:
+
+<CodeSandbox repo="MotiaDev/motia-examples/tree/main/examples/github-integration-workflow" path="/steps" />
+
+## Let's build a GitHub automation system that:
+
+1. Automatically triages and classifies new issues
+2. Intelligently assigns labels based on content
+3. Suggests appropriate assignees and reviewers
+4. Monitors PR test status
+5. Generates contextual comments
+
+## Workflow Structure
+
+The GitHub integration workflow is organized into two main components:
+
+- **Issue Triage**: Handles the management of GitHub issues
+- **PR Classifier**: Manages pull request workflows
+
+## The Steps
+
+<Folder name="steps" defaultOpen>
+  <Folder name="issue-triage" defaultOpen>
+    <File name="github-webhook.step.ts" />
+    <File name="issue-classifier.step.ts" />
+    <File name="label-assigner.step.ts" />
+    <File name="assignee-selector.step.ts" />
+    <File name="handle-new-issue.step.ts" />
+    <File name="handle-issue-update.step.ts" />
+    <File name="handle-issue-closure.step.ts" />
+  </Folder>
+  <Folder name="pr-classifier" defaultOpen>
+    <File name="pr-webhook.step.ts" />
+    <File name="pr-classifier.step.ts" />
+    <File name="pr-label-assigner.step.ts" />
+    <File name="pr-reviewer-assigner.step.ts" />
+    <File name="pr-test-monitor.step.ts" />
+  </Folder>
+</Folder>
+
+<Tabs items={['issue-webhook', 'issue-classifier', 'label-assigner', 'assignee-selector']}>
+  <GitHubWorkflowTab tab="issue-webhook" value="github-webhook" folder="issue-triage" />
+  <GitHubWorkflowTab tab="issue-classifier" value="issue-classifier" folder="issue-triage" />
+  <GitHubWorkflowTab tab="label-assigner" value="label-assigner" folder="issue-triage" />
+  <GitHubWorkflowTab tab="assignee-selector" value="assignee-selector" folder="issue-triage" />
+</Tabs>
+
+<Tabs items={['pr-webhook', 'pr-classifier', 'pr-reviewer', 'pr-monitor']}>
+  <GitHubWorkflowTab tab="pr-webhook" value="pr-webhook" folder="pr-classifier" />
+  <GitHubWorkflowTab tab="pr-classifier" value="pr-classifier" folder="pr-classifier" />
+  <GitHubWorkflowTab tab="pr-reviewer" value="pr-reviewer-assigner" folder="pr-classifier" />
+  <GitHubWorkflowTab tab="pr-monitor" value="pr-test-monitor" folder="pr-classifier" />
+</Tabs>
+
+## Visual Overview
+
+Here's how the automation flow works:
+
+<div className="my-8">![Flow: GitHub Issue Workflow](../img/github-issue-workflow.png)</div>
+<div className="my-8">![Flow: GitHub PR Workflow](../img/github-pr-workflow.png)</div>
+
+1. **Webhook Reception** → Captures GitHub events
+2. **Issue/PR Classification** → Analyzes content with AI
+3. **Automated Labeling** → Applies appropriate labels
+4. **Smart Assignment** → Suggests reviewers and assignees
+5. **Status Monitoring** → Tracks PR test status
+
+## Try It Out
+
+<Steps>
+
+### Prerequisites
+
+Make sure you have:
+
+- GitHub account with personal access token
+- Node.js installed
+- OpenAI API key (for AI classification)
+
+### Clone the Repository
+
+```bash
+git clone git@github.com:MotiaDev/motia-examples.git
+cd examples/github-integration-workflow
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Configure Environment Variables
+
+Create a `.env` file by copying the example:
+
+```bash
+cp .env.example .env
+```
+
+Update your `.env` with the following credentials:
+
+```env
+GITHUB_TOKEN=your_github_token_here
+OPENAI_API_KEY=your_openai_api_key
+```
+
+### Set Up GitHub Webhook
+
+1. Go to your GitHub repository settings
+2. Navigate to Webhooks and add a new webhook
+3. Set the Payload URL to your Motia server endpoint
+4. Select content type as `application/json`
+5. Choose which events to trigger the webhook (Issues, Pull requests)
+6. Save the webhook
+
+### Run the Application
+
+```bash
+npm run dev
+```
+
+### Test the Flow
+
+1. Create a new issue in your GitHub repository
+2. Watch as it gets automatically classified and labeled
+3. Create a new PR to see the reviewer assignment in action
+4. Check the PR comments for test status updates
+
+</Steps>
+
+<Callout type="info">
+  For more detailed setup instructions and configuration options, check out the [full
+  documentation](https://github.com/MotiaDev/motia-examples/tree/main/examples/github-integration-workflow).
+</Callout> 
+
+
+## Use Cases
+[github-integration-workflow](/docs/real-world-use-cases/github-integration-workflow.md): Real world use case
+---
+title: GitHub Integration Workflow
+description: Build an automated GitHub issue and PR management system with AI-powered classification and routing
+---
+
+## Live Example
+
+Try out the code directly in your browser:
+
+<CodeSandbox repo="MotiaDev/motia-examples/tree/main/examples/github-integration-workflow" path="/steps" />
+
+## Let's build a GitHub automation system that:
+
+1. Automatically triages and classifies new issues
+2. Intelligently assigns labels based on content
+3. Suggests appropriate assignees and reviewers
+4. Monitors PR test status
+5. Generates contextual comments
+
+## Workflow Structure
+
+The GitHub integration workflow is organized into two main components:
+
+- **Issue Triage**: Handles the management of GitHub issues
+- **PR Classifier**: Manages pull request workflows
+
+## The Steps
+
+<Folder name="steps" defaultOpen>
+  <Folder name="issue-triage" defaultOpen>
+    <File name="github-webhook.step.ts" />
+    <File name="issue-classifier.step.ts" />
+    <File name="label-assigner.step.ts" />
+    <File name="assignee-selector.step.ts" />
+    <File name="handle-new-issue.step.ts" />
+    <File name="handle-issue-update.step.ts" />
+    <File name="handle-issue-closure.step.ts" />
+  </Folder>
+  <Folder name="pr-classifier" defaultOpen>
+    <File name="pr-webhook.step.ts" />
+    <File name="pr-classifier.step.ts" />
+    <File name="pr-label-assigner.step.ts" />
+    <File name="pr-reviewer-assigner.step.ts" />
+    <File name="pr-test-monitor.step.ts" />
+  </Folder>
+</Folder>
+
+<Tabs items={['issue-webhook', 'issue-classifier', 'label-assigner', 'assignee-selector']}>
+  <GitHubWorkflowTab tab="issue-webhook" value="github-webhook" folder="issue-triage" />
+  <GitHubWorkflowTab tab="issue-classifier" value="issue-classifier" folder="issue-triage" />
+  <GitHubWorkflowTab tab="label-assigner" value="label-assigner" folder="issue-triage" />
+  <GitHubWorkflowTab tab="assignee-selector" value="assignee-selector" folder="issue-triage" />
+</Tabs>
+
+<Tabs items={['pr-webhook', 'pr-classifier', 'pr-reviewer', 'pr-monitor']}>
+  <GitHubWorkflowTab tab="pr-webhook" value="pr-webhook" folder="pr-classifier" />
+  <GitHubWorkflowTab tab="pr-classifier" value="pr-classifier" folder="pr-classifier" />
+  <GitHubWorkflowTab tab="pr-reviewer" value="pr-reviewer-assigner" folder="pr-classifier" />
+  <GitHubWorkflowTab tab="pr-monitor" value="pr-test-monitor" folder="pr-classifier" />
+</Tabs>
+
+## Visual Overview
+
+Here's how the automation flow works:
+
+<div className="my-8">![Flow: GitHub Issue Workflow](../img/github-issue-workflow.png)</div>
+<div className="my-8">![Flow: GitHub PR Workflow](../img/github-pr-workflow.png)</div>
+
+1. **Webhook Reception** → Captures GitHub events
+2. **Issue/PR Classification** → Analyzes content with AI
+3. **Automated Labeling** → Applies appropriate labels
+4. **Smart Assignment** → Suggests reviewers and assignees
+5. **Status Monitoring** → Tracks PR test status
+
+## Try It Out
+
+<Steps>
+
+### Prerequisites
+
+Make sure you have:
+
+- GitHub account with personal access token
+- Node.js installed
+- OpenAI API key (for AI classification)
+
+### Clone the Repository
+
+```bash
+git clone git@github.com:MotiaDev/motia-examples.git
+cd examples/github-integration-workflow
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Configure Environment Variables
+
+Create a `.env` file by copying the example:
+
+```bash
+cp .env.example .env
+```
+
+Update your `.env` with the following credentials:
+
+```env
+GITHUB_TOKEN=your_github_token_here
+OPENAI_API_KEY=your_openai_api_key
+```
+
+### Set Up GitHub Webhook
+
+1. Go to your GitHub repository settings
+2. Navigate to Webhooks and add a new webhook
+3. Set the Payload URL to your Motia server endpoint
+4. Select content type as `application/json`
+5. Choose which events to trigger the webhook (Issues, Pull requests)
+6. Save the webhook
+
+### Run the Application
+
+```bash
+npm run dev
+```
+
+### Test the Flow
+
+1. Create a new issue in your GitHub repository
+2. Watch as it gets automatically classified and labeled
+3. Create a new PR to see the reviewer assignment in action
+4. Check the PR comments for test status updates
+
+</Steps>
+
+<Callout type="info">
+  For more detailed setup instructions and configuration options, check out the [full
+  documentation](https://github.com/MotiaDev/motia-examples/tree/main/examples/github-integration-workflow).
+</Callout> 
+
+-   [gmail-automation](/docs/real-world-use-cases/gmail-automation.md): Documentation for gmail-automation.
+---
+title: Gmail Automation
+description: Build an automated email system with smart labeling, auto-responses, and AI-powered filtering
+---
+
+import { GmailTab } from '../../../components/GmailCodeFetcher'
+
+## Live Example
+
+Try out the code directly in your browser:
+
+<CodeSandbox repo="MotiaDev/motia-examples/tree/main/examples/gmail-workflow" path="/steps" />
+
+## Let's build a Gmail automation system that:
+
+- 📊 Smart email classification by category (work, personal, social, promotion, spam, update)
+- 🚨 Urgency detection (high, medium, low) with prioritization
+- 💬 Intelligent automated responses based on email context
+- 🏷️ Automatic email organization (labeling, archiving)
+- 📈 Daily summary reports via Discord
+- 🔒 Secure Gmail API integration with OAuth2 authentication flow
+- ⚡ Real-time email monitoring with webhook notifications
+
+## The Steps
+
+<Folder name="steps" defaultOpen>
+  <File name="analyze-email.step.py" />
+  <File name="auto-responder.step.ts" />
+  <File name="daily-summary.step.ts" />
+  <File name="fetch-email.step.ts" />
+  <File name="gmail-webhook.step.ts" />
+  <File name="organize-email.step.ts" />
+</Folder>
+
+<Tabs items={['webhook', 'analyze-email', 'auto-responder', 'daily-summary', 'fetch-email', 'organize-email']}>
+  <GmailTab tab="webhook" value="gmail-webhook" />
+  <GmailTab tab="analyze-email" value="analyze-email" fileExtension="py" />
+  <GmailTab tab="auto-responder" value="auto-responder" />
+  <GmailTab tab="daily-summary" value="daily-summary" />
+  <GmailTab tab="fetch-email" value="fetch-email" />
+  <GmailTab tab="organize-email" value="organize-email" />
+</Tabs>
+
+## Visual Overview
+
+Here's how the automation flow works:
+
+<div className="my-8">![Flow: Gmail Automation Steps](../img/gmail-automation.png)</div>
+
+## 🌊 Workflow Architecture
+
+The Gmail Account Manager workflow consists of the following steps:
+
+### 1. Gmail Authentication (Multi-Step Flow)
+- **Files**: 
+  - `steps/gmail-get-auth-url.step.ts`: Generates OAuth2 authorization URL
+  - `steps/gmail-auth.step.ts`: Handles authorization code exchange
+  - `steps/gmail-token-status.step.ts`: Checks token validity and refreshes if needed
+
+### 2. Gmail Webhook (API Step)
+- **File**: `steps/gmail-webhook.step.ts`
+- **Purpose**: Receives notifications from Gmail when new emails arrive
+- **Emits**: `gmail.new_email` event with message details
+- **Endpoint**: `POST /api/gmail-webhook`
+
+### 3. Gmail Watch (API Step)
+- **File**: `steps/gmail-watch.step.ts`
+- **Purpose**: Sets up push notifications for the Gmail account
+- **Endpoint**: `GET /api/watch`
+
+### 4. Fetch Email (Event Step)
+- **File**: `steps/fetch-email.step.ts`
+- **Purpose**: Retrieves the full email content from Gmail API
+- **Subscribes to**: `gmail.email.received`
+- **Emits**: `gmail.email.fetched` with complete email data
+- **Key Functions**: Authenticates with Gmail API, fetches message content, parses attachments
+
+### 5. Analyze Email (Event Step)
+- **File**: `steps/analyze-email.step.py`
+- **Purpose**: Uses Hugging Face models to analyze email content
+- **Subscribes to**: `gmail.email.fetched`
+- **Emits**: `gmail.email.analyzed` with analysis results
+- **Analysis Performed**: 
+  - Category classification
+  - Urgency detection
+  - Sentiment analysis
+  - Key information extraction
+
+### 6. Organize Email (Event Step)
+- **File**: `steps/organize-email.step.ts`
+- **Purpose**: Applies labels and organization based on analysis
+- **Subscribes to**: `gmail.email.analyzed`
+- **Emits**: `[gmail.email.organized, gmail.email.archived]`
+- **Actions**: Creates/applies labels, archives certain emails, marks importance
+
+### 7. Auto-Respond to Email (Event Step)
+- **File**: `steps/auto-responder.step.ts`
+- **Purpose**: Generates and sends appropriate responses for certain emails
+- **Subscribes to**: `gmail.email.analyzed`
+- **Emits**: `gmail.email.responded`
+- **Features**: 
+  - Template selection based on email context
+  - Personalization of responses
+  - Auto-reply for urgent messages
+  - Follow-up scheduling
+
+### 8. Daily Summary (Cron Step)
+- **File**: `steps/daily-summary.step.ts`
+- **Purpose**: Compiles and sends daily email activity summary
+- **Schedule**: Runs daily at 6:00 PM
+- **Emits**: `gmail.summary.sent`
+- **Delivery**: Sends report to Discord via webhook
+
+## Try It Out
+
+<Steps>
+## 📋 Prerequisites
+
+- **Node.js** (v18+)
+- **Python** (v3.8+)
+- **Gmail API credentials** (client_id and client_secret)
+- **Google Cloud project** with Pub/Sub API enabled
+- **Hugging Face API token**
+- **Discord webhook URL** (for daily summaries)
+
+## 🚀 Quick Start
+
+1. **Clone this repository**
+   ```bash
+   git clone https://github.com/yourusername/gmail-flow.git
+   cd gmail-flow
+   ```
+
+2. **Install Node.js dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Install Python dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit the `.env` file with your credentials (see setup sections below).
+
+5. **Start the development server**
+   ```bash
+   pnpm dev
+   ```
+
+6. **Open the Motia Workbench**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000) to access the workflow UI.
+
+## 🔧 Detailed Setup
+
+### Setting up Google Cloud Project and Gmail API
+
+Before you can use the Gmail Account Manager, you need to set up a Google Cloud project with the Gmail API and Pub/Sub:
+
+1. **Create a Google Cloud Project**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Click on "New Project" and follow the steps to create a new project
+   - Note your project ID for later use
+
+2. **Enable the Gmail API**:
+   - In your project, go to "APIs & Services" > "Library"
+   - Search for "Gmail API" and click on it
+   - Click "Enable"
+
+3. **Enable the Pub/Sub API**:
+   - In your project, go to "APIs & Services" > "Library"
+   - Search for "Cloud Pub/Sub API" and click on it
+   - Click "Enable"
+
+4. **Create OAuth Credentials**:
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth client ID"
+   - Set the application type to "Desktop app"
+   - Click "Create"
+   - Note your Client ID and Client Secret for your `.env` file:
+     ```
+     GOOGLE_CLIENT_ID=your_client_id
+     GOOGLE_CLIENT_SECRET=your_client_secret
+     ```
+
+### Setting up Google Pub/Sub for Gmail Notifications
+
+To enable real-time email notifications, you need to set up a Google Cloud Pub/Sub topic and subscription:
+
+1. **Create a Pub/Sub Topic**:
+   - In your Google Cloud Console, go to "Pub/Sub" > "Topics"
+   - Click "Create Topic"
+   - Name your topic (e.g., `gmail-notifications`)
+   - Add the service account `gmail-api-push@system.gserviceaccount.com` as a Topic Publisher to allow Gmail to publish notifications
+   - Click "Create"
+   - Note the full topic name (usually `projects/your-project-id/topics/gmail-notifications`) for your `.env` file:
+     ```
+     GOOGLE_PUBSUB_TOPIC=projects/your-project-id/topics/gmail-notifications
+     ```
+
+2. **Create a Pub/Sub Subscription**:
+   - Once your topic is created, click "Create Subscription"
+   - Name your subscription (e.g., `gmail-notifications-push`)
+   - Set the Delivery Type to "Push"
+   - Set the Endpoint URL to your webhook URL (e.g., `https://your-domain.com/api/gmail-webhook`)
+     - For local development, you'll need to use a tool like ngrok to expose your local server
+   - Click "Create"
+
+3. **Set up Domain Verification** (if needed):
+   - If you're using a custom domain for your webhook endpoint, you may need to verify domain ownership
+   - Follow the instructions in Google Cloud Console for domain verification
+
+### Gmail API Authentication
+
+This project includes a complete OAuth2 authentication flow for the Gmail API:
+
+1. Start the development server: `pnpm dev`
+2. Navigate to the authentication workflow in the Motia Workbench
+3. The workflow will generate an authorization URL
+4. Open the URL in your browser and authorize the application
+5. The application will receive and store your authentication tokens
+
+### Discord Webhook Configuration
+
+To receive daily email summaries in Discord, follow these steps to set up a webhook:
+
+1. **Create a Discord Server** (skip if you already have one):
+   - Open Discord and click the "+" icon on the left sidebar
+   - Select "Create My Own" and follow the setup wizard
+
+2. **Create a Channel for Notifications**:
+   - Right-click on your server name and select "Server Settings"
+   - Go to "Channels" and click "Create Channel"
+   - Name it (e.g., "email-summaries") and click "Create"
+
+3. **Create a Webhook**:
+   - Right-click on your new channel and select "Edit Channel"
+   - Go to "Integrations" tab
+   - Click "Create Webhook"
+   - Give it a name (e.g., "Gmail Summary Bot")
+   - Optionally, customize the avatar
+   - Click "Copy Webhook URL"
+
+4. **Add Webhook URL to Environment Variables**:
+   - Open your `.env` file
+   - Add or update the Discord webhook URL:
+     ```
+     DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your-webhook-url
+     ```
+
+5. **Test the Webhook**:
+   - You can test if your webhook is working correctly with this curl command:
+     ```bash
+     curl -X POST -H "Content-Type: application/json" \
+     -d '{"content": "Testing Gmail Account Manager webhook"}' \
+     https://discord.com/api/webhooks/your-webhook-url
+     ```
+   - You should see the message appear in your Discord channel
+
+### Hugging Face Setup
+
+1. **Create a Hugging Face Account**:
+   - Sign up at [Hugging Face](https://huggingface.co/join)
+
+2. **Generate an API Token**:
+   - Go to your [Hugging Face account settings](https://huggingface.co/settings/tokens)
+   - Create a new API token
+   - Copy the token to your `.env` file:
+     ```
+     HUGGINGFACE_API_TOKEN=your_api_token
+     ```
+
+</Steps>
+
+## 📁 Project Structure
+
+- `steps/` - Contains all workflow steps
+  - `gmail-get-auth-url.step.ts` - Generates OAuth2 URL
+  - `gmail-auth.step.ts` - Handles OAuth2 flow
+  - `gmail-token-status.step.ts` - Manages token refresh
+  - `gmail-webhook.step.ts` - Webhook endpoint for Gmail notifications
+  - `gmail-watch.step.ts` - Sets up Gmail push notifications
+  - `fetch-email.step.ts` - Fetches email content from Gmail API
+  - `analyze-email.step.py` - Python step for email analysis using Hugging Face
+  - `organize-email.step.ts` - Organizes emails (labels, archives)
+  - `auto-responder.step.ts` - Generates appropriate responses
+  - `daily-summary.step.ts` - Sends daily summary to Discord
+- `services/` - Shared service modules
+- `config/` - Configuration files
+- `.motia/` - Motia framework configuration
+
+## 📦 Dependencies
+
+### Node.js Dependencies
+- **@motiadev/core**, **@motiadev/workbench**, **motia**: Motia framework
+- **googleapis**, **google-auth-library**: Google API integration
+- **gmail-api-parse-message-ts**: Gmail message parsing
+- **axios**: HTTP client
+- **zod**: Schema validation
+- **react**: UI components
+
+### Python Dependencies
+- **transformers**, **torch**: Machine learning models
+- **scikit-learn**, **numpy**, **pandas**: Data processing
+- **huggingface_hub**: Access to Hugging Face models
+- **python-dotenv**: Environment variable loading
+
+## 🛠️ Troubleshooting
+
+- **Python Module Errors**: Ensure you've installed all required Python packages with `pip install -r requirements.txt`
+- **Authentication Errors**: Verify your API credentials and follow the authentication flow
+- **Webhook Issues**: Make sure the webhook endpoint is publicly accessible or properly configured for testing
+- **Token Refresh Errors**: Check that your OAuth tokens are valid and that the refresh flow is working properly
+- **Pub/Sub Not Working**: Verify that your Pub/Sub topic and subscription are properly configured and that your service account has the necessary permissions
+
+## 📝 Environment Variables
+
+Create a `.env` file with the following variables:
+
+```
+# Google API Configuration
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_PUBSUB_TOPIC=projects/your-project-id/topics/gmail-notifications
+
+# HuggingFace Configuration
+HUGGINGFACE_API_TOKEN=your_huggingface_token
+
+# Discord Integration
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your-webhook-url
+
+# Auto-Responder Configuration
+AUTO_RESPONDER_NAME=Your Name
+AUTO_RESPONDER_EMAIL=your-email@example.com
+```
+
+
+
+## Use Cases
+[gmail-automation](/docs/real-world-use-cases/gmail-automation.md): Real world use case
+---
+title: Gmail Automation
+description: Build an automated email system with smart labeling, auto-responses, and AI-powered filtering
+---
+
+import { GmailTab } from '../../../components/GmailCodeFetcher'
+
+## Live Example
+
+Try out the code directly in your browser:
+
+<CodeSandbox repo="MotiaDev/motia-examples/tree/main/examples/gmail-workflow" path="/steps" />
+
+## Let's build a Gmail automation system that:
+
+- 📊 Smart email classification by category (work, personal, social, promotion, spam, update)
+- 🚨 Urgency detection (high, medium, low) with prioritization
+- 💬 Intelligent automated responses based on email context
+- 🏷️ Automatic email organization (labeling, archiving)
+- 📈 Daily summary reports via Discord
+- 🔒 Secure Gmail API integration with OAuth2 authentication flow
+- ⚡ Real-time email monitoring with webhook notifications
+
+## The Steps
+
+<Folder name="steps" defaultOpen>
+  <File name="analyze-email.step.py" />
+  <File name="auto-responder.step.ts" />
+  <File name="daily-summary.step.ts" />
+  <File name="fetch-email.step.ts" />
+  <File name="gmail-webhook.step.ts" />
+  <File name="organize-email.step.ts" />
+</Folder>
+
+<Tabs items={['webhook', 'analyze-email', 'auto-responder', 'daily-summary', 'fetch-email', 'organize-email']}>
+  <GmailTab tab="webhook" value="gmail-webhook" />
+  <GmailTab tab="analyze-email" value="analyze-email" fileExtension="py" />
+  <GmailTab tab="auto-responder" value="auto-responder" />
+  <GmailTab tab="daily-summary" value="daily-summary" />
+  <GmailTab tab="fetch-email" value="fetch-email" />
+  <GmailTab tab="organize-email" value="organize-email" />
+</Tabs>
+
+## Visual Overview
+
+Here's how the automation flow works:
+
+<div className="my-8">![Flow: Gmail Automation Steps](../img/gmail-automation.png)</div>
+
+## 🌊 Workflow Architecture
+
+The Gmail Account Manager workflow consists of the following steps:
+
+### 1. Gmail Authentication (Multi-Step Flow)
+- **Files**: 
+  - `steps/gmail-get-auth-url.step.ts`: Generates OAuth2 authorization URL
+  - `steps/gmail-auth.step.ts`: Handles authorization code exchange
+  - `steps/gmail-token-status.step.ts`: Checks token validity and refreshes if needed
+
+### 2. Gmail Webhook (API Step)
+- **File**: `steps/gmail-webhook.step.ts`
+- **Purpose**: Receives notifications from Gmail when new emails arrive
+- **Emits**: `gmail.new_email` event with message details
+- **Endpoint**: `POST /api/gmail-webhook`
+
+### 3. Gmail Watch (API Step)
+- **File**: `steps/gmail-watch.step.ts`
+- **Purpose**: Sets up push notifications for the Gmail account
+- **Endpoint**: `GET /api/watch`
+
+### 4. Fetch Email (Event Step)
+- **File**: `steps/fetch-email.step.ts`
+- **Purpose**: Retrieves the full email content from Gmail API
+- **Subscribes to**: `gmail.email.received`
+- **Emits**: `gmail.email.fetched` with complete email data
+- **Key Functions**: Authenticates with Gmail API, fetches message content, parses attachments
+
+### 5. Analyze Email (Event Step)
+- **File**: `steps/analyze-email.step.py`
+- **Purpose**: Uses Hugging Face models to analyze email content
+- **Subscribes to**: `gmail.email.fetched`
+- **Emits**: `gmail.email.analyzed` with analysis results
+- **Analysis Performed**: 
+  - Category classification
+  - Urgency detection
+  - Sentiment analysis
+  - Key information extraction
+
+### 6. Organize Email (Event Step)
+- **File**: `steps/organize-email.step.ts`
+- **Purpose**: Applies labels and organization based on analysis
+- **Subscribes to**: `gmail.email.analyzed`
+- **Emits**: `[gmail.email.organized, gmail.email.archived]`
+- **Actions**: Creates/applies labels, archives certain emails, marks importance
+
+### 7. Auto-Respond to Email (Event Step)
+- **File**: `steps/auto-responder.step.ts`
+- **Purpose**: Generates and sends appropriate responses for certain emails
+- **Subscribes to**: `gmail.email.analyzed`
+- **Emits**: `gmail.email.responded`
+- **Features**: 
+  - Template selection based on email context
+  - Personalization of responses
+  - Auto-reply for urgent messages
+  - Follow-up scheduling
+
+### 8. Daily Summary (Cron Step)
+- **File**: `steps/daily-summary.step.ts`
+- **Purpose**: Compiles and sends daily email activity summary
+- **Schedule**: Runs daily at 6:00 PM
+- **Emits**: `gmail.summary.sent`
+- **Delivery**: Sends report to Discord via webhook
+
+## Try It Out
+
+<Steps>
+## 📋 Prerequisites
+
+- **Node.js** (v18+)
+- **Python** (v3.8+)
+- **Gmail API credentials** (client_id and client_secret)
+- **Google Cloud project** with Pub/Sub API enabled
+- **Hugging Face API token**
+- **Discord webhook URL** (for daily summaries)
+
+## 🚀 Quick Start
+
+1. **Clone this repository**
+   ```bash
+   git clone https://github.com/yourusername/gmail-flow.git
+   cd gmail-flow
+   ```
+
+2. **Install Node.js dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Install Python dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit the `.env` file with your credentials (see setup sections below).
+
+5. **Start the development server**
+   ```bash
+   pnpm dev
+   ```
+
+6. **Open the Motia Workbench**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000) to access the workflow UI.
+
+## 🔧 Detailed Setup
+
+### Setting up Google Cloud Project and Gmail API
+
+Before you can use the Gmail Account Manager, you need to set up a Google Cloud project with the Gmail API and Pub/Sub:
+
+1. **Create a Google Cloud Project**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Click on "New Project" and follow the steps to create a new project
+   - Note your project ID for later use
+
+2. **Enable the Gmail API**:
+   - In your project, go to "APIs & Services" > "Library"
+   - Search for "Gmail API" and click on it
+   - Click "Enable"
+
+3. **Enable the Pub/Sub API**:
+   - In your project, go to "APIs & Services" > "Library"
+   - Search for "Cloud Pub/Sub API" and click on it
+   - Click "Enable"
+
+4. **Create OAuth Credentials**:
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth client ID"
+   - Set the application type to "Desktop app"
+   - Click "Create"
+   - Note your Client ID and Client Secret for your `.env` file:
+     ```
+     GOOGLE_CLIENT_ID=your_client_id
+     GOOGLE_CLIENT_SECRET=your_client_secret
+     ```
+
+### Setting up Google Pub/Sub for Gmail Notifications
+
+To enable real-time email notifications, you need to set up a Google Cloud Pub/Sub topic and subscription:
+
+1. **Create a Pub/Sub Topic**:
+   - In your Google Cloud Console, go to "Pub/Sub" > "Topics"
+   - Click "Create Topic"
+   - Name your topic (e.g., `gmail-notifications`)
+   - Add the service account `gmail-api-push@system.gserviceaccount.com` as a Topic Publisher to allow Gmail to publish notifications
+   - Click "Create"
+   - Note the full topic name (usually `projects/your-project-id/topics/gmail-notifications`) for your `.env` file:
+     ```
+     GOOGLE_PUBSUB_TOPIC=projects/your-project-id/topics/gmail-notifications
+     ```
+
+2. **Create a Pub/Sub Subscription**:
+   - Once your topic is created, click "Create Subscription"
+   - Name your subscription (e.g., `gmail-notifications-push`)
+   - Set the Delivery Type to "Push"
+   - Set the Endpoint URL to your webhook URL (e.g., `https://your-domain.com/api/gmail-webhook`)
+     - For local development, you'll need to use a tool like ngrok to expose your local server
+   - Click "Create"
+
+3. **Set up Domain Verification** (if needed):
+   - If you're using a custom domain for your webhook endpoint, you may need to verify domain ownership
+   - Follow the instructions in Google Cloud Console for domain verification
+
+### Gmail API Authentication
+
+This project includes a complete OAuth2 authentication flow for the Gmail API:
+
+1. Start the development server: `pnpm dev`
+2. Navigate to the authentication workflow in the Motia Workbench
+3. The workflow will generate an authorization URL
+4. Open the URL in your browser and authorize the application
+5. The application will receive and store your authentication tokens
+
+### Discord Webhook Configuration
+
+To receive daily email summaries in Discord, follow these steps to set up a webhook:
+
+1. **Create a Discord Server** (skip if you already have one):
+   - Open Discord and click the "+" icon on the left sidebar
+   - Select "Create My Own" and follow the setup wizard
+
+2. **Create a Channel for Notifications**:
+   - Right-click on your server name and select "Server Settings"
+   - Go to "Channels" and click "Create Channel"
+   - Name it (e.g., "email-summaries") and click "Create"
+
+3. **Create a Webhook**:
+   - Right-click on your new channel and select "Edit Channel"
+   - Go to "Integrations" tab
+   - Click "Create Webhook"
+   - Give it a name (e.g., "Gmail Summary Bot")
+   - Optionally, customize the avatar
+   - Click "Copy Webhook URL"
+
+4. **Add Webhook URL to Environment Variables**:
+   - Open your `.env` file
+   - Add or update the Discord webhook URL:
+     ```
+     DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your-webhook-url
+     ```
+
+5. **Test the Webhook**:
+   - You can test if your webhook is working correctly with this curl command:
+     ```bash
+     curl -X POST -H "Content-Type: application/json" \
+     -d '{"content": "Testing Gmail Account Manager webhook"}' \
+     https://discord.com/api/webhooks/your-webhook-url
+     ```
+   - You should see the message appear in your Discord channel
+
+### Hugging Face Setup
+
+1. **Create a Hugging Face Account**:
+   - Sign up at [Hugging Face](https://huggingface.co/join)
+
+2. **Generate an API Token**:
+   - Go to your [Hugging Face account settings](https://huggingface.co/settings/tokens)
+   - Create a new API token
+   - Copy the token to your `.env` file:
+     ```
+     HUGGINGFACE_API_TOKEN=your_api_token
+     ```
+
+</Steps>
+
+## 📁 Project Structure
+
+- `steps/` - Contains all workflow steps
+  - `gmail-get-auth-url.step.ts` - Generates OAuth2 URL
+  - `gmail-auth.step.ts` - Handles OAuth2 flow
+  - `gmail-token-status.step.ts` - Manages token refresh
+  - `gmail-webhook.step.ts` - Webhook endpoint for Gmail notifications
+  - `gmail-watch.step.ts` - Sets up Gmail push notifications
+  - `fetch-email.step.ts` - Fetches email content from Gmail API
+  - `analyze-email.step.py` - Python step for email analysis using Hugging Face
+  - `organize-email.step.ts` - Organizes emails (labels, archives)
+  - `auto-responder.step.ts` - Generates appropriate responses
+  - `daily-summary.step.ts` - Sends daily summary to Discord
+- `services/` - Shared service modules
+- `config/` - Configuration files
+- `.motia/` - Motia framework configuration
+
+## 📦 Dependencies
+
+### Node.js Dependencies
+- **@motiadev/core**, **@motiadev/workbench**, **motia**: Motia framework
+- **googleapis**, **google-auth-library**: Google API integration
+- **gmail-api-parse-message-ts**: Gmail message parsing
+- **axios**: HTTP client
+- **zod**: Schema validation
+- **react**: UI components
+
+### Python Dependencies
+- **transformers**, **torch**: Machine learning models
+- **scikit-learn**, **numpy**, **pandas**: Data processing
+- **huggingface_hub**: Access to Hugging Face models
+- **python-dotenv**: Environment variable loading
+
+## 🛠️ Troubleshooting
+
+- **Python Module Errors**: Ensure you've installed all required Python packages with `pip install -r requirements.txt`
+- **Authentication Errors**: Verify your API credentials and follow the authentication flow
+- **Webhook Issues**: Make sure the webhook endpoint is publicly accessible or properly configured for testing
+- **Token Refresh Errors**: Check that your OAuth tokens are valid and that the refresh flow is working properly
+- **Pub/Sub Not Working**: Verify that your Pub/Sub topic and subscription are properly configured and that your service account has the necessary permissions
+
+## 📝 Environment Variables
+
+Create a `.env` file with the following variables:
+
+```
+# Google API Configuration
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_PUBSUB_TOPIC=projects/your-project-id/topics/gmail-notifications
+
+# HuggingFace Configuration
+HUGGINGFACE_API_TOKEN=your_huggingface_token
+
+# Discord Integration
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your-webhook-url
+
+# Auto-Responder Configuration
+AUTO_RESPONDER_NAME=Your Name
+AUTO_RESPONDER_EMAIL=your-email@example.com
+```
+
+
 -   [index](/docs/real-world-use-cases/index.md): Documentation for index.
 ---
 title: Real-World Use Cases
@@ -2934,6 +3912,8 @@ title: Trello Card Automation
 description: Build an automated card progression system for Trello boards with AI-powered summaries
 ---
 
+import { TrelloTab, TrelloCodeContent } from '../../../components/TrelloCodeFetcher'
+
 ## Live Example
 
 Try out the code directly in your browser:
@@ -2971,349 +3951,14 @@ The Trello board is organized into four main lists:
 </Folder>
 
 <Tabs items={['webhook', 'validation', 'requirements', 'assigned', 'review', 'completion', 'overdue', 'slack']}>
-  <Tab value="webhook">
-    ```ts
-    // Receives Trello webhook events
-    import { ApiRouteConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-
-    export const config: ApiRouteConfig = {
-      type: 'api',
-      name: 'Trello Webhook',
-      path: '/api/trello-webhook',
-      method: 'POST',
-      emits: ['trello.webhook'],
-      bodySchema: z.object({
-        action: z.object({
-          type: z.string(),
-          data: z.object({}).passthrough(),
-        }),
-      }),
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
-      const { action } = req.body
-
-      logger.info('[TrelloWebhook] Received webhook', {
-        type: action.type,
-        data: action.data
-      })
-
-      await emit({
-        topic: 'trello.webhook',
-        data: action,
-      })
-
-      return {
-        status: 200,
-        body: { status: 'Accepted' },
-      }
-    }
-    ```
-
-  </Tab>
-  <Tab value="validation">
-    ```ts
-    // Validates webhook events and routes them
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-
-    const webhookSchema = z.object({
-      type: z.string(),
-      data: z.object({}).passthrough(),
-    })
-
-    export const config: EventConfig<typeof webhookSchema> = {
-      type: 'event',
-      name: 'Webhook Validator',
-      subscribes: ['trello.webhook'],
-      emits: [
-        'trello.cardCreated',
-        'trello.cardMoved',
-        'trello.commentAdded',
-        'trello.memberAdded'
-      ],
-      input: webhookSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (action, { emit, logger }) => {
-      switch (action.type) {
-        case 'createCard':
-          await emit({
-            topic: 'trello.cardCreated',
-            data: action.data.card
-          })
-          break
-        case 'updateCard':
-          if (action.data.listAfter) {
-            await emit({
-              topic: 'trello.cardMoved',
-              data: {
-                card: action.data.card,
-                listBefore: action.data.listBefore,
-                listAfter: action.data.listAfter
-              }
-            })
-          }
-          break
-        // ... other cases
-      }
-    }
-    ```
-
-  </Tab>
-  <Tab value="requirements">
-    ```ts
-    // Validates new card requirements
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const cardSchema = z.object({
-      id: z.string(),
-      name: z.string(),
-      desc: z.string(),
-      idMembers: z.array(z.string()),
-    })
-
-    export const config: EventConfig<typeof cardSchema> = {
-      type: 'event',
-      name: 'Card Requirements Validator',
-      subscribes: ['trello.cardCreated'],
-      emits: ['trello.cardValidated'],
-      input: cardSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (card, { emit, logger }) => {
-      const trello = new TrelloClient()
-
-      const requirements = [
-        { check: card.name.length > 0, message: 'Title is required' },
-        { check: card.desc.length > 0, message: 'Description is required' },
-        { check: card.idMembers.length > 0, message: 'Assignee is required' }
-      ]
-
-      const failures = requirements
-        .filter(req => !req.check)
-        .map(req => req.message)
-
-      if (failures.length > 0) {
-        await trello.addComment(card.id,
-          `⚠️ Card requirements not met:\n${failures.join('\n')}`)
-        return
-      }
-
-      await emit({
-        topic: 'trello.cardValidated',
-        data: { cardId: card.id }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="assigned">
-    ```ts
-    // Handles card assignment
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const assignmentSchema = z.object({
-      cardId: z.string(),
-      memberId: z.string(),
-    })
-
-    export const config: EventConfig<typeof assignmentSchema> = {
-      type: 'event',
-      name: 'Card Assignment Handler',
-      subscribes: ['trello.memberAdded'],
-      emits: ['trello.cardStarted'],
-      input: assignmentSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
-      const trello = new TrelloClient()
-
-      // Move to In Progress list
-      await trello.moveCard(
-        input.cardId,
-        process.env.TRELLO_IN_PROGRESS_LIST_ID!
-      )
-
-      await emit({
-        topic: 'trello.cardStarted',
-        data: { cardId: input.cardId }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="review">
-    ```ts
-    // Handles review process
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const reviewSchema = z.object({
-      card: z.object({
-        id: z.string(),
-        name: z.string(),
-      }),
-      listBefore: z.object({ id: z.string() }),
-      listAfter: z.object({ id: z.string() }),
-    })
-
-    export const config: EventConfig<typeof reviewSchema> = {
-      type: 'event',
-      name: 'Review Process Handler',
-      subscribes: ['trello.cardMoved'],
-      emits: ['trello.readyForReview'],
-      input: reviewSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
-      // Only handle moves to review list
-      if (input.listAfter.id !== process.env.TRELLO_NEEDS_REVIEW_LIST_ID) {
-        return
-      }
-
-      await emit({
-        topic: 'trello.readyForReview',
-        data: {
-          cardId: input.card.id,
-          cardName: input.card.name
-        }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="completion">
-    ```ts
-    // Handles card completion
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const commentSchema = z.object({
-      text: z.string(),
-      card: z.object({
-        id: z.string(),
-      }),
-    })
-
-    export const config: EventConfig<typeof commentSchema> = {
-      type: 'event',
-      name: 'Card Completion Handler',
-      subscribes: ['trello.commentAdded'],
-      emits: ['trello.cardCompleted'],
-      input: commentSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
-      if (!input.text.toLowerCase().includes('approved')) {
-        return
-      }
-
-      const trello = new TrelloClient()
-
-      await trello.moveCard(
-        input.card.id,
-        process.env.TRELLO_COMPLETED_LIST_ID!
-      )
-
-      await emit({
-        topic: 'trello.cardCompleted',
-        data: { cardId: input.card.id }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="overdue">
-    ```ts
-    // Checks for overdue cards
-    import { CronConfig, StepHandler } from 'motia'
-    import { TrelloClient } from '@/services/trello'
-
-    export const config: CronConfig = {
-      type: 'cron',
-      name: 'Overdue Cards Checker',
-      cron: '0 9 * * 1-5', // 9 AM on weekdays
-      emits: ['trello.cardOverdue'],
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (_, { emit, logger }) => {
-      const trello = new TrelloClient()
-
-      const cards = await trello.getOverdueCards()
-
-      for (const card of cards) {
-        await emit({
-          topic: 'trello.cardOverdue',
-          data: {
-            cardId: card.id,
-            cardName: card.name,
-            dueDate: card.due
-          }
-        })
-      }
-    }
-    ```
-
-  </Tab>
-  <Tab value="slack">
-    ```ts
-    // Sends Slack notifications
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { WebClient } from '@slack/web-api'
-
-    const slack = new WebClient(process.env.SLACK_TOKEN)
-
-    export const config: EventConfig = {
-      type: 'event',
-      name: 'Slack Notifier',
-      subscribes: [
-        'trello.readyForReview',
-        'trello.cardCompleted',
-        'trello.cardOverdue'
-      ],
-      emits: [],
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (event, { logger }) => {
-      switch (event.type) {
-        case 'trello.readyForReview':
-          await slack.chat.postMessage({
-            channel: '#code-review',
-            text: `🔍 New review needed: ${event.data.cardName}`,
-            blocks: [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: `🔍 *New review needed*\n${event.data.cardName}`
-                }
-              }
-            ]
-          })
-          break
-        // ... handle other events
-      }
-    }
-    ```
-
-  </Tab>
+  <TrelloTab tab="webhook" value="trello-webhook" />
+  <TrelloTab tab="validation" value="trello-webhook-validation" />
+  <TrelloTab tab="requirements" value="validate-card-requirements" />
+  <TrelloTab tab="assigned" value="start-assigned-card" />
+  <TrelloTab tab="review" value="mark-card-for-review" />
+  <TrelloTab tab="completion" value="complete-approved-card" />
+  <TrelloTab tab="overdue" value="check-overdue-cards" />
+  <TrelloTab tab="slack" value="slack-notifier" />
 </Tabs>
 
 ## Visual Overview
@@ -3343,8 +3988,8 @@ Make sure you have:
 ### Clone the Repository
 
 ```bash
-git clone git@github.com:MotiaDev/Ytallo-Challenge.git
-cd Ytallo-Challenge
+git clone git@github.com:MotiaDev/motia-examples.git
+cd examples/trello-flow
 ```
 
 ### Install Dependencies
@@ -3419,6 +4064,8 @@ title: Trello Card Automation
 description: Build an automated card progression system for Trello boards with AI-powered summaries
 ---
 
+import { TrelloTab, TrelloCodeContent } from '../../../components/TrelloCodeFetcher'
+
 ## Live Example
 
 Try out the code directly in your browser:
@@ -3456,349 +4103,14 @@ The Trello board is organized into four main lists:
 </Folder>
 
 <Tabs items={['webhook', 'validation', 'requirements', 'assigned', 'review', 'completion', 'overdue', 'slack']}>
-  <Tab value="webhook">
-    ```ts
-    // Receives Trello webhook events
-    import { ApiRouteConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-
-    export const config: ApiRouteConfig = {
-      type: 'api',
-      name: 'Trello Webhook',
-      path: '/api/trello-webhook',
-      method: 'POST',
-      emits: ['trello.webhook'],
-      bodySchema: z.object({
-        action: z.object({
-          type: z.string(),
-          data: z.object({}).passthrough(),
-        }),
-      }),
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
-      const { action } = req.body
-
-      logger.info('[TrelloWebhook] Received webhook', {
-        type: action.type,
-        data: action.data
-      })
-
-      await emit({
-        topic: 'trello.webhook',
-        data: action,
-      })
-
-      return {
-        status: 200,
-        body: { status: 'Accepted' },
-      }
-    }
-    ```
-
-  </Tab>
-  <Tab value="validation">
-    ```ts
-    // Validates webhook events and routes them
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-
-    const webhookSchema = z.object({
-      type: z.string(),
-      data: z.object({}).passthrough(),
-    })
-
-    export const config: EventConfig<typeof webhookSchema> = {
-      type: 'event',
-      name: 'Webhook Validator',
-      subscribes: ['trello.webhook'],
-      emits: [
-        'trello.cardCreated',
-        'trello.cardMoved',
-        'trello.commentAdded',
-        'trello.memberAdded'
-      ],
-      input: webhookSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (action, { emit, logger }) => {
-      switch (action.type) {
-        case 'createCard':
-          await emit({
-            topic: 'trello.cardCreated',
-            data: action.data.card
-          })
-          break
-        case 'updateCard':
-          if (action.data.listAfter) {
-            await emit({
-              topic: 'trello.cardMoved',
-              data: {
-                card: action.data.card,
-                listBefore: action.data.listBefore,
-                listAfter: action.data.listAfter
-              }
-            })
-          }
-          break
-        // ... other cases
-      }
-    }
-    ```
-
-  </Tab>
-  <Tab value="requirements">
-    ```ts
-    // Validates new card requirements
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const cardSchema = z.object({
-      id: z.string(),
-      name: z.string(),
-      desc: z.string(),
-      idMembers: z.array(z.string()),
-    })
-
-    export const config: EventConfig<typeof cardSchema> = {
-      type: 'event',
-      name: 'Card Requirements Validator',
-      subscribes: ['trello.cardCreated'],
-      emits: ['trello.cardValidated'],
-      input: cardSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (card, { emit, logger }) => {
-      const trello = new TrelloClient()
-
-      const requirements = [
-        { check: card.name.length > 0, message: 'Title is required' },
-        { check: card.desc.length > 0, message: 'Description is required' },
-        { check: card.idMembers.length > 0, message: 'Assignee is required' }
-      ]
-
-      const failures = requirements
-        .filter(req => !req.check)
-        .map(req => req.message)
-
-      if (failures.length > 0) {
-        await trello.addComment(card.id,
-          `⚠️ Card requirements not met:\n${failures.join('\n')}`)
-        return
-      }
-
-      await emit({
-        topic: 'trello.cardValidated',
-        data: { cardId: card.id }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="assigned">
-    ```ts
-    // Handles card assignment
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const assignmentSchema = z.object({
-      cardId: z.string(),
-      memberId: z.string(),
-    })
-
-    export const config: EventConfig<typeof assignmentSchema> = {
-      type: 'event',
-      name: 'Card Assignment Handler',
-      subscribes: ['trello.memberAdded'],
-      emits: ['trello.cardStarted'],
-      input: assignmentSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
-      const trello = new TrelloClient()
-
-      // Move to In Progress list
-      await trello.moveCard(
-        input.cardId,
-        process.env.TRELLO_IN_PROGRESS_LIST_ID!
-      )
-
-      await emit({
-        topic: 'trello.cardStarted',
-        data: { cardId: input.cardId }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="review">
-    ```ts
-    // Handles review process
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const reviewSchema = z.object({
-      card: z.object({
-        id: z.string(),
-        name: z.string(),
-      }),
-      listBefore: z.object({ id: z.string() }),
-      listAfter: z.object({ id: z.string() }),
-    })
-
-    export const config: EventConfig<typeof reviewSchema> = {
-      type: 'event',
-      name: 'Review Process Handler',
-      subscribes: ['trello.cardMoved'],
-      emits: ['trello.readyForReview'],
-      input: reviewSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
-      // Only handle moves to review list
-      if (input.listAfter.id !== process.env.TRELLO_NEEDS_REVIEW_LIST_ID) {
-        return
-      }
-
-      await emit({
-        topic: 'trello.readyForReview',
-        data: {
-          cardId: input.card.id,
-          cardName: input.card.name
-        }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="completion">
-    ```ts
-    // Handles card completion
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { TrelloClient } from '@/services/trello'
-
-    const commentSchema = z.object({
-      text: z.string(),
-      card: z.object({
-        id: z.string(),
-      }),
-    })
-
-    export const config: EventConfig<typeof commentSchema> = {
-      type: 'event',
-      name: 'Card Completion Handler',
-      subscribes: ['trello.commentAdded'],
-      emits: ['trello.cardCompleted'],
-      input: commentSchema,
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
-      if (!input.text.toLowerCase().includes('approved')) {
-        return
-      }
-
-      const trello = new TrelloClient()
-
-      await trello.moveCard(
-        input.card.id,
-        process.env.TRELLO_COMPLETED_LIST_ID!
-      )
-
-      await emit({
-        topic: 'trello.cardCompleted',
-        data: { cardId: input.card.id }
-      })
-    }
-    ```
-
-  </Tab>
-  <Tab value="overdue">
-    ```ts
-    // Checks for overdue cards
-    import { CronConfig, StepHandler } from 'motia'
-    import { TrelloClient } from '@/services/trello'
-
-    export const config: CronConfig = {
-      type: 'cron',
-      name: 'Overdue Cards Checker',
-      cron: '0 9 * * 1-5', // 9 AM on weekdays
-      emits: ['trello.cardOverdue'],
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (_, { emit, logger }) => {
-      const trello = new TrelloClient()
-
-      const cards = await trello.getOverdueCards()
-
-      for (const card of cards) {
-        await emit({
-          topic: 'trello.cardOverdue',
-          data: {
-            cardId: card.id,
-            cardName: card.name,
-            dueDate: card.due
-          }
-        })
-      }
-    }
-    ```
-
-  </Tab>
-  <Tab value="slack">
-    ```ts
-    // Sends Slack notifications
-    import { EventConfig, StepHandler } from 'motia'
-    import { z } from 'zod'
-    import { WebClient } from '@slack/web-api'
-
-    const slack = new WebClient(process.env.SLACK_TOKEN)
-
-    export const config: EventConfig = {
-      type: 'event',
-      name: 'Slack Notifier',
-      subscribes: [
-        'trello.readyForReview',
-        'trello.cardCompleted',
-        'trello.cardOverdue'
-      ],
-      emits: [],
-      flows: ['trello-automation'],
-    }
-
-    export const handler: StepHandler<typeof config> = async (event, { logger }) => {
-      switch (event.type) {
-        case 'trello.readyForReview':
-          await slack.chat.postMessage({
-            channel: '#code-review',
-            text: `🔍 New review needed: ${event.data.cardName}`,
-            blocks: [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: `🔍 *New review needed*\n${event.data.cardName}`
-                }
-              }
-            ]
-          })
-          break
-        // ... handle other events
-      }
-    }
-    ```
-
-  </Tab>
+  <TrelloTab tab="webhook" value="trello-webhook" />
+  <TrelloTab tab="validation" value="trello-webhook-validation" />
+  <TrelloTab tab="requirements" value="validate-card-requirements" />
+  <TrelloTab tab="assigned" value="start-assigned-card" />
+  <TrelloTab tab="review" value="mark-card-for-review" />
+  <TrelloTab tab="completion" value="complete-approved-card" />
+  <TrelloTab tab="overdue" value="check-overdue-cards" />
+  <TrelloTab tab="slack" value="slack-notifier" />
 </Tabs>
 
 ## Visual Overview
@@ -3828,8 +4140,8 @@ Make sure you have:
 ### Clone the Repository
 
 ```bash
-git clone git@github.com:MotiaDev/Ytallo-Challenge.git
-cd Ytallo-Challenge
+git clone git@github.com:MotiaDev/motia-examples.git
+cd examples/trello-flow
 ```
 
 ### Install Dependencies
@@ -4265,9 +4577,9 @@ NOOP steps represent parts of your workflow that happen outside your system. Com
     ```typescript
     export const config: NoopConfig = {
       type: 'noop',
-  name: 'Manager Review',
-  description: 'Manager reviews request',
-  virtualSubscribes: ['approval.requested'],
+      name: 'Manager Review',
+      description: 'Manager reviews request',
+      virtualSubscribes: ['approval.requested'],
       virtualEmits: ['/api/approvals/submit'],
       flows: ['approval'],
     }
@@ -4616,8 +4928,8 @@ To create a custom UI for a step, create a `.tsx` or `.jsx` file next to your st
     // myStep.step.tsx
 
     import React from 'react'
-    import { EventNode } from 'motia'
-    import type { EventNodeProps } from 'motia'
+    import { EventNode } from 'motia/workbench'
+    import type { EventNodeProps } from 'motia/workbench'
 
     export default function MyStep({ data }: EventNodeProps) {
       return (
@@ -4635,7 +4947,7 @@ To create a custom UI for a step, create a `.tsx` or `.jsx` file next to your st
     // myStep.step.jsx
 
     import React from 'react'
-    import { EventNode } from 'motia'
+    import { EventNode } from 'motia/workbench'
 
     export default function MyStep({ data }) {
       return (
@@ -4671,8 +4983,8 @@ The main component for general-purpose steps.
     // customStep.step.tsx
 
     import React from 'react'
-    import { EventNode } from 'motia'
-    import type { EventNodeProps } from 'motia'
+    import { EventNode } from 'motia/workbench'
+    import type { EventNodeProps } from 'motia/workbench'
 
     export default function CustomStep({ data }: EventNodeProps) {
       return (
@@ -4693,7 +5005,7 @@ The main component for general-purpose steps.
     // customStep.step.jsx
 
     import React from 'react'
-    import { EventNode } from 'motia'
+    import { EventNode } from 'motia/workbench'
 
     export default function CustomStep({ data }) {
       return (
@@ -4740,8 +5052,8 @@ Specialized component for API-related steps.
     // apiStep.step.tsx
 
     import React from 'react'
-    import { ApiNode } from 'motia'
-    import type { ApiNodeProps } from 'motia'
+    import { ApiNode } from 'motia/workbench'
+    import type { ApiNodeProps } from 'motia/workbench'
 
     export default function ApiStep({ data }: ApiNodeProps) {
       return (
@@ -4760,7 +5072,7 @@ Specialized component for API-related steps.
     // apiStep.step.jsx
 
     import React from 'react'
-    import { ApiNode } from 'motia'
+    import { ApiNode } from 'motia/workbench'
 
     export default function ApiStep({ data }) {
       return (

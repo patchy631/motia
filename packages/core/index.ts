@@ -9,5 +9,7 @@ export { isApiStep, isCronStep, isEventStep, isNoopStep } from './src/guards'
 export { LockedData } from './src/locked-data'
 export { getStepConfig } from './src/get-step-config'
 export { StateAdapter } from './src/state/state-adapter'
-export { MermaidService } from './src/mermaid-service'
-export { setupMermaidEndpoint } from './src/mermaid-endpoint'
+
+// Plugin System
+export { PluginManager, MotiaPlugin } from './src/plugins'
+export { loadConfig, getPluginConfig, MotiaConfig } from './src/config'

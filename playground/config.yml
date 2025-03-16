@@ -2,3 +2,11 @@ state:
   adapter: redis
   host: localhost
   port: 6379
+
+# Plugin configuration
+plugins:
+  # Enable/disable mermaid support
+  mermaid:
+    enabled: true
+    # Directory to store mermaid diagrams
+    baseDir: .

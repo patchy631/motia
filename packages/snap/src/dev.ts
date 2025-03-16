@@ -6,6 +6,8 @@ import { FileStateAdapter } from '@motiadev/core/dist/src/state/adapters/default
 import { createDevWatchers } from './dev-watchers'
 import { stateEndpoints } from './dev/state-endpoints'
 
+// Plugins will be auto-discovered by the plugin manager
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require('ts-node').register({
   transpileOnly: true,
@@ -24,6 +26,8 @@ export const dev = async (port: number, isVerbose: boolean): Promise<void> => {
 
   const config = { isVerbose }
   const motiaServer = await createServer(lockedData, eventManager, state, config)
+  
+  // Plugins are auto-discovered by the plugin manager
   const motiaEventManager = createStepHandlers(lockedData, eventManager, state)
   const watcher = createDevWatchers(lockedData, motiaServer, motiaEventManager, motiaServer.cronManager)
 

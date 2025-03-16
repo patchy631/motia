@@ -17,6 +17,7 @@
     "@motiadev/core": "workspace:*",
     "motia": "workspace:*",
     "@motiadev/workbench": "workspace:*",
+    "@motiadev/mermaid": "workspace:*",
     "deep-equal": "^2.2.3",
     "openai": "^4.78.1",
     "zod": "^3.24.1"

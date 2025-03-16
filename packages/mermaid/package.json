@@ -1,0 +1,25 @@
+{
+  "name": "@motiadev/mermaid",
+  "description": "Mermaid diagram plugin for the Motia framework, providing flowchart visualization.",
+  "main": "dist/index.js",
+  "version": "0.1.0-beta.5",
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "lint": "eslint --config ../../eslint.config.js",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@motiadev/core": "workspace:*",
+    "colors": "^1.4.0",
+    "express": "^4.21.2"
+  },
+  "peerDependencies": {
+    "mermaid": "^11.5.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/react": "^18.2.33",
+    "typescript": "^5.7.2"
+  }
+}

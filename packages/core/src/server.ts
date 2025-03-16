@@ -14,7 +14,8 @@ import { callStepFile } from './call-step-file'
 import { LoggerFactory } from './LoggerFactory'
 import { generateTraceId } from './generate-trace-id'
 import { flowsConfigEndpoint } from './flows-config-endpoint'
-import { setupMermaidEndpoint } from './mermaid-endpoint'
+import { PluginManager } from './plugins/plugin-manager'
+import { MotiaConfig } from './config'
 
 export type MotiaServer = {
   app: Express
@@ -24,6 +25,7 @@ export type MotiaServer = {
   removeRoute: (step: Step<ApiRouteConfig>) => void
   addRoute: (step: Step<ApiRouteConfig>) => void
   cronManager: CronManager
+  pluginManager?: PluginManager
 }
 
 type MotiaServerConfig = {
@@ -35,6 +37,7 @@ export const createServer = async (
   eventManager: EventManager,
   state: StateAdapter,
   config: MotiaServerConfig,
+  motiaConfig: MotiaConfig = {},
 ): Promise<MotiaServer> => {
   const printer = lockedData.printer
   const app = express()
@@ -140,7 +143,26 @@ export const createServer = async (
 
   flowsEndpoint(lockedData, app)
   flowsConfigEndpoint(app, process.cwd())
-  setupMermaidEndpoint(app, lockedData.mermaidService)
+  
+  // Initialize plugin manager
+  const pluginManager = new PluginManager(app)
+  
+  // Store the plugin manager in lockedData for other components to use
+  lockedData.pluginManager = pluginManager
+  
+  // Attempt to auto-discover and load plugins
+  pluginManager.autoDiscoverPlugins()
+  
+  // Add a fallback route handler for plugin-specific endpoints
+  // This must be added after plugin initialization so plugins can register their routes first
+  app.use('/flows/:id/*', (req, res) => {
+    // This is a generic handler for any unhandled plugin routes
+    res.status(404).json({
+      error: 'Not found',
+      message: 'This endpoint is not available. The required plugin might not be loaded.',
+      path: req.path
+    })
+  })
 
   server.on('error', (error) => {
     console.error('Server error:', error)
@@ -152,5 +174,5 @@ export const createServer = async (
     server.close()
   }
 
-  return { app, server, socketServer: io, close, removeRoute, addRoute, cronManager }
+  return { app, server, socketServer: io, close, removeRoute, addRoute, cronManager, pluginManager }
 }
