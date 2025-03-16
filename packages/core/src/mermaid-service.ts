@@ -135,8 +135,8 @@ export class MermaidService {
           const targetId = this.getNodeId(targetStep);
           connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
         }
-        // Check if API or Cron steps have virtualSubscribes (unusual but possible)
-        else if ((isApiStep(targetStep) || isCronStep(targetStep)) && 
+        // Check if API steps have virtualSubscribes
+        else if (isApiStep(targetStep) && 
                   targetStep.config.virtualSubscribes && 
                   Array.isArray(targetStep.config.virtualSubscribes) && 
                   targetStep.config.virtualSubscribes.includes(topic)) {
