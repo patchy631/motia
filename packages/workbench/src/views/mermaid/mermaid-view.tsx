@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { FlowResponse } from '@/views/flow/hooks/use-get-flow-state'
 import mermaid from 'mermaid'
-import { Code } from 'lucide-react'
+import { Code, ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface MermaidViewProps {
   flow: FlowResponse
@@ -11,7 +13,17 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
   const [diagram, setDiagram] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-
+  
+  // Zoom and pan state
+  const [scale, setScale] = useState<number>(1)
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState<boolean>(false)
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  
+  // Refs
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Fetch the mermaid diagram
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -34,6 +46,62 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
     fetchMermaidDiagram()
   }, [flow.name])
+  
+  // Zoom handlers
+  const handleZoomIn = useCallback(() => {
+    setScale(prevScale => Math.min(prevScale + 0.1, 2.5))
+  }, [])
+  
+  const handleZoomOut = useCallback(() => {
+    setScale(prevScale => Math.max(prevScale - 0.1, 0.5))
+  }, [])
+  
+  const handleResetView = useCallback(() => {
+    setScale(1)
+    setPosition({ x: 0, y: 0 })
+  }, [])
+  
+  const handleFitToScreen = useCallback(() => {
+    if (!containerRef.current) return
+    
+    // This is a simple implementation; for a better fit,
+    // you'd need to measure the diagram SVG dimensions
+    handleResetView()
+  }, [handleResetView])
+  
+  // Pan handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true)
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }, [])
+  
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return
+    
+    const dx = e.clientX - dragStart.x
+    const dy = e.clientY - dragStart.y
+    
+    setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }, [isDragging, dragStart])
+  
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+  
+  // Mouse wheel zoom handler
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    
+    // Zoom in or out based on wheel direction
+    if (e.deltaY < 0) {
+      // Zoom in
+      setScale(prevScale => Math.min(prevScale + 0.1, 2.5))
+    } else {
+      // Zoom out
+      setScale(prevScale => Math.max(prevScale - 0.1, 0.5))
+    }
+  }, [])
 
   useEffect(() => {
     if (diagram) {
@@ -91,7 +159,7 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
         }
         
         // Use mermaid.render instead of init for more reliable rendering
-        const container = document.getElementById('mermaid-container')
+        const container = document.getElementById('mermaid-diagram')
         if (container) {
           // Generate a unique ID for this render
           const id = `mermaid-${Date.now()}`
@@ -147,28 +215,94 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
   }
 
   return (
-    <div className="w-full h-full bg-[#15131E] p-6 overflow-auto">
-      <div className="flex flex-col items-center">
-        <h2 className="text-lg font-medium text-white/70 mb-6 flex items-center gap-2">
+    <div className="w-full h-full bg-[#15131E] p-6 overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-medium text-white/70 flex items-center gap-2">
           <Code size={18} className="text-indigo-400" />
           Flow Diagram: <span className="text-indigo-400 font-semibold">{flow.name}</span>
         </h2>
-        <div className="bg-[#1D1A2A] border border-zinc-800 p-6 rounded-lg shadow-lg max-w-6xl w-full">
-          <div className="overflow-auto min-h-[400px] flex items-center justify-center" id="mermaid-container"></div>
-        </div>
         
-        {/* Debug section */}
-        <div className="mt-6 w-full max-w-6xl">
-          <details className="text-xs">
-            <summary className="text-gray-500 cursor-pointer hover:text-gray-300 inline-flex items-center gap-1.5 py-1">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 4h6v6M10 20H4v-6M22 14v6h-6M2 10V4h6" />
-              </svg>
-              <span>View Mermaid Source</span>
-            </summary>
-            <pre className="mt-2 p-4 bg-zinc-950 border border-zinc-800/50 rounded text-gray-400 overflow-auto text-xs" id="mermaid-debug"></pre>
-          </details>
+        {/* Zoom controls */}
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleZoomOut}
+            className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
+            title="Zoom out"
+          >
+            <ZoomOut size={16} />
+          </Button>
+          
+          <div className="text-zinc-400 text-xs min-w-12 text-center">
+            {Math.round(scale * 100)}%
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleZoomIn}
+            className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
+            title="Zoom in"
+          >
+            <ZoomIn size={16} />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleFitToScreen}
+            className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
+            title="Fit to screen"
+          >
+            <Maximize size={16} />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleResetView}
+            className="h-8 w-8 p-0 flex items-center justify-center text-gray-400 hover:text-white bg-[#1D1A2A] hover:bg-[#2D2A3A] rounded-md"
+            title="Reset view"
+          >
+            <RotateCcw size={16} />
+          </Button>
         </div>
+      </div>
+      
+      {/* Zoomable diagram container */}
+      <div 
+        className="flex-1 bg-[#1D1A2A] border border-zinc-800 rounded-lg shadow-lg overflow-hidden relative"
+        ref={containerRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      >
+        <div 
+          className="absolute inset-0 transition-transform duration-100"
+          style={{ 
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transformOrigin: 'center center' 
+          }}
+        >
+          <div id="mermaid-diagram" className="min-h-[400px] flex items-center justify-center"></div>
+        </div>
+      </div>
+      
+      {/* Debug section */}
+      <div className="mt-6 w-full">
+        <details className="text-xs">
+          <summary className="text-gray-500 cursor-pointer hover:text-gray-300 inline-flex items-center gap-1.5 py-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 4h6v6M10 20H4v-6M22 14v6h-6M2 10V4h6" />
+            </svg>
+            <span>View Mermaid Source</span>
+          </summary>
+          <pre className="mt-2 p-4 bg-zinc-950 border border-zinc-800/50 rounded text-gray-400 overflow-auto text-xs" id="mermaid-debug"></pre>
+        </details>
       </div>
     </div>
   )
