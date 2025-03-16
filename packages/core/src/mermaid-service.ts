@@ -20,7 +20,7 @@ export class MermaidService {
       // In test environment, don't try to access the file system
       return
     }
-    
+
     if (!fs.existsSync(this.diagramsPath)) {
       try {
         fs.writeFileSync(this.diagramsPath, JSON.stringify({}, null, 2))
@@ -35,10 +35,10 @@ export class MermaidService {
       // In test environment, use the in-memory diagrams
       return this.inMemoryDiagrams
     }
-    
+
     try {
       return JSON.parse(fs.readFileSync(this.diagramsPath, 'utf8'))
-    } catch (error) {
+    } catch (_) {
       // If file doesn't exist or can't be read, return empty object
       return {}
     }
@@ -47,13 +47,13 @@ export class MermaidService {
   private saveDiagram(flowName: string, diagram: string): void {
     const diagrams = this.getDiagrams()
     diagrams[flowName] = diagram
-    
+
     if (this.isTestEnvironment) {
       // In test environment, update the in-memory diagrams
       this.inMemoryDiagrams = diagrams
       return
     }
-    
+
     try {
       fs.writeFileSync(this.diagramsPath, JSON.stringify(diagrams, null, 2))
     } catch (error) {
@@ -73,13 +73,13 @@ export class MermaidService {
   removeDiagram(flowName: string): void {
     const diagrams = this.getDiagrams()
     delete diagrams[flowName]
-    
+
     if (this.isTestEnvironment) {
       // In test environment, update the in-memory diagrams
       this.inMemoryDiagrams = diagrams
       return
     }
-    
+
     try {
       fs.writeFileSync(this.diagramsPath, JSON.stringify(diagrams, null, 2))
     } catch (error) {
