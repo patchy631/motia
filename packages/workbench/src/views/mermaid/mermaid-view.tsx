@@ -48,11 +48,11 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
 
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
-    setScale(prevScale => Math.min(prevScale + 0.05, 3.0)) // Increased max zoom
+    setScale(prevScale => Math.min(prevScale + 0.02, 3.0)) // Reduced increment from 0.05 to 0.02
   }, [])
 
   const handleZoomOut = useCallback(() => {
-    setScale(prevScale => Math.max(prevScale - 0.05, 0.15)) // Reduced minimum zoom to see more
+    setScale(prevScale => Math.max(prevScale - 0.02, 0.15)) // Reduced increment from 0.05 to 0.02
   }, [])
 
   const handleResetView = useCallback(() => {
@@ -116,8 +116,8 @@ export const MermaidView: React.FC<MermaidViewProps> = ({ flow }) => {
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault()
 
-    // Calculate zoom increment based on delta - reduced sensitivity
-    const zoomIncrement = 0.05 * Math.sign(e.deltaY) * -1
+    // Calculate zoom increment based on delta - significantly reduced sensitivity
+    const zoomIncrement = 0.02 * Math.sign(e.deltaY) * -1 // Reduced from 0.05 to 0.02
     
     // Apply the zoom, making sure to stay within limits
     setScale(prevScale => {

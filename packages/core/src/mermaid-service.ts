@@ -161,7 +161,7 @@ export class MermaidService {
     let prefix = '';
     
     if (isApiStep(step)) prefix = '🌐 ';
-    else if (isEventStep(step)) prefix = '🔔 ';
+    else if (isEventStep(step)) prefix = '📢 '; // Changed from bell to megaphone for events
     else if (isCronStep(step)) prefix = '⏰ ';
     else if (isNoopStep(step)) prefix = '⚙️ ';
     
