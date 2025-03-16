@@ -197,6 +197,7 @@ const createCronStepResponse = (step: Step, id: string): FlowStepResponse => {
     ...createBaseStepResponse(step, id),
     type: 'cron',
     emits: step.config.emits,
+    virtualEmits: step.config.virtualEmits ?? [],
     cronExpression: step.config.cron,
   }
 }

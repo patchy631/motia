@@ -119,13 +119,24 @@ export class MermaidService {
       const label = typeof emit === 'string' ? topic : (emit.label || topic);
       
       steps.forEach(targetStep => {
+        // Check for regular subscribes in event steps
         if (isEventStep(targetStep) && 
             targetStep.config.subscribes && 
             Array.isArray(targetStep.config.subscribes) && 
             targetStep.config.subscribes.includes(topic)) {
           const targetId = this.getNodeId(targetStep);
           connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
-        } else if (isNoopStep(targetStep) && 
+        } 
+        // Check for virtual subscribes in noop steps
+        else if (isNoopStep(targetStep) && 
+                  targetStep.config.virtualSubscribes && 
+                  Array.isArray(targetStep.config.virtualSubscribes) && 
+                  targetStep.config.virtualSubscribes.includes(topic)) {
+          const targetId = this.getNodeId(targetStep);
+          connections += `    ${sourceId} -->|${label}| ${targetId}\n`;
+        }
+        // Check if API or Cron steps have virtualSubscribes (unusual but possible)
+        else if ((isApiStep(targetStep) || isCronStep(targetStep)) && 
                   targetStep.config.virtualSubscribes && 
                   Array.isArray(targetStep.config.virtualSubscribes) && 
                   targetStep.config.virtualSubscribes.includes(topic)) {
@@ -168,6 +179,22 @@ export class MermaidService {
   }
   
   updateFlow(flowName: string, flow: Flow): void {
+    // Debug log to help troubleshoot flow data
+    console.debug(`Generating mermaid diagram for flow: ${flowName} with ${flow.steps.length} steps`);
+    
+    // Log step information to help diagnose connection issues
+    flow.steps.forEach(step => {
+      if (isApiStep(step)) {
+        console.debug(`API Step ${step.config.name || step.filePath}: emits=${JSON.stringify(step.config.emits)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
+      } else if (isEventStep(step)) {
+        console.debug(`Event Step ${step.config.name || step.filePath}: subscribes=${JSON.stringify(step.config.subscribes)}, emits=${JSON.stringify(step.config.emits)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
+      } else if (isCronStep(step)) {
+        console.debug(`Cron Step ${step.config.name || step.filePath}: emits=${JSON.stringify(step.config.emits)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
+      } else if (isNoopStep(step)) {
+        console.debug(`Noop Step ${step.config.name || step.filePath}: virtualSubscribes=${JSON.stringify(step.config.virtualSubscribes)}, virtualEmits=${JSON.stringify(step.config.virtualEmits)}`);
+      }
+    });
+    
     const diagram = this.generateFlowDiagram(flowName, flow.steps)
     this.saveDiagram(flowName, diagram)
   }
