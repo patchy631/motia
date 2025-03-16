@@ -5,10 +5,20 @@ import { MotiaPlugin } from './plugin-interface'
 
 export class PluginManager {
   private plugins: MotiaPlugin[] = []
+  private pluginOptions: Record<string, Record<string, any>> = {}
   private app: Express
   
   constructor(app: Express) {
     this.app = app
+  }
+  
+  /**
+   * Set options for a plugin before it's loaded
+   * @param pluginName Name of the plugin
+   * @param options Plugin options
+   */
+  setPluginOptions(pluginName: string, options: Record<string, any>): void {
+    this.pluginOptions[pluginName] = options
   }
   
   /**
@@ -141,7 +151,11 @@ export class PluginManager {
           
           if (typeof pluginModule.createPlugin === 'function') {
             const plugin = pluginModule.createPlugin()
-            this.registerPlugin(plugin)
+            
+            // Apply any configuration options set for this plugin
+            const options = this.pluginOptions[plugin.name] || {}
+            
+            this.registerPlugin(plugin, options)
             loadedPlugins.push(plugin.name)
           }
         } catch (error) {

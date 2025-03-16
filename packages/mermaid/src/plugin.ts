@@ -21,7 +21,7 @@ export class MermaidPlugin implements MotiaPlugin {
     const baseDir = options.baseDir || process.cwd();
     
     try {
-      this.mermaidService = new MermaidService(baseDir);
+      this.mermaidService = new MermaidService(baseDir, options.diagramsPath);
       
       // Set up API endpoints
       setupMermaidEndpoint(app, this.mermaidService);
@@ -32,6 +32,7 @@ export class MermaidPlugin implements MotiaPlugin {
           status: 'Plugin loaded',
           name: this.name,
           serviceInitialized: !!this.mermaidService,
+          diagramsPath: this.mermaidService['diagramsPath'],
           time: new Date().toISOString()
         });
       });

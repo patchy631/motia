@@ -150,6 +150,16 @@ export const createServer = async (
   // Store the plugin manager in lockedData for other components to use
   lockedData.pluginManager = pluginManager
   
+  // Configure and load plugins from config if available
+  if (motiaConfig.plugins) {
+    // Process plugin configurations
+    Object.entries(motiaConfig.plugins).forEach(([pluginName, pluginConfig]) => {
+      if (pluginConfig.enabled !== false) {
+        pluginManager.setPluginOptions(pluginName, pluginConfig)
+      }
+    })
+  }
+  
   // Attempt to auto-discover and load plugins
   pluginManager.autoDiscoverPlugins()
   

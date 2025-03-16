@@ -8,11 +8,21 @@ export class MermaidService {
   private inMemoryDiagrams: Record<string, string> = {}
   private isTestEnvironment: boolean
 
-  constructor(private readonly baseDir: string) {
-    this.diagramsPath = path.join(baseDir, 'motia-mermaid.json')
-    // Check if we're in a test environment by checking if the directory exists
-    this.isTestEnvironment = baseDir.startsWith('/test') || !fs.existsSync(baseDir)
-    this.ensureDiagramsFile()
+  constructor(private readonly baseDir: string, diagramsPath?: string) {
+    // If a specific diagrams path is provided, use it
+    if (diagramsPath) {
+      this.diagramsPath = diagramsPath;
+    } else {
+      // Otherwise use the project root, not the package directory
+      const projectRoot = process.cwd();
+      this.diagramsPath = path.join(projectRoot, 'motia-mermaid.json');
+    }
+    
+    // Check if we're in a test environment
+    this.isTestEnvironment = baseDir.startsWith('/test') || 
+                            !fs.existsSync(path.dirname(this.diagramsPath));
+    
+    this.ensureDiagramsFile();
   }
 
   private ensureDiagramsFile(): void {

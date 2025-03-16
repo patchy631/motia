@@ -7,6 +7,12 @@ export interface MermaidPluginOptions {
    * Defaults to process.cwd()
    */
   baseDir?: string;
+  
+  /**
+   * Path to the mermaid diagrams JSON file
+   * If provided, this overrides the default path calculation
+   */
+  diagramsPath?: string;
 }
 
 export interface MermaidRenderer {
