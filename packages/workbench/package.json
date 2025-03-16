@@ -30,6 +30,7 @@
     "framer-motion": "^11.15.0",
     "json-schema": "^0.4.0",
     "lucide-react": "^0.469.0",
+    "mermaid": "^11.5.0",
     "postcss": "^8.5.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -3,6 +3,7 @@ import { ApiRouteConfig, CronConfig, EventConfig, Flow, Step } from './types'
 import { isApiStep, isCronStep, isEventStep } from './guards'
 import { validateStep } from './step-validator'
 import { Printer } from './printer'
+import { MermaidService } from './mermaid-service'
 
 type FlowEvent = 'flow-created' | 'flow-removed' | 'flow-updated'
 type StepEvent = 'step-created' | 'step-removed' | 'step-updated'
@@ -12,6 +13,7 @@ export class LockedData {
   public activeSteps: Step[]
   public devSteps: Step[]
   public printer: Printer
+  public mermaidService: MermaidService
 
   private stepsMap: Record<string, Step>
   private handlers: Record<FlowEvent, ((flowName: string) => void)[]>
@@ -23,6 +25,7 @@ export class LockedData {
     this.devSteps = []
     this.stepsMap = {}
     this.printer = new Printer(baseDir)
+    this.mermaidService = new MermaidService(baseDir)
 
     this.handlers = {
       'flow-created': [],
@@ -35,6 +38,23 @@ export class LockedData {
       'step-removed': [],
       'step-updated': [],
     }
+    
+    // Register handlers to update mermaid diagrams when flows change
+    this.on('flow-created', (flowName) => {
+      if (this.flows[flowName]) {
+        this.mermaidService.updateFlow(flowName, this.flows[flowName])
+      }
+    })
+    
+    this.on('flow-updated', (flowName) => {
+      if (this.flows[flowName]) {
+        this.mermaidService.updateFlow(flowName, this.flows[flowName])
+      }
+    })
+    
+    this.on('flow-removed', (flowName) => {
+      this.mermaidService.removeDiagram(flowName)
+    })
   }
 
   on(event: FlowEvent, handler: (flowName: string) => void) {

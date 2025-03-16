@@ -14,6 +14,7 @@ import { callStepFile } from './call-step-file'
 import { LoggerFactory } from './LoggerFactory'
 import { generateTraceId } from './generate-trace-id'
 import { flowsConfigEndpoint } from './flows-config-endpoint'
+import { setupMermaidEndpoint } from './mermaid-endpoint'
 
 export type MotiaServer = {
   app: Express
@@ -139,6 +140,7 @@ export const createServer = async (
 
   flowsEndpoint(lockedData, app)
   flowsConfigEndpoint(app, process.cwd())
+  setupMermaidEndpoint(app, lockedData.mermaidService)
 
   server.on('error', (error) => {
     console.error('Server error:', error)
