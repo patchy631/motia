@@ -181,4 +181,123 @@ state
     }
   })
 
+const infrastructure = program.command('infrastructure').description('Manage motia infrastructure deployment services')
+
+infrastructure
+  .command('init')
+  .description('Initialize a new Motia infrastructure deployment project')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
+  .option('-n, --name <project name>', 'The name for your infrastructure deployment project')
+  .option('-d, --description <description>', 'Description of the infrastructure deployment service')
+  .action(async (arg) => {
+    try {
+      const { initInfrastructure } = require('./infrastructure/init')
+      await initInfrastructure({
+        name: arg.name,
+        description: arg.description,
+        apiKey: arg.apiKey
+      })
+    } catch (error) {
+      console.error('❌ Infrastructure initialization failed:', error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
+const project = infrastructure.command('project').description('Manage deployment projects')
+
+project
+  .command('list')
+  .description('List all projects')
+  .option('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
+  .option('-u, --api-base-url <url>', 'Base URL for the API (defaults to MOTIA_API_URL env var or https://api.motia.io)')
+  .action(async (arg) => {
+    try {
+      const { listProjects } = require('./infrastructure/project')
+      await listProjects({
+        apiKey: arg.apiKey,
+        apiBaseUrl: arg.apiBaseUrl
+      })
+    } catch (error) {
+      console.error('❌ Failed to list projects:', error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
+project
+  .command('id')
+  .description('Get the project ID from the current config')
+  .action(async () => {
+    try {
+      const { getProjectId } = require('./infrastructure/project')
+      const projectId = getProjectId()
+      
+      if (projectId) {
+        console.log(`Project ID: ${projectId}`)
+      } else {
+        console.error('❌ No project ID found in motia.config.json')
+        console.error('Initialize the project first with motia infrastructure init or check your config file')
+        process.exit(1)
+      }
+    } catch (error) {
+      console.error('❌ Failed to get project ID:', error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
+const stage = infrastructure.command('stage').description('Manage deployment stages')
+
+stage
+  .command('create')
+  .description('Create a new deployment stage')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
+  .option('-n, --name <stage name>', 'The name for your deployment stage')
+  .option('-d, --description <description>', 'Description of the deployment stage')
+  .action(async (arg) => {
+    try {
+      const { createStage } = require('./infrastructure/stage')
+      await createStage({
+        name: arg.name,
+        description: arg.description,
+        apiKey: arg.apiKey,
+      })
+    } catch (error) {
+      console.error('❌ Stage creation failed:', error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
+stage
+  .command('select')
+  .description('Select a deployment stage')
+  .option('-n, --name <stage name>', 'The name of the stage to select')
+  .action(async (arg) => {
+    try {
+      const { selectStage } = require('./infrastructure/stage')
+      await selectStage({
+        name: arg.name
+      })
+    } catch (error) {
+      console.error('❌ Stage selection failed:', error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
+stage
+  .command('list')
+  .description('List all deployment stages')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication (when using API)')
+  .option('-a, --api', 'Fetch stages from API instead of local config')
+  .action(async (arg) => {
+    try {
+      const { listStages } = require('./infrastructure/stage')
+      await listStages({
+        useApi: arg.api,
+        apiKey: arg.apiKey,
+      })
+    } catch (error) {
+      console.error('❌ Failed to list stages:', error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
 program.parse(process.argv)
