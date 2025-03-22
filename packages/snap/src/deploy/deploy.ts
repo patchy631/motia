@@ -1,10 +1,10 @@
 import fs from 'fs'
 import path from 'path'
 import { DeploymentResult, DeploymentConfig } from './types'
-import { FileService } from './files'
+import { FileManager } from './file-manager'
 import { logger } from './logger'
 import { GenericDeploymentError, MissingApiKeyError, MissingStepsConfigError } from './error'
-import { deploymentApiService } from './services/deployment-api-service'
+import { deploymentService } from './services/deployment-service'
 
 export class DeploymentManager {
   async deploy(
@@ -25,7 +25,7 @@ export class DeploymentManager {
     }
 
     const stepsConfig = JSON.parse(fs.readFileSync(stepsConfigPath, 'utf-8'))
-    const zipFiles = FileService.retrieveZipFiles(projectDir, stepsConfig)
+    const zipFiles = FileManager.retrieveZipFiles(projectDir, stepsConfig)
 
     if (zipFiles.length === 0) {
       logger.warning('No zip files found to deploy')
@@ -42,14 +42,14 @@ export class DeploymentManager {
 
     logger.info(`Deploying to environment: ${environment}, version: ${version}`)
 
-    const flowGroups = FileService.groupStepsByFlow(zipFiles)
+    const flowGroups = FileManager.groupStepsByFlow(zipFiles)
     logger.info(`Deploying steps for ${Object.keys(flowGroups).length} flows`)
 
     // First, upload the steps configuration to get a deploymentId
-    const deploymentId = await deploymentApiService.uploadConfiguration(stepsConfig, apiKey, environment, version)
+    const deploymentId = await deploymentService.uploadConfiguration(stepsConfig, apiKey, environment, version)
 
     // Then upload all zip files with the deploymentId
-    const { uploadResults, failedUploads, allSuccessful } = await deploymentApiService.uploadZipFiles(
+    const { uploadResults, failedUploads, allSuccessful } = await deploymentService.uploadZipFiles(
       zipFiles,
       apiKey,
       environment,
@@ -66,7 +66,7 @@ export class DeploymentManager {
     }
 
     // Finally, start the deployment
-    await deploymentApiService.startDeployment(deploymentId, deploymentConfig)
+    await deploymentService.startDeployment(deploymentId, deploymentConfig)
 
     const deploymentResults: DeploymentResult[] = uploadResults.map((result) => ({
       bundlePath: result.bundlePath,
@@ -81,7 +81,7 @@ export class DeploymentManager {
       success: result.success,
     }))
 
-    FileService.writeDeploymentResults(projectDir, deploymentResults, zipFiles, flowGroups, environment, version)
+    FileManager.writeDeploymentResults(projectDir, deploymentResults, zipFiles, flowGroups, environment, version)
 
     logger.success('Deployment process completed successfully')
   }
