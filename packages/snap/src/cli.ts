@@ -90,7 +90,7 @@ program
 
       const { DeploymentManager } = require('./deploy/deploy')
       const deploymentManager = new DeploymentManager()
-      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.env, arg.version)
+      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.version)
     } catch (error) {
       console.error('❌ Deployment failed:', error)
       process.exit(1)

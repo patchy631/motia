@@ -1,65 +1,14 @@
-import fs from 'fs'
-import path from 'path'
-import { createInterface } from 'readline'
-import { ApiService, Stage as ApiStage, API_BASE_URL, ApiError } from './api-service'
-import { getProjectConfig, getProjectId } from './project'
-
-interface Stage {
-  name: string
-  description?: string
-  apiUrl?: string
-  id?: string
-  projectId?: string
-}
-
-interface ProjectConfig {
-  name: string
-  description?: string
-  id?: string
-  selectedStage?: string
-  stages?: Record<string, Stage>
-}
-
-interface CreateStageResponse {
-  id: string
-  name: string
-  description?: string
-  projectId: string
-  apiUrl?: string
-}
-
-const readline = createInterface({
-  input: process.stdin,
-  output: process.stdout
-})
-
-const question = (query: string): Promise<string> => {
-  return new Promise((resolve) => {
-    readline.question(query, (answer) => {
-      resolve(answer)
-    })
-  })
-}
-
-function getConfigPath(): string {
-  return path.join(process.cwd(), 'motia.config.json')
-}
-
-function readConfig(): ProjectConfig | null {
-  return getProjectConfig()
-}
-
-function writeConfig(config: ProjectConfig): boolean {
-  const configPath = getConfigPath()
-  
-  try {
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2))
-    return true
-  } catch (error) {
-    console.error('Error writing config file:', error instanceof Error ? error.message : 'Unknown error')
-    return false
-  }
-}
+import { ApiService, Stage as ApiStage, ApiError } from './api-service'
+import { 
+  ProjectConfig, 
+  Stage,
+  readConfig, 
+  writeConfig, 
+  question, 
+  readline, 
+  exitWithError,
+  getProjectId 
+} from './config-utils'
 
 export async function createStage(options: {
   name?: string
@@ -70,9 +19,7 @@ export async function createStage(options: {
     const config = readConfig()
     
     if (!config) {
-      console.error('❌ No motia.config.json found. Please initialize the project first with motia infrastructure init.')
-      readline.close()
-      process.exit(1)
+      exitWithError('No motia.config.json found. Please initialize the project first with motia infrastructure init')
     }
     
     const stageName = options.name || await question('Stage name: ')
@@ -82,15 +29,11 @@ export async function createStage(options: {
     const apiKey = options.apiKey
     
     if (!stageName) {
-      console.error('❌ Stage name is required.')
-      readline.close()
-      process.exit(1)
+      exitWithError('Stage name is required')
     }
     
     if (!projectId) {
-      console.error('❌ Project ID is required.')
-      readline.close()
-      process.exit(1)
+      exitWithError('Project ID is required')
     }
     
     if (!config.stages) {
@@ -139,25 +82,12 @@ export async function createStage(options: {
         }
       }
     } catch (error) {
-      if ((error as ApiError).status) {
-        const apiError = error as ApiError
-        console.error(`❌ API request failed: ${apiError.status} ${apiError.message}`)
-        if (apiError.details) {
-          console.error(`   Details: ${apiError.details}`)
-        }
-      } else {
-        console.error('❌ API request failed:', error instanceof Error ? error.message : 'Unknown error')
-      }
-      console.error('Stage creation via API failed. Please check your API key and project ID.')
-      readline.close()
-      process.exit(1)
+      handleApiError(error, 'Stage creation via API failed. Please check your API key and project ID.')
     }
     
     readline.close()
   } catch (error) {
-    console.error('❌ Stage creation failed:', error instanceof Error ? error.message : 'Unknown error')
-    readline.close()
-    process.exit(1)
+    exitWithError('Stage creation failed', error)
   }
 }
 
@@ -168,15 +98,11 @@ export async function selectStage(options: {
     const config = readConfig()
     
     if (!config) {
-      console.error('❌ No motia.config.json found. Please initialize the project first with motia infrastructure init.')
-      readline.close()
-      process.exit(1)
+      exitWithError('No motia.config.json found. Please initialize the project first with motia infrastructure init')
     }
     
     if (!config.stages || Object.keys(config.stages).length === 0) {
-      console.error('❌ No stages found. Please create a stage first with motia infrastructure stage create.')
-      readline.close()
-      process.exit(1)
+      exitWithError('No stages found. Please create a stage first with motia infrastructure stage create')
     }
     
     let stageName = options.name
@@ -195,16 +121,12 @@ export async function selectStage(options: {
       const stageIndex = parseInt(stageNumber) - 1
       
       if (isNaN(stageIndex) || stageIndex < 0 || stageIndex >= Object.keys(config.stages).length) {
-        console.error('❌ Invalid stage number.')
-        readline.close()
-        process.exit(1)
+        exitWithError('Invalid stage number')
       }
       
       stageName = Object.keys(config.stages)[stageIndex]
     } else if (!config.stages[stageName]) {
-      console.error(`❌ Stage "${stageName}" not found.`)
-      readline.close()
-      process.exit(1)
+      exitWithError(`Stage "${stageName}" not found`)
     }
     
     // Update selected stage
@@ -223,9 +145,7 @@ export async function selectStage(options: {
     
     readline.close()
   } catch (error) {
-    console.error('❌ Stage selection failed:', error instanceof Error ? error.message : 'Unknown error')
-    readline.close()
-    process.exit(1)
+    exitWithError('Stage selection failed', error)
   }
 }
 
@@ -237,9 +157,7 @@ export async function listStages(options: {
     const config = readConfig()
     
     if (!config) {
-      console.error('❌ No motia.config.json found. Please initialize the project first with motia infrastructure init.')
-      readline.close()
-      process.exit(1)
+      exitWithError('No motia.config.json found. Please initialize the project first with motia infrastructure init')
     }
     
     // If using API to fetch stages
@@ -248,22 +166,16 @@ export async function listStages(options: {
       const projectId = getProjectId()
       
       if (!projectId) {
-        console.error('❌ Project ID is required.')
-        readline.close()
-        process.exit(1)
+        exitWithError('Project ID is required')
       }
       
       if (!apiKey) {
-        console.error('❌ API key is required for authentication.')
-        readline.close()
-        process.exit(1)
+        exitWithError('API key is required for authentication')
       }
       
-      console.log('Fetching stages from API...')
-      
       try {
+        console.log('Fetching stages from API...')
         const apiService = new ApiService(apiKey)
-        
         const stages = await apiService.getStages(projectId)
         
         if (stages.length === 0) {
@@ -272,59 +184,166 @@ export async function listStages(options: {
           return
         }
         
-        console.log('Stages:')
-        
+        console.log('\nStages:')
         stages.forEach((stage) => {
-          const isInConfig = config.stages && config.stages[stage.name]
-          const isSelected = config.selectedStage === stage.name
-          console.log(`- ${stage.name}${isSelected ? ' (selected)' : ''}${isInConfig ? '' : ' (not in config)'}`)
-          console.log(`  ID: ${stage.id}`)
-          if (stage.description) console.log(`  Description: ${stage.description}`)
-          if (stage.apiUrl) console.log(`  API URL: ${stage.apiUrl}`)
+          const isSelected = stage.name === config.selectedStage
+          console.log(`- ${stage.name}${isSelected ? ' (currently selected)' : ''} (ID: ${stage.id})`)
+          if (stage.description) {
+            console.log(`  Description: ${stage.description}`)
+          }
+          if (stage.apiUrl) {
+            console.log(`  API URL: ${stage.apiUrl}`)
+          }
           console.log('')
         })
-        
       } catch (error) {
-        if ((error as ApiError).status) {
-          const apiError = error as ApiError
-          console.error(`❌ API request failed: ${apiError.status} ${apiError.message}`)
-          if (apiError.details) {
-            console.error(`   Details: ${apiError.details}`)
-          }
-        } else {
-          console.error('❌ API request failed:', error instanceof Error ? error.message : 'Unknown error')
-        }
+        handleApiError(error)
+      }
+    } else {
+      // List stages from local config
+      if (!config.stages || Object.keys(config.stages).length === 0) {
+        console.log('No stages found in local config.')
         readline.close()
-        process.exit(1)
+        return
       }
       
-      readline.close()
-      return
+      console.log('\nStages (from local config):')
+      Object.keys(config.stages).forEach((name) => {
+        const stage = config.stages![name]
+        const isSelected = name === config.selectedStage
+        console.log(`- ${name}${isSelected ? ' (currently selected)' : ''}${stage.id ? ` (ID: ${stage.id})` : ''}`)
+        if (stage.description) {
+          console.log(`  Description: ${stage.description}`)
+        }
+        if (stage.apiUrl) {
+          console.log(`  API URL: ${stage.apiUrl}`)
+        }
+        console.log('')
+      })
     }
-    
-    // Local listing from config file
-    if (!config.stages || Object.keys(config.stages).length === 0) {
-      console.log('No stages found in config. Create one with motia infrastructure stage create.')
-      readline.close()
-      return
-    }
-    
-    console.log('Stages (from local config):')
-    
-    Object.keys(config.stages).forEach((name) => {
-      const stage = config.stages![name]
-      const isSelected = name === config.selectedStage
-      console.log(`- ${name}${isSelected ? ' (selected)' : ''}`)
-      if (stage.id) console.log(`  ID: ${stage.id}`)
-      if (stage.description) console.log(`  Description: ${stage.description}`)
-      if (stage.apiUrl) console.log(`  API URL: ${stage.apiUrl}`)
-      console.log('')
-    })
     
     readline.close()
   } catch (error) {
-    console.error('❌ Failed to list stages:', error instanceof Error ? error.message : 'Unknown error')
-    readline.close()
-    process.exit(1)
+    exitWithError('Failed to list stages', error)
   }
+}
+
+export async function deleteStage(options: {
+  name?: string
+  apiKey: string
+  skipApiDelete?: boolean
+}): Promise<void> {
+  try {
+    const config = readConfig()
+    
+    if (!config) {
+      exitWithError('No motia.config.json found. Please initialize the project first with motia infrastructure init')
+    }
+    
+    if (!config.stages || Object.keys(config.stages).length === 0) {
+      exitWithError('No stages found. Nothing to delete')
+    }
+    
+    let stageName = options.name
+    
+    // If no stage name provided, list stages and ask to select one to delete
+    if (!stageName) {
+      console.log('Available stages:')
+      
+      Object.keys(config.stages).forEach((name, index) => {
+        const stage = config.stages![name]
+        const isSelected = name === config.selectedStage
+        console.log(`${index + 1}. ${name}${isSelected ? ' (currently selected)' : ''}${stage.description ? ` - ${stage.description}` : ''}`)
+      })
+      
+      const stageNumber = await question('\nEnter stage number to delete: ')
+      const stageIndex = parseInt(stageNumber) - 1
+      
+      if (isNaN(stageIndex) || stageIndex < 0 || stageIndex >= Object.keys(config.stages).length) {
+        exitWithError('Invalid stage number')
+      }
+      
+      stageName = Object.keys(config.stages)[stageIndex]
+    }
+    
+    if (!config.stages[stageName]) {
+      exitWithError(`Stage "${stageName}" not found`)
+    }
+    
+    const confirm = await question(`Are you sure you want to delete stage "${stageName}"? This cannot be undone. (y/N): `)
+    if (confirm.toLowerCase() !== 'y') {
+      console.log('⚠️ Stage deletion cancelled')
+      readline.close()
+      return
+    }
+    
+    const stageId = config.stages[stageName].id
+    const projectId = getProjectId()
+    
+    // Delete from API if not skipping and we have both IDs
+    if (!options.skipApiDelete && stageId && projectId) {
+      try {
+        console.log(`Deleting stage "${stageName}" from API...`)
+        const apiService = new ApiService(options.apiKey)
+        await apiService.deleteStage(projectId, stageId)
+        console.log(`✅ Stage "${stageName}" deleted from API successfully.`)
+      } catch (error) {
+        console.error(`⚠️ Failed to delete stage "${stageName}" from API:`, error instanceof Error ? error.message : 'Unknown error')
+        const proceed = await question('Continue with removing from local config? (y/N): ')
+        if (proceed.toLowerCase() !== 'y') {
+          console.log('⚠️ Stage deletion cancelled')
+          readline.close()
+          return
+        }
+      }
+    }
+    
+    // Delete from local config
+    const wasSelected = config.selectedStage === stageName
+    delete config.stages[stageName]
+    
+    // If the deleted stage was selected, select another one if available
+    if (wasSelected) {
+      const remainingStages = Object.keys(config.stages)
+      if (remainingStages.length > 0) {
+        config.selectedStage = remainingStages[0]
+      } else {
+        config.selectedStage = undefined
+      }
+    }
+    
+    // Save the config
+    if (writeConfig(config)) {
+      console.log(`✅ Stage "${stageName}" removed from local config.`)
+      
+      if (wasSelected && config.selectedStage) {
+        console.log(`🚀 Stage "${config.selectedStage}" is now the selected stage.`)
+      } else if (wasSelected) {
+        console.log('⚠️ No stages left. You should create a new stage.')
+      }
+    }
+    
+    readline.close()
+  } catch (error) {
+    exitWithError('Stage deletion failed', error)
+  }
+}
+
+function handleApiError(error: unknown, customMessage?: string): never {
+  if ((error as ApiError).status) {
+    const apiError = error as ApiError
+    console.error(`❌ API request failed: ${apiError.status} ${apiError.message}`)
+    if (apiError.details) {
+      console.error(`   Details: ${apiError.details}`)
+    }
+  } else {
+    console.error('❌ API request failed:', error instanceof Error ? error.message : 'Unknown error')
+  }
+  
+  if (customMessage) {
+    console.error(customMessage)
+  }
+  
+  readline.close()
+  process.exit(1)
 } 

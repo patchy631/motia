@@ -1,87 +1,17 @@
-import fs from 'fs'
-import path from 'path'
-import { createInterface } from 'readline'
-import { ApiService, Project, API_BASE_URL, ApiError } from './api-service'
+import { ApiService, API_BASE_URL, ApiError } from './api-service'
+import { 
+  ProjectConfig, 
+  readConfig, 
+  writeConfig, 
+  question, 
+  readline, 
+  exitWithError 
+} from './config-utils'
 
-interface ProjectConfig {
-  name: string
-  description?: string
-  id?: string
-  selectedStage?: string
-  stages?: Record<string, {
-    name: string
-    description?: string
-    apiUrl?: string
-    id?: string
-    projectId?: string
-  }>
-}
-
-const readline = createInterface({
-  input: process.stdin,
-  output: process.stdout
-})
-
-const question = (query: string): Promise<string> => {
-  return new Promise((resolve) => {
-    readline.question(query, (answer) => {
-      resolve(answer)
-    })
-  })
-}
-
-function getConfigPath(): string {
-  return path.join(process.cwd(), 'motia.config.json')
-}
-
-function readConfig(): ProjectConfig | null {
-  const configPath = getConfigPath()
-  
-  if (!fs.existsSync(configPath)) {
-    return null
-  }
-  
-  try {
-    const configData = fs.readFileSync(configPath, 'utf8')
-    return JSON.parse(configData)
-  } catch (error) {
-    console.error('Error reading config file:', error instanceof Error ? error.message : 'Unknown error')
-    return null
-  }
-}
-
-function writeConfig(config: ProjectConfig): boolean {
-  const configPath = getConfigPath()
-  
-  try {
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2))
-    return true
-  } catch (error) {
-    console.error('Error writing config file:', error instanceof Error ? error.message : 'Unknown error')
-    return false
-  }
-}
-
-export function getProjectConfig(): ProjectConfig | null {
-  const configPath = getConfigPath()
-  
-  if (!fs.existsSync(configPath)) {
-    return null
-  }
-  
-  try {
-    const configData = fs.readFileSync(configPath, 'utf8')
-    return JSON.parse(configData)
-  } catch (error) {
-    console.error('Error reading config file:', error instanceof Error ? error.message : 'Unknown error')
-    return null
-  }
-}
-
-export function getProjectId(): string | null {
-  const config = getProjectConfig()
-  return config?.id || null
-}
+export {
+  getProjectId,
+  readConfig as getProjectConfig
+} from './config-utils'
 
 export async function createProject(options: {
   name?: string
@@ -94,9 +24,7 @@ export async function createProject(options: {
     const projectDescription = options.description || await question('Project description (optional): ')
     
     if (!projectName) {
-      console.error('❌ Project name is required.')
-      readline.close()
-      process.exit(1)
+      exitWithError('Project name is required')
     }
     
     console.log(`Creating project "${projectName}" via API...`)
@@ -137,28 +65,15 @@ export async function createProject(options: {
         // Next steps
         console.log('\nNext steps:')
         console.log('  1. Create a stage with: motia infrastructure stage create')
-        console.log(`     motia infrastructure stage create -n <stage-name> -p ${projectData.id} -k <api-key>`)
+        console.log(`     motia infrastructure stage create -n <stage-name> -k <api-key>`)
       }
     } catch (error) {
-      if ((error as ApiError).status) {
-        const apiError = error as ApiError
-        console.error(`❌ API request failed: ${apiError.status} ${apiError.message}`)
-        if (apiError.details) {
-          console.error(`   Details: ${apiError.details}`)
-        }
-      } else {
-        console.error('❌ API request failed:', error instanceof Error ? error.message : 'Unknown error')
-      }
-      console.error('Project creation via API failed. Please check your API key.')
-      readline.close()
-      process.exit(1)
+      handleApiError(error, 'Project creation via API failed. Please check your API key.')
     }
     
     readline.close()
   } catch (error) {
-    console.error('❌ Project creation failed:', error instanceof Error ? error.message : 'Unknown error')
-    readline.close()
-    process.exit(1)
+    exitWithError('Project creation failed', error)
   }
 }
 
@@ -171,18 +86,13 @@ export async function listProjects(options: {
     const apiBaseUrl = options.apiBaseUrl || API_BASE_URL
     
     if (!apiKey) {
-      console.error('❌ API key is required for authentication.')
-      readline.close()
-      process.exit(1)
+      exitWithError('API key is required for authentication')
     }
     
     console.log('Fetching projects...')
     
     try {
-      // Create the API service
       const apiService = new ApiService(apiKey, apiBaseUrl)
-      
-      // Get projects from API
       const projects = await apiService.getProjects()
       
       if (projects.length === 0) {
@@ -202,23 +112,30 @@ export async function listProjects(options: {
       })
       
     } catch (error) {
-      if ((error as ApiError).status) {
-        const apiError = error as ApiError
-        console.error(`❌ API request failed: ${apiError.status} ${apiError.message}`)
-        if (apiError.details) {
-          console.error(`   Details: ${apiError.details}`)
-        }
-      } else {
-        console.error('❌ API request failed:', error instanceof Error ? error.message : 'Unknown error')
-      }
-      readline.close()
-      process.exit(1)
+      handleApiError(error)
     }
     
     readline.close()
   } catch (error) {
-    console.error('❌ Failed to list projects:', error instanceof Error ? error.message : 'Unknown error')
-    readline.close()
-    process.exit(1)
+    exitWithError('Failed to list projects', error)
   }
+}
+
+function handleApiError(error: unknown, customMessage?: string): never {
+  if ((error as ApiError).status) {
+    const apiError = error as ApiError
+    console.error(`❌ API request failed: ${apiError.status} ${apiError.message}`)
+    if (apiError.details) {
+      console.error(`   Details: ${apiError.details}`)
+    }
+  } else {
+    console.error('❌ API request failed:', error instanceof Error ? error.message : 'Unknown error')
+  }
+  
+  if (customMessage) {
+    console.error(customMessage)
+  }
+  
+  readline.close()
+  process.exit(1)
 } 

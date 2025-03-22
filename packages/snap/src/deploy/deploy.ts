@@ -5,14 +5,14 @@ import { FileManager } from './file-manager'
 import { logger } from './logger'
 import { GenericDeploymentError, MissingApiKeyError, MissingStepsConfigError } from './error'
 import { deploymentService } from './services/deployment-service'
-
+import { getProjectId } from '../infrastructure/project'
 export class DeploymentManager {
   async deploy(
     apiKey: string,
     projectDir: string = process.cwd(),
-    environment: string = 'dev',
     version: string = 'latest',
   ): Promise<void> {
+    const projectId = getProjectId()
     if (!apiKey) {
       throw new MissingApiKeyError()
     }

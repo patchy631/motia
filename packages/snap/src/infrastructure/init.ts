@@ -1,12 +1,5 @@
-import fs from 'fs'
-import path from 'path'
-import { createInterface } from 'readline'
 import { createProject } from './project'
-
-const readline = createInterface({
-  input: process.stdin,
-  output: process.stdout
-})
+import { readline, exitWithError } from './config-utils'
 
 export async function initInfrastructure(options: { 
   name?: string 
@@ -25,8 +18,6 @@ export async function initInfrastructure(options: {
     
     readline.close()
   } catch (error) {
-    console.error('❌ Initialization failed:', error instanceof Error ? error.message : 'Unknown error')
-    readline.close()
-    process.exit(1)
+    exitWithError('Initialization failed', error)
   }
 } 

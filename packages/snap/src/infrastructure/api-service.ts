@@ -24,8 +24,8 @@ export interface ApiError {
 }
 
 export class ApiService {
-  private apiKey: string
-  private baseUrl: string
+  private readonly apiKey: string
+  private readonly baseUrl: string
 
   constructor(apiKey: string, baseUrl: string = API_BASE_URL) {
     this.apiKey = apiKey
@@ -35,13 +35,12 @@ export class ApiService {
   private async request<T>(
     endpoint: string,
     method: string = 'GET',
-    body?: any
+    body?: Record<string, unknown>
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
-    console.log(`Calling API: ${url} (${method})`)
-
+    
     try {
-      const headers: Record<string, string> = {
+      const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'X-API-Key': this.apiKey
       }
@@ -57,13 +56,22 @@ export class ApiService {
 
       const response = await fetch(url, options)
 
+      let data: any = {}
       const text = await response.text()
-      const data = text ? JSON.parse(text) : {}
+      
+      if (text) {
+        try {
+          data = JSON.parse(text)
+        } catch (e) {
+          // If response is not valid JSON, keep the text version
+          data = { message: text }
+        }
+      }
 
       if (!response.ok) {
         const error: ApiError = {
           status: response.status,
-          message: response.statusText,
+          message: response.statusText || 'Request failed',
           details: data.error || data.message || text
         }
         throw error
@@ -101,6 +109,17 @@ export class ApiService {
     return this.request<Project>(`/projects/${projectId}`)
   }
 
+  async deleteProject(projectId: string): Promise<void> {
+    return this.request<void>(`/projects/${projectId}`, 'DELETE')
+  }
+
+  async updateProject(
+    projectId: string, 
+    data: { name?: string; description?: string }
+  ): Promise<Project> {
+    return this.request<Project>(`/projects/${projectId}`, 'PATCH', data)
+  }
+
   // Stage APIs
   async createStage(
     name: string,
@@ -113,8 +132,23 @@ export class ApiService {
     })
   }
 
-  async getStages(projectId?: string): Promise<Stage[]> {
+  async getStages(projectId: string): Promise<Stage[]> {
     return this.request<Stage[]>(`/projects/${projectId}/stages`)
   }
+  
+  async getStage(projectId: string, stageId: string): Promise<Stage> {
+    return this.request<Stage>(`/projects/${projectId}/stages/${stageId}`)
+  }
 
+  async deleteStage(projectId: string, stageId: string): Promise<void> {
+    return this.request<void>(`/projects/${projectId}/stages/${stageId}`, 'DELETE')
+  }
+
+  async updateStage(
+    projectId: string,
+    stageId: string,
+    data: { name?: string; description?: string }
+  ): Promise<Stage> {
+    return this.request<Stage>(`/projects/${projectId}/stages/${stageId}`, 'PATCH', data)
+  }
 } 
