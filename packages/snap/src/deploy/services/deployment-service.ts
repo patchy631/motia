@@ -1,21 +1,24 @@
-import { DeploymentConfig, UploadResult, ZipFileInfo } from '../types'
-import { apiClient } from './api-client'
+import { UploadResult, ZipFileInfo } from '../types'
+import { ApiClient } from './api-client'
 import { logger } from '../logger'
 import { ConfigUploadFailureError, DeploymentFailureError, FailedUpload } from '../error'
 import { formatError, logFailures } from '../utils/error-handler'
 
 export class DeploymentService {
-  constructor() {}
+  private readonly apiClient: ApiClient
+
+  constructor(private readonly apiKey: string) {
+    this.apiClient = new ApiClient(this.apiKey)
+  }
 
   async uploadConfiguration(
     stepsConfig: { [key: string]: unknown },
-    apiKey: string,
-    environment: string,
+    stageId: string,
     version: string,
   ): Promise<string> {
     try {
       logger.info('Uploading configuration...')
-      const deploymentId = await apiClient.uploadStepsConfig(stepsConfig, apiKey, environment, version)
+      const deploymentId = await this.apiClient.uploadStepsConfig(stepsConfig,  stageId, version)
       logger.success('Configuration uploaded successfully')
       logger.success(`Deployment started with ID: ${deploymentId}`)
       return deploymentId
@@ -28,9 +31,6 @@ export class DeploymentService {
 
   async uploadZipFiles(
     zipFiles: ZipFileInfo[],
-    apiKey: string,
-    environment: string,
-    version: string,
     deploymentId: string,
   ): Promise<{
     uploadResults: UploadResult[]
@@ -45,13 +45,8 @@ export class DeploymentService {
 
     for (const zipFile of zipFiles) {
       try {
-        const relativePath = zipFile.bundlePath
-        const uploadId = await apiClient.uploadZipFile(
+        const uploadId = await this.apiClient.uploadZipFile(
           zipFile.zipPath,
-          relativePath,
-          apiKey,
-          environment,
-          version,
           deploymentId,
         )
 
@@ -100,10 +95,10 @@ export class DeploymentService {
     }
   }
 
-  async startDeployment(deploymentId: string, deploymentConfig: DeploymentConfig): Promise<void> {
+  async startDeployment(deploymentId: string): Promise<void> {
     try {
       logger.info('Finalizing deployment...')
-      await apiClient.startDeployment(deploymentId, deploymentConfig)
+      await this.apiClient.startDeployment(deploymentId)
     } catch (error) {
       const errorMessage = formatError(error)
       logger.error(`Failed to finalize deployment: ${errorMessage}`)
@@ -112,4 +107,3 @@ export class DeploymentService {
   }
 }
 
-export const deploymentService = new DeploymentService()

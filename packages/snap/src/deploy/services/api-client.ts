@@ -2,7 +2,6 @@ import fs from 'fs'
 import path from 'path'
 import axios from 'axios'
 import FormData from 'form-data'
-import { DeploymentConfig, ZipFileInfo } from '../types'
 import { logger } from '../logger'
 import { DeploymentError, ZipFileNotFoundError, EmptyStepsConfigError, GenericDeploymentError } from '../error'
 import { handleAxiosError } from '../utils/error-handler'
@@ -10,6 +9,14 @@ import { handleAxiosError } from '../utils/error-handler'
 export const API_URL = 'https://api.motiadev.com/deploy'
 
 export class ApiClient {
+  private readonly apiKey: string
+  private readonly apiUrl: string
+
+  constructor(apiKey: string, apiUrl: string = API_URL) {
+    this.apiKey = apiKey
+    this.apiUrl = apiUrl
+  }
+
   private async makeApiRequest<T, D = unknown>(
     url: string,
     data: D,
@@ -45,11 +52,7 @@ export class ApiClient {
 
   async uploadZipFile(
     zipPath: string,
-    relativePath: string,
-    apiKey: string,
-    environment: string = 'dev',
-    version: string = 'latest',
-    deploymentId?: string,
+    deploymentId: string,
   ): Promise<string> {
     if (!fs.existsSync(zipPath)) {
       throw new ZipFileNotFoundError(zipPath)
@@ -68,21 +71,15 @@ export class ApiClient {
       throw new GenericDeploymentError(error, 'FILE_READ_ERROR', `Failed to read zip file ${zipPath}`)
     }
 
-    formData.append('path', relativePath)
-    formData.append('environment', environment)
-    formData.append('version', version)
-
-    if (deploymentId) {
-      formData.append('deploymentId', deploymentId)
-    }
+    formData.append('deploymentId', deploymentId)
 
     const headers: Record<string, string> = {
       ...formData.getHeaders(),
-      'x-api-key': apiKey,
+      'x-api-key': this.apiKey,
     }
 
     const response = await this.makeApiRequest<{ uploadId: string }>(
-      `${API_URL}/files`,
+      `${this.apiUrl}/deployments/${deploymentId}/files`,
       formData,
       headers,
       'zip file',
@@ -97,8 +94,7 @@ export class ApiClient {
 
   async uploadStepsConfig(
     stepsConfig: { [key: string]: unknown },
-    apiKey: string,
-    environment: string = 'dev',
+    stageId: string = 'dev',
     version: string = 'latest',
   ): Promise<string> {
     if (!stepsConfig || Object.keys(stepsConfig).length === 0) {
@@ -107,18 +103,16 @@ export class ApiClient {
 
     const headers = {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': this.apiKey,
     }
 
     const data = {
       config: stepsConfig,
-      environment,
       version,
-      createDeployment: true,
     }
 
     const response = await this.makeApiRequest<{ deploymentId: string }>(
-      `${API_URL}/config`,
+      `${this.apiUrl}/stages/${stageId}/deployments`,
       data,
       headers,
       'configuration',
@@ -127,35 +121,12 @@ export class ApiClient {
     return response.deploymentId
   }
 
-  async startDeployment(deploymentId: string, deploymentConfig: DeploymentConfig): Promise<void> {
+  async startDeployment(deploymentId: string): Promise<void> {
     const headers = {
       'Content-Type': 'application/json',
-      'x-api-key': deploymentConfig.apiKey,
+      'x-api-key': this.apiKey,
     }
 
-    const data = {
-      deploymentId,
-      environment: deploymentConfig.environment,
-      version: deploymentConfig.version,
-    }
-
-    await this.makeApiRequest<void>(`${API_URL}/start`, data, headers, 'deployment finalization')
-  }
-
-  async uploadStepZip(
-    zipFile: ZipFileInfo,
-    deploymentConfig: DeploymentConfig,
-    deploymentId?: string,
-  ): Promise<string> {
-    return this.uploadZipFile(
-      zipFile.zipPath,
-      zipFile.bundlePath,
-      deploymentConfig.apiKey,
-      deploymentConfig.environment,
-      deploymentConfig.version,
-      deploymentId,
-    )
+    await this.makeApiRequest<void>(`${this.apiUrl}/deployments/${deploymentId}/start`, {}, headers, 'deployment finalization')
   }
 }
-
-export const apiClient = new ApiClient()

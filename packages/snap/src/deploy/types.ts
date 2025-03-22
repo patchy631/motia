@@ -23,7 +23,7 @@ export interface StepsConfig {
  */
 export interface DeploymentConfig {
   apiKey: string
-  environment: string
+  stageId: string
   version: string
 }
 

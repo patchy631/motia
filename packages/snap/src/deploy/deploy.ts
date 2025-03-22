@@ -4,15 +4,23 @@ import { DeploymentResult, DeploymentConfig } from './types'
 import { FileManager } from './file-manager'
 import { logger } from './logger'
 import { GenericDeploymentError, MissingApiKeyError, MissingStepsConfigError } from './error'
-import { deploymentService } from './services/deployment-service'
-import { getProjectId } from '../infrastructure/project'
+import { DeploymentService } from './services/deployment-service'
+import { getSelectedStage } from '../infrastructure/config-utils'
+
 export class DeploymentManager {
   async deploy(
     apiKey: string,
     projectDir: string = process.cwd(),
     version: string = 'latest',
   ): Promise<void> {
-    const projectId = getProjectId()
+    const deploymentService = new DeploymentService(apiKey)
+
+    const stage = getSelectedStage()
+
+    if (!stage) {
+      throw new Error('No stage selected')
+    }
+
     if (!apiKey) {
       throw new MissingApiKeyError()
     }
@@ -34,26 +42,15 @@ export class DeploymentManager {
 
     logger.info(`Found ${zipFiles.length} zip files to deploy`)
 
-    const deploymentConfig: DeploymentConfig = {
-      apiKey,
-      environment,
-      version,
-    }
-
-    logger.info(`Deploying to environment: ${environment}, version: ${version}`)
+    logger.info(`Deploying to environment: ${stage?.name}, version: ${version}`)
 
     const flowGroups = FileManager.groupStepsByFlow(zipFiles)
     logger.info(`Deploying steps for ${Object.keys(flowGroups).length} flows`)
 
-    // First, upload the steps configuration to get a deploymentId
-    const deploymentId = await deploymentService.uploadConfiguration(stepsConfig, apiKey, environment, version)
+    const deploymentId = await deploymentService.uploadConfiguration(stepsConfig, stage.id, version)
 
-    // Then upload all zip files with the deploymentId
     const { uploadResults, failedUploads, allSuccessful } = await deploymentService.uploadZipFiles(
       zipFiles,
-      apiKey,
-      environment,
-      version,
       deploymentId,
     )
 
@@ -65,8 +62,7 @@ export class DeploymentManager {
       )
     }
 
-    // Finally, start the deployment
-    await deploymentService.startDeployment(deploymentId, deploymentConfig)
+    await deploymentService.startDeployment(deploymentId)
 
     const deploymentResults: DeploymentResult[] = uploadResults.map((result) => ({
       bundlePath: result.bundlePath,
@@ -75,13 +71,13 @@ export class DeploymentManager {
       stepName: result.stepName,
       stepPath: stepsConfig[result.bundlePath]?.entrypointPath,
       flowName: stepsConfig[result.bundlePath]?.config?.flows?.[0] || 'unknown',
-      environment: environment,
+      environment: stage.name,
       version: version,
       error: result.error,
       success: result.success,
     }))
 
-    FileManager.writeDeploymentResults(projectDir, deploymentResults, zipFiles, flowGroups, environment, version)
+    FileManager.writeDeploymentResults(projectDir, deploymentResults, zipFiles, flowGroups, stage.name, version)
 
     logger.success('Deployment process completed successfully')
   }

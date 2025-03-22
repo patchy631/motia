@@ -1,16 +1,11 @@
 import { ApiService, API_BASE_URL, ApiError } from './api-service'
 import { 
-  ProjectConfig, 
-  readConfig, 
+  ProjectConfig,
+  readConfig,
   writeConfig, 
   question, 
   readline, 
   exitWithError 
-} from './config-utils'
-
-export {
-  getProjectId,
-  readConfig as getProjectConfig
 } from './config-utils'
 
 export async function createProject(options: {

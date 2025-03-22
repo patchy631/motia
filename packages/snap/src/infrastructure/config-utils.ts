@@ -3,17 +3,17 @@ import path from 'path'
 import { createInterface } from 'readline'
 
 export interface Stage {
+  id: string
   name: string
   description?: string
   apiUrl?: string
-  id?: string
   projectId?: string
 }
 
 export interface ProjectConfig {
+  id: string
   name: string
   description?: string
-  id?: string
   selectedStage?: string
   stages?: Record<string, Stage>
 }
@@ -66,6 +66,17 @@ export function writeConfig(config: ProjectConfig): boolean {
 export function getProjectId(): string | null {
   const config = readConfig()
   return config?.id || null
+}
+
+export const getStage = (stageName: string): Stage | null => {
+  const config = readConfig()
+  return config?.stages?.[stageName] || null
+}
+
+export const getSelectedStage = (): Stage | null => {
+  const config = readConfig()
+
+  return config?.selectedStage ? getStage(config.selectedStage) : null
 }
 
 export function exitWithError(message: string, error?: unknown): never {
