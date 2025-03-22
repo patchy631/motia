@@ -4,7 +4,9 @@
 
 The reimagined Motia documentation is designed around user journeys and learning paths rather than technical structure. This approach ensures that users of all skill levels can quickly find the information they need, whether they're just getting started or implementing advanced patterns.
 
-The old docs are currently in content-old directory for refference.
+IMPORTANT: Your task is to do a complete rewrite of the docs. The old docs are in packages/docs/content-old. You need to refference these frequently while you create the new docs. The new docs should be a complete rewrite.
+
+DO NOT USE ORDER PROCESSING AS AN EXAMPLE. The examples must flow nicely into agentic workflows as you progress from beginner to imtermediate to advanced
 
 Our documentation will:
 
@@ -361,41 +363,145 @@ Each section will include:
 
 ## Implementation Checklist
 
+### Progress Summary
+
+- **Phase 1 (Foundation)**: 20% complete (1/5 tasks) + 1 in progress
+- **Phase 2 (Core Content)**: 0% complete (0/5 tasks)
+- **Phase 3 (Advanced Content)**: 0% complete (0/7 tasks)
+- **Phase 4 (Enhancement)**: 0% complete (0/7 tasks)
+- **Overall Progress**: 4% complete (1/24 tasks) + 1 in progress
+
+### Status Key
+
+- [ ] Not Started
+- [🔄] In Progress
+- [✓] Completed
+
 ### Phase 1: Foundation
 
-- [ ] Create directory structure and navigation framework
-- [ ] Develop content templates for each page type
+- [✓] Create directory structure and navigation framework
+  - [ ] Define folder hierarchy
+  - [ ] Set up navigation links between sections
+  - [ ] Implement breadcrumb navigation
+  - [ ] Create consistent URL structure
+- [🔄] Develop content templates for each page type
+  - [ ] Create journey page template
+  - [ ] Create concept page template
+  - [ ] Create guide page template
+  - [ ] Create tutorial page template
+  - [ ] Create reference page template
 - [ ] Implement multi-audience tagging system
+  - [ ] Define visual indicators for beginner/intermediate/advanced content
+  - [ ] Create filtering mechanism by skill level
+  - [ ] Implement progressive disclosure UI
 - [ ] Design interactive code example component
+  - [ ] Create language switcher (JS/TS/Python/Ruby)
+  - [ ] Implement code execution environment
+  - [ ] Add copy-to-clipboard functionality
+  - [ ] Create annotation system for code examples
 - [ ] Create visual style guide for diagrams and illustrations
+  - [ ] Define color scheme and typography
+  - [ ] Create templates for common diagram types
+  - [ ] Establish standards for interactive elements
+  - [ ] Define animation guidelines
 
 ### Phase 2: Core Content
 
 - [ ] Develop landing page and journey maps
+  - [ ] Create main documentation landing page
+  - [ ] Design visual journey maps for learning paths
+  - [ ] Implement journey selection interface
 - [ ] Create fundamental concept documentation
+  - [ ] Write "What is Motia" introduction
+  - [ ] Document event-driven basics
+  - [ ] Create steps and flows introductions
+  - [ ] Document core components overview
 - [ ] Implement core guides for essential tasks
+  - [ ] Write installation and setup guides
+  - [ ] Create basic step creation guides
+  - [ ] Document workbench usage fundamentals
+  - [ ] Write basic patterns implementation guides
 - [ ] Develop quick-start tutorial
+  - [ ] Create 5-minute setup guide
+  - [ ] Write starter example explanation
+  - [ ] Document first modification walkthrough
+  - [ ] Create next steps guidance
 - [ ] Create basic troubleshooting resources
+  - [ ] Document common errors and solutions
+  - [ ] Create debugging guide for beginners
+  - [ ] Develop FAQ for new users
+  - [ ] Write environment troubleshooting guide
 
 ### Phase 3: Advanced Content
 
 - [ ] Develop advanced concept documentation
+  - [ ] Write deterministic workflow concepts
+  - [ ] Document agentic workflow concepts
+  - [ ] Create advanced patterns documentation
 - [ ] Create complex pattern guides
+  - [ ] Document parallel processing patterns
+  - [ ] Write error handling strategies
+  - [ ] Create state management techniques
+  - [ ] Document testing strategies
 - [ ] Implement comprehensive tutorials
+  - [ ] Create GitHub integration tutorial
+  - [ ] Develop email automation tutorial
+  - [ ] Write task management tutorial
+  - [ ] Create financial analysis tutorial
 - [ ] Develop complete API reference
+  - [ ] Document configuration options
+  - [ ] Write core functions reference
+  - [ ] Create utilities documentation
 - [ ] Create language-specific documentation
+  - [ ] Write JavaScript/TypeScript documentation
+  - [ ] Create Python-specific documentation
+  - [ ] Document Ruby-specific features
 - [ ] Develop AI tools integration framework
+  - [ ] Create LLMs context documentation
+  - [ ] Write AI integration guidelines
+  - [ ] Document prompt engineering best practices
 - [ ] Create LLMs.txt button implementation
+  - [ ] Design button UI component
+  - [ ] Implement documentation context extraction
+  - [ ] Create usage guidelines
 
 ### Phase 4: Enhancement
 
 - [ ] Implement interactive visualizations
+  - [ ] Create concept map visualizations
+  - [ ] Develop flow visualization animations
+  - [ ] Implement state transition diagrams
+  - [ ] Create architecture visualization components
 - [ ] Create contextual navigation system
+  - [ ] Implement "You Are Here" indicators
+  - [ ] Develop related content suggestions
+  - [ ] Create prerequisite concept links
+  - [ ] Implement skill level pathways
 - [ ] Develop integrated troubleshooting
+  - [ ] Create common pitfalls warnings
+  - [ ] Write section-specific debugging tips
+  - [ ] Document error message explanations
+  - [ ] Develop solution patterns library
 - [ ] Implement search optimization
+  - [ ] Create search index
+  - [ ] Implement faceted search
+  - [ ] Develop search result ranking
+  - [ ] Create search suggestion system
 - [ ] Create community resources
+  - [ ] Write contribution guidelines
+  - [ ] Create community showcase
+  - [ ] Develop support resources
+  - [ ] Implement feedback mechanisms
 - [ ] Develop tool-specific rules files for AI code generation tools
+  - [ ] Create Cursor rules.md
+  - [ ] Write Windsurf rules.md
+  - [ ] Develop Cline rules.mdc
+  - [ ] Create Claude Code rules.md
 - [ ] Create AI-assisted workflow examples
+  - [ ] Develop LLM-powered workflow examples
+  - [ ] Create agent orchestration examples
+  - [ ] Write hybrid approach demonstrations
+  - [ ] Document AI integration patterns
 
 ## Special Considerations for Motia
 
