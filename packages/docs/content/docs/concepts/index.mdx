@@ -1,0 +1,87 @@
+---
+title: Core Concepts
+description: An overview of Motia's core concepts and architecture
+---
+
+# Core Concepts
+
+Motia is built on a set of powerful, yet simple core concepts that work together to create flexible, scalable event-driven workflows. This section provides a comprehensive overview of these concepts and how they fit together.
+
+<div className="my-8">
+  {/* ![Motia Architecture Overview](./img/motia-architecture-overview.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">Motia's architecture is built around Steps, Flows, Events, and Topics</p>
+</div>
+
+## The Building Blocks of Motia
+
+Motia's architecture is centered around four key concepts:
+
+| Concept    | Description                                                                                                |
+| ---------- | ---------------------------------------------------------------------------------------------------------- |
+| **Steps**  | Self-contained, reusable units of business logic that process data and emit events                         |
+| **Flows**  | Logical groupings of related steps that together accomplish a specific task or process                     |
+| **Events** | Messages that are emitted by steps and trigger other steps that subscribe to them                          |
+| **Topics** | Named channels or categories for events, enabling event routing and decoupling between steps               |
+
+## Event-Driven Architecture
+
+At its core, Motia implements an [event-driven architecture](/docs/concepts/event-driven-architecture) pattern. This approach offers several advantages:
+
+- **Loose coupling**: Steps communicate through events, not direct calls
+- **Scalability**: Components can scale independently
+- **Flexibility**: Easy to add, remove, or modify steps without disrupting the entire system
+- **Resilience**: Failures in one step don't necessarily cascade to others
+
+## Steps: The Workhorses of Motia
+
+[Steps](/docs/concepts/steps) are the fundamental building blocks in Motia. Each step is a self-contained unit of code that:
+
+1. Subscribes to specific event topics
+2. Processes data when triggered
+3. Emits events to trigger other steps
+
+Motia supports several types of steps:
+
+- [**Event Steps**](/docs/concepts/steps/event): Triggered by events from other steps
+- [**API Steps**](/docs/concepts/steps/api): Triggered by HTTP requests
+- [**Cron Steps**](/docs/concepts/steps/cron): Triggered on a schedule
+- [**Noop Steps**](/docs/workbench/noop-steps): Placeholder steps for visualization or documentation
+
+## Events & Topics: The Communication Layer
+
+[Events and Topics](/docs/concepts/events-and-topics) form the communication backbone of Motia. Events are messages that flow between steps, while topics act as channels for these events.
+
+This decoupled communication pattern allows steps to interact without direct dependencies, making your workflows more maintainable and flexible.
+
+## Flows: The Organizational Structure
+
+[Flows](/docs/concepts/flows-and-visualization) provide organization and context for your steps. They group related steps together into coherent workflows, enabling visualization in the Workbench and helping with debugging and monitoring.
+
+## State Management
+
+Motia provides flexible [state management](/docs/concepts/state-management) options to handle data persistence and sharing between steps. This allows you to maintain context across your workflow and build stateful applications.
+
+## Logging and Debugging
+
+Comprehensive [logging and debugging](/docs/concepts/logging-and-debugging) capabilities help you understand what's happening in your workflows, troubleshoot issues, and optimize performance.
+
+## Deployment
+
+Motia offers multiple [deployment](/docs/concepts/deployment) options, from local development to production environments, with built-in support for scaling and reliability.
+
+## CLI
+
+The Motia [CLI](/docs/concepts/cli) provides powerful command-line tools for creating, developing, testing, and deploying your workflows.
+
+## Testing
+
+Motia includes robust [testing](/docs/concepts/testing) capabilities to ensure your workflows behave as expected and remain reliable as they evolve.
+
+## Next Steps
+
+Now that you understand the core concepts of Motia, you can:
+
+- Dive deeper into [Steps](/docs/concepts/steps/defining-steps) to learn how to create your own
+- Explore [Flows and Visualization](/docs/concepts/flows-and-visualization) to see how to organize and visualize your workflows
+- Learn about [Event-Driven Architecture](/docs/concepts/event-driven-architecture) to understand the underlying principles
+- Check out the [Workbench](/docs/workbench/overview) to see how to develop and debug your workflows visually

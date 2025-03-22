@@ -1,10 +1,14 @@
 {
+  "title": "Core Concepts",
   "defaultOpen": true,
   "pages": [
+    "index",
+    "event-driven-architecture",
     "steps",
+    "events-and-topics",
     "flows-and-visualization",
-    "logging-and-debugging",
     "state-management",
+    "logging-and-debugging",
     "cli",
     "deployment",
     "testing"

@@ -2,6 +2,7 @@
   "title": "Examples",
   "defaultOpen": true,
   "pages": [
+    "basic-workflow",
     "sentiment-analysis"
   ]
 }

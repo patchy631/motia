@@ -1,11 +1,68 @@
 ---
 title: Welcome to Motia
-description: Get started with Motia, a powerful framework for building event-driven workflows
+description: A powerful AI agent and automation framework built for software engineering teams
 ---
 
-# Code-First Framework for Intelligent Workflows
+# AI Agent Framework for Software Engineers
 
-Motia is a **code-first framework** designed to empower developers to build robust, scalable, and observable event-driven workflows with unparalleled ease. We handle the infrastructure complexities, so you can focus on your business logic.
+Motia is a **code-first framework** designed to empower developers to build robust, scalable, and observable event-driven agentntic workflows with unparalleled ease. We handle the infrastructure complexities, so you can focus on your business logic.
+
+<div className="my-8">
+  ```mermaid
+  flowchart LR
+    %% Define node styles
+    classDef apiStep fill:#4285F4,color:white,stroke:#2A56C6,stroke-width:2px
+    classDef eventStep fill:#34A853,color:white,stroke:#1E8E3E,stroke-width:2px
+    classDef cronStep fill:#FBBC05,color:black,stroke:#F29900,stroke-width:2px
+    classDef dataStore fill:#F1F3F4,stroke:#DADCE0,stroke-width:2px,stroke-dasharray:5 5
+    
+    %% Define nodes
+    API["API Step<br/>Receive Request"]
+    Validate["Event Step<br/>Validate Data"]
+    Process["Event Step<br/>Process with AI"]
+    Store["Event Step<br/>Store Results"]
+    Notify["Event Step<br/>Send Notification"]
+    Scheduled["Cron Step<br/>Scheduled Task"]
+    DB[("State Store")]
+    
+    %% Define connections
+    API -->|"data.received"| Validate
+    Validate -->|"data.validated"| Process
+    Process -->|"data.processed"| Store
+    Store -->|"data.stored"| Notify
+    Store -.->|"read/write"| DB
+    Scheduled -->|"task.triggered"| Process
+    
+    %% Apply styles
+    class API apiStep
+    class Validate eventStep
+    class Process eventStep
+    class Store eventStep
+    class Notify eventStep
+    class Scheduled cronStep
+    class DB dataStore
+    
+    %% Define subgraph
+    subgraph "Flow: Data Processing"
+      API
+      Validate
+      Process
+      Store
+      Notify
+    end
+  ```
+  <p className="text-center text-sm text-gray-500 mt-2">Motia's event-driven architecture connects steps through topics, creating powerful workflows</p>
+</div>
+
+## How to Use These Docs
+
+This documentation is organized to help you get up to speed with Motia quickly:
+
+1. **Start with the [3-Minute Overview](/docs/tldr-motia-in-3-minutes)** for a quick introduction to Motia's core concepts.
+2. **Follow the [Quick Start Guide](/docs/getting-started/quick-start)** to set up your first Motia project and create a simple workflow.
+3. **Explore [Core Concepts](/docs/concepts)** to understand the building blocks of Motia in depth.
+4. **See [Real-World Examples](/docs/real-world-use-cases)** to understand how Motia can be applied to solve practical problems.
+5. **Use the [Workbench Documentation](/docs/workbench)** to master Motia's visual development environment.
 
 ## Why Choose Motia?
 
@@ -22,6 +79,21 @@ Motia is built with the developer in mind, offering a unique blend of simplicity
 - ✨ **Flexible and Extensible Architecture:**  Motia is designed to be easily extended and customized. Create custom steps, UI components, and adapt the framework to your specific needs.
 
 - 🧑‍💻 **Developer-First Experience:**  From intuitive APIs and a powerful CLI to comprehensive documentation and a visual workbench, Motia prioritizes developer productivity and a smooth, enjoyable development experience.
+
+- 🔄 **Seamless Integration:** Connect with existing systems and third-party services without complex integration code. Motia's event-driven architecture makes integrations straightforward.
+
+- 🛡️ **Production-Ready:** Deploy with confidence using Motia's built-in reliability features, including error handling, retries, and monitoring capabilities.
+
+## Motia vs. Other Frameworks
+
+| Feature | Motia | No-code/Low-code Tools | Fully-agentic Frameworks | ML-focused Frameworks | Custom Code |
+|---------|-------|------------------------|--------------------------|----------------------|-------------|
+| **Code-First Approach** | ✅ Full flexibility with code | ❌ Limited by visual tools | ✅ Usually code-based | ✅ Code-based but ML-focused | ✅ Complete control |
+| **Multi-language Support** | ✅ JS, TS, Python, Ruby | ❌ Usually proprietary | ❌ Often single language | ❌ Often Python-only | ✅ Your choice |
+| **Visual Debugging** | ✅ Built-in workbench | ✅ Visual interfaces | ❌ Limited visualization | ❌ ML-focused tools | ❌ Requires separate tools |
+| **Infrastructure Management** | ✅ Handled automatically | ✅ Managed for you | ❌ Often requires setup | ❌ Requires ML infrastructure | ❌ Build your own |
+| **Production Scalability** | ✅ Enterprise-ready | ❌ Often limited | ⚠️ Varies widely | ⚠️ ML-specific scaling | ✅ Custom scaling |
+| **Learning Curve** | 📊 Moderate | 📊 Low | 📊 High | 📊 Very high | 📊 Very high |
 
 ## Motia Workbench: Your Development Control Center
 
@@ -76,7 +148,7 @@ Motia is versatile and can be applied across various industries and use cases, s
 
 Embark on your Motia journey and start building powerful workflows today:
 
-1.  **Quick Start Guide:** Follow our [Quick Start](/docs/quick-start) to set up your first Motia project and create a minimal workflow.
+1.  **Quick Start Guide:** Follow our [Quick Start](/docs/getting-started/quick-start) to set up your first Motia project and create a minimal workflow.
 2.  **Explore Examples:** Dive into practical [Examples](/docs/examples) to understand common patterns and real-world use cases.
 3.  **Dive into Concepts:**  Delve deeper into Motia's [Core Concepts](/docs/concepts) to gain a solid understanding of the framework's architecture and principles.
 

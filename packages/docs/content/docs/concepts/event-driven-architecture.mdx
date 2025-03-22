@@ -1,0 +1,187 @@
+---
+title: Event-Driven Architecture
+description: Understanding the event-driven architecture principles behind Motia
+---
+
+# Event-Driven Architecture
+
+Event-driven architecture (EDA) is the foundation of Motia's design. This architectural pattern enables the creation of loosely coupled, scalable, and resilient systems by organizing application components around the production, detection, and consumption of events.
+
+<div className="my-8">
+  {/* ![Event-Driven Architecture](./img/event-driven-architecture.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">Event-driven architecture decouples components through event-based communication</p>
+</div>
+
+## What is Event-Driven Architecture?
+
+At its core, event-driven architecture is a software design pattern where:
+
+1. **Components communicate through events** rather than direct method calls
+2. **Events represent something that has happened** in the system or domain
+3. **Components react to events** they're interested in, without needing to know about the source
+
+This approach differs from traditional request-response patterns, where components directly call each other and wait for responses.
+
+## Key Concepts in Event-Driven Architecture
+
+### Events
+
+An event is a notification that something has happened. Events typically contain:
+
+- A **type or name** identifying what happened
+- A **payload** with relevant data about the occurrence
+- **Metadata** such as timestamps, source information, etc.
+
+### Event Producers
+
+Components that detect or create events and publish them to the system. In Motia, any step can be an event producer by emitting events.
+
+### Event Consumers
+
+Components that listen for specific events and react when they occur. In Motia, steps subscribe to specific topics to consume events.
+
+### Event Channels
+
+The pathways through which events flow from producers to consumers. In Motia, these are represented by topics.
+
+## How Motia Implements Event-Driven Architecture
+
+Motia provides a complete implementation of event-driven architecture through its core concepts:
+
+### Steps as Event Producers and Consumers
+
+In Motia, [steps](/docs/concepts/steps/defining-steps) can both produce and consume events:
+
+```typescript
+// Example of a step that consumes and produces events
+exports.config = {
+  type: 'event',
+  name: 'ProcessOrder',
+  subscribes: ['order.created'],  // Consumes these events
+  emits: ['payment.requested'],   // Produces these events
+  flows: ['order-processing']
+}
+
+exports.handler = async (input, { emit }) => {
+  // Process the order
+  const order = processOrder(input);
+  
+  // Emit a payment request event
+  await emit({
+    topic: 'payment.requested',
+    data: { 
+      orderId: order.id,
+      amount: order.total
+    }
+  });
+}
+```
+
+### Topics as Event Channels
+
+[Topics](/docs/concepts/events-and-topics) in Motia serve as the channels through which events flow. They provide:
+
+- **Decoupling**: Steps don't need to know about each other, only about the topics they care about
+- **Filtering**: Steps only receive events from topics they subscribe to
+- **Routing**: Events are delivered to all steps that subscribe to the relevant topic
+
+### Event Manager
+
+Behind the scenes, Motia's event manager:
+
+- Routes events to the appropriate subscribers
+- Handles event persistence when needed
+- Manages event delivery and retry logic
+- Provides observability into event flow
+
+## Benefits of Event-Driven Architecture in Motia
+
+### Loose Coupling
+
+Steps communicate indirectly through events, reducing dependencies between components. This makes your system:
+
+- **More maintainable**: Changes to one step don't require changes to others
+- **More extensible**: New functionality can be added without modifying existing code
+- **More testable**: Components can be tested in isolation
+
+### Scalability
+
+Event-driven systems can scale more effectively because:
+
+- **Components can scale independently**: High-load components can be scaled without scaling everything
+- **Asynchronous processing**: Steps don't block each other, allowing for better resource utilization
+- **Natural partitioning**: Work can be distributed across multiple instances
+
+### Resilience
+
+Event-driven architecture enhances system resilience:
+
+- **Fault isolation**: Failures in one step don't necessarily cascade to others
+- **Retry capabilities**: Failed event processing can be retried
+- **Event persistence**: Events can be stored and processed later if needed
+
+### Flexibility
+
+Motia's event-driven approach provides exceptional flexibility:
+
+- **Easy to add new capabilities**: Just add a new step that subscribes to existing events
+- **Simple to modify behavior**: Change how events are processed without changing how they're produced
+- **Multi-language support**: Different steps can be implemented in different languages
+
+## Common Patterns in Event-Driven Architecture
+
+### Event Sourcing
+
+Event sourcing is a pattern where the state of a system is determined by a sequence of events. In Motia, you can implement event sourcing by:
+
+- Storing all events that change the state
+- Reconstructing the state by replaying events
+- Using the [state management](/docs/concepts/state-management) capabilities to persist and retrieve state
+
+### Command Query Responsibility Segregation (CQRS)
+
+CQRS separates read and write operations into different models. In Motia, you can implement CQRS by:
+
+- Using different steps for commands (writes) and queries (reads)
+- Maintaining separate data models optimized for each purpose
+- Synchronizing models through events
+
+### Saga Pattern
+
+The saga pattern manages distributed transactions across multiple services. In Motia, you can implement sagas by:
+
+- Breaking transactions into a sequence of steps
+- Using compensating transactions to handle failures
+- Coordinating the process through events
+
+## Best Practices for Event-Driven Architecture in Motia
+
+### Event Design
+
+- **Keep events meaningful**: Events should represent significant occurrences in your domain
+- **Design for evolution**: Event schemas should be able to evolve without breaking consumers
+- **Include necessary context**: Events should contain all data needed by consumers
+
+### Topic Naming
+
+- **Use hierarchical naming**: e.g., `order.created`, `order.updated`, `payment.processed`
+- **Be specific but not too granular**: Balance between too generic and too specific
+- **Follow a consistent convention**: Establish naming patterns and stick to them
+
+### Step Design
+
+- **Single responsibility**: Each step should do one thing well
+- **Idempotency**: Steps should handle duplicate events gracefully
+- **Failure handling**: Plan for and handle failures appropriately
+
+## Conclusion
+
+Event-driven architecture is a powerful paradigm that enables the creation of flexible, scalable, and resilient systems. Motia embraces this approach, providing a framework that makes it easy to build event-driven workflows without the complexity of setting up the underlying infrastructure.
+
+By understanding the principles of event-driven architecture and how Motia implements them, you can create more maintainable, extensible, and robust applications.
+
+## Next Steps
+
+- Learn more about [Steps](/docs/concepts/steps/defining-steps) in Motia
+- Explore [Events and Topics](/docs/concepts/events-and-topics) in depth
+- Understand [Flows and Visualization](/docs/concepts/flows-and-visualization) to see how your event-driven system comes together

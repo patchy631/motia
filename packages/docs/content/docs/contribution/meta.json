@@ -1,8 +1,6 @@
 {
   "title": "Contribution",
   "pages": [
-    "how-to-contribute",
-    "code-of-conduct",
-    "development-setup"
+    "how-to-contribute"
   ]
-} 
+}

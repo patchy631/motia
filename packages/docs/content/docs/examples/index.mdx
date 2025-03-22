@@ -1,19 +1,102 @@
 ---
 title: Examples
+description: Learn Motia through practical examples from basic to advanced
 ---
 
-We have curated a few examples to help you get started with Motia.
+# Motia Examples
+
+Explore these practical examples to learn how to build workflows with Motia. These examples range from simple to complex and demonstrate different features and use cases.
+
+<div className="my-8">
+  {/* ![Motia Examples](../img/examples-overview.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">Learn Motia through hands-on examples</p>
+</div>
+
+## Available Examples
 
 <Cards>
   <Card
+    title="Basic Workflow"
+    href="/docs/examples/basic-workflow"
+    description="A simple end-to-end example that demonstrates the core concepts of Motia, including steps, events, and flows"
+    icon="workflow"
+  />
+  <Card
     title="Sentiment Analysis"
     href="/docs/examples/sentiment-analysis"
-    description="Sometimes you don't just want a simple “prompt => response.” Instead, you want the LLM to decide how to proceed A real-world example of a sentiment analysis flow"
+    description="A more advanced example that uses AI to analyze sentiment in text, demonstrating integration with external services"
+    icon="brain"
   />
 </Cards>
 
-<br/>
+## Learning Path
+
+We recommend following these examples in order:
+
+1. **Basic Workflow**: Start here to learn the fundamentals of Motia
+2. **Sentiment Analysis**: Move on to this more complex example once you understand the basics
+
+Each example includes:
+
+- Step-by-step instructions
+- Complete code samples
+- Explanations of key concepts
+- Tips for extending and customizing
+
+## Example Structure
+
+Our examples follow a consistent structure:
+
+1. **Overview**: What you'll build and what you'll learn
+2. **Prerequisites**: What you need to get started
+3. **Step-by-Step Guide**: Detailed instructions for building the example
+4. **Key Concepts**: Explanation of the Motia concepts demonstrated
+5. **Next Steps**: Suggestions for extending the example or moving on to more advanced topics
+
+## Running the Examples
+
+To run these examples:
+
+1. Clone the example repository:
+   ```bash
+   git clone https://github.com/MotiaDev/motia-examples.git
+   ```
+
+2. Navigate to the specific example:
+   ```bash
+   cd motia-examples/examples/basic-workflow
+   ```
+
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+4. Start the Motia development server:
+   ```bash
+   motia dev
+   ```
+
+5. Open the Workbench at http://localhost:3000
+
+## Creating Your Own Examples
+
+These examples are designed to be starting points for your own workflows. Feel free to:
+
+- Modify the examples to fit your needs
+- Combine concepts from different examples
+- Use the code as a reference for your own projects
 
 ## Contribute
 
-We welcome contributions to the examples. Please submit a PR to the [examples repository](https://github.com/motiadev/motia-examples).
+We welcome contributions to our examples! If you've built something interesting with Motia, consider sharing it:
+
+1. Fork the [examples repository](https://github.com/MotiaDev/motia-examples)
+2. Add your example following our contribution guidelines
+3. Submit a pull request
+
+## Next Steps
+
+- Check out [Real-World Use Cases](/docs/real-world-use-cases) for more complex implementations
+- Learn about [Debugging Workflows](/docs/workbench/debugging-workflows) to troubleshoot your examples
+- Explore the [Core Concepts](/docs/concepts) to deepen your understanding of Motia

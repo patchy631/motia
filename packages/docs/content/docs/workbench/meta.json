@@ -1,7 +1,9 @@
 {
+  "title": "Workbench",
   "defaultOpen": true,
   "pages": [
     "overview",
+    "debugging-workflows",
     "ui-steps",
     "noop-steps"
   ]

@@ -1,19 +1,20 @@
 ---
-title: Overview
+title: Workbench Overview
+description: A comprehensive guide to Motia Workbench - your visual development environment for building and debugging workflows
 ---
 
-Motia Workbench is a development platform that helps you build and debug your Motia flows. It serves as your control center where you can:
+# Workbench Overview
 
-- Visualize flows as interactive diagrams
-- Test steps directly in the UI
-- Monitor real-time logs
-- Debug issues
+Motia Workbench is a powerful visual development environment that helps you build, test, and debug your Motia workflows. It serves as your command center where you can visualize flows, monitor execution, and troubleshoot issues in real-time.
 
-![Flow Visualization in Workbench](./../img/demo-workbench.png)
+<div className="my-8">
+  {/* ![Motia Workbench Interface](../img/workbench-overview.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">The Motia Workbench interface showing a flow visualization</p>
+</div>
 
-## Getting Started
+## Getting Started with Workbench
 
-Start workbench by running:
+Start the Workbench by running the development command in your Motia project:
 
 <Tabs items={['pnpm', 'yarn', 'npm', 'bun']}>
    <Tab value='pnpm'>
@@ -42,78 +43,262 @@ Start workbench by running:
 Running the dev command starts:
 - **Motia Server**: Backend services and API endpoints
 - **Motia Workbench**: Web interface at http://localhost:3000
-- **Development Mode**: Auto-reloads when changes are made
+- **Development Mode**: Auto-reloads when changes are made to your steps
 </Callout>
+
+## Workbench Interface
+
+The Workbench interface is designed to give you a complete view of your workflows:
+
+<div className="my-8">
+  {/* ![Workbench UI Components](../img/workbench-ui-components.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">Key components of the Motia Workbench interface</p>
+</div>
+
+### Main Components
+
+1. **Navigation Bar**: Switch between different views and access settings
+2. **Flow Selector**: Choose which flow to visualize and work with
+3. **Flow Visualization**: Interactive diagram of your workflow
+4. **Step Details Panel**: View and edit step properties
+5. **Log Explorer**: Monitor and filter logs in real-time
+6. **Test Panel**: Send test requests and view responses
 
 ## Key Features
 
 <Steps>
   <Step>
-  ### Flow Visualization
-  See your entire flow as an interactive diagram:
-  - Steps appear as connected nodes
-  - API endpoints are highlighted as entry points
-  - Event connections show data flow
-  - Click any step to see its details
+    ### Interactive Flow Visualization
+    
+    The flow visualization is the heart of the Workbench, providing a real-time, interactive view of your workflows:
+    
+    - **Step Nodes**: Each step appears as a node in the diagram
+    - **Event Connections**: Lines show how events flow between steps
+    - **Color Coding**: Different step types have distinct colors
+    - **Status Indicators**: See which steps are active, completed, or have errors
+    - **Zoom and Pan**: Navigate complex flows with ease
+    
+    <div className="my-4">
+      {/* ![Flow Visualization](../img/flow-visualization.png) */}
+      <p className="text-center text-sm text-gray-500 mt-2">Interactive flow visualization showing steps and connections</p>
+    </div>
+    
+    <Callout>
+      Click on any step in the visualization to see its details, including configuration, code, and recent executions.
+    </Callout>
   </Step>
 
   <Step>
-  ### Real-time Testing
-  Test your flows directly in the interface:
-  - Send test requests to API endpoints
-  - Monitor how events flow through steps
-  - Visualize step sequence execution
-  - Inspect data at each stage
+    ### Real-time Testing
+    
+    Test your workflows directly in the Workbench:
+    
+    - **API Testing**: Send test requests to API endpoints
+    - **Event Injection**: Manually trigger events to test specific steps
+    - **Request Builder**: Construct test payloads with a user-friendly interface
+    - **Response Viewer**: See the responses from your API steps
+    - **Flow Tracing**: Watch how events propagate through your workflow
+    
+    <div className="my-4">
+      {/* ![Testing Interface](../img/testing-interface.png) */}
+      <p className="text-center text-sm text-gray-500 mt-2">Testing interface for sending requests and viewing responses</p>
+    </div>
   </Step>
 
   <Step>
-  ### Live Logs
-  Monitor your flow execution:
-  ```
-  [INFO] [payment-flow] Payment received: $50.00
-  [DEBUG] [payment-flow] Processing payment...
-  ```
+    ### Live Log Explorer
+    
+    Monitor your workflow execution with the Log Explorer:
+    
+    - **Real-time Logs**: See logs as they're generated
+    - **Filtering**: Filter logs by flow, step, level, or text
+    - **Log Levels**: View different log levels (ERROR, WARN, INFO, DEBUG)
+    - **Structured Data**: Expand structured log data for detailed inspection
+    - **Trace Correlation**: Follow a request through multiple steps
+    
+    <div className="my-4">
+      {/* ![Log Explorer](../img/log-explorer.png) */}
+      <p className="text-center text-sm text-gray-500 mt-2">Log Explorer showing filtered logs with expandable details</p>
+    </div>
+    
+    ```
+    [INFO] [payment-flow] [ProcessPayment] Received payment request
+    [DEBUG] [payment-flow] [ProcessPayment] Payment details: { "amount": 50.00, "currency": "USD" }
+    [INFO] [payment-flow] [ValidatePayment] Validating payment...
+    [INFO] [payment-flow] [ProcessPayment] Payment processed successfully
+    ```
   </Step>
 
   <Step>
-   ### Development Tools
-  - **Hot Reload**: Changes reflect immediately in the UI
-  - **Error Handling**: Detailed error messages with contextual debugging information
-  - **State Inspector**: Real-time monitoring of state management
+    ### Step Inspector
+    
+    Examine and understand your steps in detail:
+    
+    - **Configuration View**: See the step's configuration
+    - **Code View**: Examine the step's implementation
+    - **State Inspector**: View and modify the step's state
+    - **Recent Executions**: See the history of recent executions
+    - **Input/Output Data**: Inspect the data flowing through the step
+    
+    <div className="my-4">
+      {/* ![Step Inspector](../img/step-inspector.png) */}
+      <p className="text-center text-sm text-gray-500 mt-2">Step Inspector showing configuration, code, and execution details</p>
+    </div>
+  </Step>
+
+  <Step>
+    ### Development Tools
+    
+    The Workbench includes powerful tools for development:
+    
+    - **Hot Reload**: Changes to your steps are automatically reflected
+    - **Error Highlighting**: Errors are highlighted in the flow visualization
+    - **Debugging Tools**: Set breakpoints, inspect variables, and step through execution
+    - **Performance Metrics**: Monitor execution time and resource usage
+    - **Export/Import**: Share flows and configurations
   </Step>
 </Steps>
 
-## Customization
+## Customizing the Workbench Experience
 
-Motia Workbench allows you to customize how your steps appear in the Workbench flow visualization tool.
+Motia Workbench allows you to customize how your workflows appear and behave:
 
-### NOOP Steps
+### Step Visualization
 
-NOOP (No Operation) steps represent virtual points in your flow where external actions occur:
-- Human approvals or reviews
-- Webhook callbacks
-- External system integrations
-- Manual interventions
+Customize how steps appear in the flow visualization:
 
-These steps help visualize important external touchpoints without implementing actual logic.
+- **Custom Icons**: Assign unique icons to steps for easier identification
+- **Color Coding**: Use colors to indicate step purpose or status
+- **Layout Control**: Arrange steps in a way that makes sense for your workflow
+- **Grouping**: Group related steps together for better organization
 
 ### UI Steps
 
-UI steps allow you to customize how your steps appear in the Workbench visualization:
-- Override the default layout of Event steps
-- Customize API endpoint representations
-- Modify how Cron jobs are displayed
-- Add custom icons and styling
+[UI Steps](/docs/workbench/ui-steps) provide a way to customize the appearance and behavior of steps in the Workbench:
 
-<Breadcrumb items={[{
-  name: 'UI Steps',
-  url: '/docs/workbench/ui-steps'
-},{
-  name: 'NOOP Steps',
-  url: '/docs/workbench/noop-steps'
-}]} />
+```typescript
+// Example UI Step
+export const ui = {
+  icon: 'payment',
+  color: '#4CAF50',
+  description: 'Processes payment transactions',
+  displayData: (data) => ({
+    amount: `$${data.amount.toFixed(2)}`,
+    status: data.status
+  })
+};
+```
 
-<Callout>
-New to Motia? Follow the **[quick start](/docs/quick-start)** guide to get set up.
-</Callout>
+### NOOP Steps
 
+[NOOP Steps](/docs/workbench/noop-steps) represent external processes or manual interventions in your workflow:
+
+```typescript
+// Example NOOP Step
+export const config = {
+  type: 'noop',
+  name: 'ManualApproval',
+  subscribes: ['order.created'],
+  emits: ['order.approved', 'order.rejected'],
+  flows: ['order-processing']
+};
+
+export const ui = {
+  icon: 'person',
+  color: '#FFC107',
+  description: 'Requires manual approval from a manager'
+};
+```
+
+## Workbench Modes
+
+The Workbench offers different modes to support your development workflow:
+
+### Development Mode
+
+The default mode when running `motia dev`:
+
+- Hot reloading of changes
+- Detailed logging and debugging information
+- Full access to all development tools
+
+### Production Preview Mode
+
+Simulate production environment:
+
+- No hot reloading
+- Limited debugging information
+- Performance optimizations enabled
+
+### Presentation Mode
+
+Showcase your workflows to stakeholders:
+
+- Simplified interface
+- Focus on flow visualization
+- Hide implementation details
+
+## Keyboard Shortcuts
+
+The Workbench supports keyboard shortcuts for common actions:
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+F` / `Cmd+F` | Search logs |
+| `Ctrl+R` / `Cmd+R` | Refresh flow visualization |
+| `Ctrl+E` / `Cmd+E` | Toggle step details panel |
+| `Ctrl+L` / `Cmd+L` | Toggle log explorer |
+| `Ctrl+T` / `Cmd+T` | Open test panel |
+| `Ctrl+S` / `Cmd+S` | Save current flow layout |
+| `Esc` | Close current panel |
+
+## Best Practices
+
+### Organizing Flows
+
+- **Group Related Steps**: Keep related steps in the same flow
+- **Meaningful Flow Names**: Use descriptive names for flows
+- **Consistent Naming**: Use a consistent naming convention for steps and flows
+- **Limit Flow Size**: Keep flows to a manageable size (10-15 steps maximum)
+
+### Effective Visualization
+
+- **Logical Layout**: Arrange steps in a logical flow from left to right or top to bottom
+- **Color Coding**: Use colors consistently to indicate step types or purposes
+- **Custom Icons**: Use icons that represent the step's function
+- **Step Descriptions**: Add clear descriptions to steps
+
+### Debugging Workflows
+
+- **Start Simple**: Begin with simple flows and add complexity gradually
+- **Test Each Step**: Test steps individually before connecting them
+- **Use Logging**: Add appropriate logging to track execution
+- **Isolate Issues**: Use the [debugging tools](/docs/workbench/debugging-workflows) to isolate and fix issues
+
+## Troubleshooting
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Workbench not starting | Check if the port is already in use or if there are errors in your steps |
+| Steps not appearing in visualization | Verify that steps have the correct flow name in their configuration |
+| Events not triggering steps | Check that the topic names match exactly between emitter and subscriber |
+| Hot reload not working | Ensure your file watcher is working and check for syntax errors |
+| High CPU/memory usage | Look for infinite loops or memory leaks in your step code |
+
+### Getting Help
+
+If you encounter issues with the Workbench:
+
+1. Check the server logs for error messages
+2. Consult the [debugging guide](/docs/workbench/debugging-workflows)
+3. Search the [GitHub issues](https://github.com/motiadev/motia/issues)
+4. Join our [Discord community](https://discord.gg/nJFfsH5d6v) for help
+
+## Next Steps
+
+- Learn about [Debugging Workflows](/docs/workbench/debugging-workflows) for troubleshooting tips
+- Explore [UI Steps](/docs/workbench/ui-steps) to customize your flow visualization
+- Discover [NOOP Steps](/docs/workbench/noop-steps) for representing external processes
+- Check out [Real-World Examples](/docs/real-world-use-cases) to see Motia in action

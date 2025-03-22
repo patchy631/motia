@@ -1,0 +1,381 @@
+---
+title: Steps Overview
+description: Understanding the different types of steps in Motia and when to use them
+---
+
+# Steps Overview
+
+Steps are the fundamental building blocks of Motia workflows. Each step is a self-contained unit of business logic that can be triggered by events, process data, and emit new events. This page provides an overview of the different types of steps available in Motia and guidance on when to use each type.
+
+<div className="my-8">
+  {/* ![Steps Overview](../img/steps-overview.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">Different types of steps in Motia and how they interact</p>
+</div>
+
+## What is a Step?
+
+A step in Motia is a modular, reusable component that:
+
+- Has a specific purpose or function
+- Can be triggered by events or external stimuli
+- Processes input data
+- Can emit events to trigger other steps
+- Belongs to one or more flows
+
+All steps in Motia share a common structure:
+
+```typescript
+// Basic structure of a Motia step
+exports.config = {
+  type: 'event', // The type of step (event, api, cron)
+  name: 'ProcessData', // A unique name for the step
+  subscribes: ['data.received'], // Events this step listens for (for event steps)
+  emits: ['data.processed'], // Events this step may emit
+  flows: ['data-pipeline'] // Flows this step belongs to
+}
+
+exports.handler = async (input, context) => {
+  // Step implementation logic goes here
+  // Process input data
+  // Emit events using context.emit
+  // Return results if needed
+}
+```
+
+## Types of Steps
+
+Motia provides several types of steps, each designed for specific use cases:
+
+### Event Steps
+
+[Event steps](/docs/concepts/steps/event) are triggered by events emitted by other steps. They are the most common type of step in Motia workflows.
+
+**When to use Event Steps:**
+- For processing data after a specific event occurs
+- For implementing business logic that depends on other steps
+- For creating chains of processing steps
+- For implementing event-driven workflows
+
+**Example:**
+```typescript
+// Event step example
+exports.config = {
+  type: 'event',
+  name: 'ProcessOrder',
+  subscribes: ['order.created'],
+  emits: ['order.processed'],
+  flows: ['order-processing']
+}
+
+exports.handler = async (input, { emit }) => {
+  // Process the order
+  const processedOrder = await processOrder(input);
+  
+  // Emit an event with the processed order
+  await emit({
+    topic: 'order.processed',
+    data: processedOrder
+  });
+}
+```
+
+### API Steps
+
+[API steps](/docs/concepts/steps/api) expose HTTP endpoints that can be called from external systems. They serve as entry points to your Motia workflows.
+
+**When to use API Steps:**
+- For integrating with external systems
+- For creating webhooks
+- For building REST APIs
+- For triggering workflows from user interfaces
+- For starting new workflow instances
+
+**Example:**
+```typescript
+// API step example
+exports.config = {
+  type: 'api',
+  name: 'CreateOrder',
+  path: '/orders',
+  method: 'POST',
+  emits: ['order.created'],
+  flows: ['order-processing']
+}
+
+exports.handler = async (req, { emit }) => {
+  // Validate the request
+  const orderData = validateOrderData(req.body);
+  
+  // Emit an event with the new order
+  await emit({
+    topic: 'order.created',
+    data: orderData
+  });
+  
+  // Return a response
+  return {
+    statusCode: 201,
+    body: {
+      orderId: orderData.id,
+      message: 'Order created successfully'
+    }
+  };
+}
+```
+
+### Cron Steps
+
+[Cron steps](/docs/concepts/steps/cron) are triggered on a schedule using cron expressions. They are useful for periodic tasks and scheduled workflows.
+
+**When to use Cron Steps:**
+- For scheduled tasks that run at specific intervals
+- For periodic data processing
+- For maintenance tasks
+- For generating reports
+- For implementing time-based workflows
+
+**Example:**
+```typescript
+// Cron step example
+exports.config = {
+  type: 'cron',
+  name: 'DailyReport',
+  schedule: '0 0 * * *', // Run at midnight every day
+  emits: ['report.generated'],
+  flows: ['reporting']
+}
+
+exports.handler = async (input, { emit }) => {
+  // Generate the daily report
+  const report = await generateDailyReport();
+  
+  // Emit an event with the report
+  await emit({
+    topic: 'report.generated',
+    data: report
+  });
+}
+```
+
+### Noop Steps
+
+[Noop (No Operation) steps](/docs/workbench/noop-steps) don't contain actual implementation logic. They are used for visualization, documentation, or representing external processes in the Workbench.
+
+**When to use Noop Steps:**
+- For documenting external processes
+- For visualizing complex workflows
+- For representing manual steps
+- For placeholders in workflow design
+
+## Multi-Language Support
+
+One of Motia's key features is support for multiple programming languages. You can write steps in:
+
+- **JavaScript/TypeScript**: For frontend and Node.js developers
+- **Python**: For data science, machine learning, and scientific computing
+- **Ruby**: For Ruby on Rails developers and those familiar with Ruby
+
+This flexibility allows you to use the best language for each specific task and leverage existing code and libraries.
+
+## Common Step Patterns
+
+### Transformation Steps
+
+Transform data from one format to another:
+
+```typescript
+exports.config = {
+  type: 'event',
+  name: 'TransformData',
+  subscribes: ['data.raw'],
+  emits: ['data.transformed'],
+  flows: ['data-processing']
+}
+
+exports.handler = async (input, { emit }) => {
+  // Transform the data
+  const transformedData = transformData(input);
+  
+  // Emit the transformed data
+  await emit({
+    topic: 'data.transformed',
+    data: transformedData
+  });
+}
+```
+
+### Aggregation Steps
+
+Combine data from multiple events:
+
+```typescript
+exports.config = {
+  type: 'event',
+  name: 'AggregateData',
+  subscribes: ['data.part'],
+  emits: ['data.aggregated'],
+  flows: ['data-processing']
+}
+
+exports.handler = async (input, { emit, state }) => {
+  // Get the current aggregation state
+  const aggregation = await state.get('aggregation') || { parts: [], complete: false };
+  
+  // Add the new part
+  aggregation.parts.push(input);
+  
+  // Check if aggregation is complete
+  if (aggregation.parts.length >= input.totalParts) {
+    aggregation.complete = true;
+    
+    // Emit the aggregated data
+    await emit({
+      topic: 'data.aggregated',
+      data: {
+        result: combineData(aggregation.parts)
+      }
+    });
+    
+    // Reset the state
+    await state.set('aggregation', null);
+  } else {
+    // Update the state
+    await state.set('aggregation', aggregation);
+  }
+}
+```
+
+### Filter Steps
+
+Filter events based on certain criteria:
+
+```typescript
+exports.config = {
+  type: 'event',
+  name: 'FilterHighValueOrders',
+  subscribes: ['order.created'],
+  emits: ['order.highvalue'],
+  flows: ['order-processing']
+}
+
+exports.handler = async (input, { emit }) => {
+  // Check if this is a high-value order
+  if (input.total > 1000) {
+    // Emit a high-value order event
+    await emit({
+      topic: 'order.highvalue',
+      data: input
+    });
+  }
+}
+```
+
+### Integration Steps
+
+Connect with external systems:
+
+```typescript
+exports.config = {
+  type: 'event',
+  name: 'SendEmailNotification',
+  subscribes: ['notification.email.requested'],
+  flows: ['notifications']
+}
+
+exports.handler = async (input, { emit }) => {
+  // Send the email using an external service
+  await emailService.send({
+    to: input.recipient,
+    subject: input.subject,
+    body: input.body
+  });
+  
+  // Optionally emit an event indicating the email was sent
+  await emit({
+    topic: 'notification.email.sent',
+    data: {
+      recipientId: input.recipientId,
+      messageId: result.messageId,
+      sentAt: new Date().toISOString()
+    }
+  });
+}
+```
+
+## Best Practices for Steps
+
+### Design Principles
+
+- **Single Responsibility**: Each step should do one thing well
+- **Idempotency**: Steps should handle duplicate events gracefully
+- **Statelessness**: Minimize state within steps; use the state management API for persistent state
+- **Error Handling**: Implement proper error handling and recovery mechanisms
+- **Logging**: Use appropriate logging to aid debugging and monitoring
+
+### Naming Conventions
+
+- Use clear, descriptive names for steps
+- Follow a consistent naming convention
+- Consider including the action and entity in the name (e.g., `ProcessOrder`, `ValidateUser`)
+
+### Input Validation
+
+Always validate input data to ensure it meets your expectations:
+
+```typescript
+exports.handler = async (input, { emit }) => {
+  // Validate input
+  if (!input.userId || !input.productId) {
+    throw new Error('Missing required fields: userId and productId are required');
+  }
+  
+  // Process valid input
+  // ...
+}
+```
+
+### Error Handling
+
+Implement proper error handling to make your steps resilient:
+
+```typescript
+exports.handler = async (input, { emit }) => {
+  try {
+    // Attempt to process the input
+    const result = await processData(input);
+    
+    // Emit success event
+    await emit({
+      topic: 'data.processed',
+      data: result
+    });
+  } catch (error) {
+    // Log the error
+    console.error('Error processing data:', error);
+    
+    // Emit error event
+    await emit({
+      topic: 'data.processing.failed',
+      data: {
+        input,
+        error: {
+          message: error.message,
+          stack: error.stack
+        }
+      }
+    });
+  }
+}
+```
+
+## Next Steps
+
+Now that you understand the different types of steps in Motia, you can:
+
+- Learn how to [define steps](/docs/concepts/steps/defining-steps) in detail
+- Explore specific step types:
+  - [Event Steps](/docs/concepts/steps/event)
+  - [API Steps](/docs/concepts/steps/api)
+  - [Cron Steps](/docs/concepts/steps/cron)
+- Understand how steps fit into [flows](/docs/concepts/flows-and-visualization)
+- Learn about [events and topics](/docs/concepts/events-and-topics) for step communication

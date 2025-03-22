@@ -1,0 +1,474 @@
+---
+title: Basic Workflow
+description: A simple end-to-end example of a Motia workflow
+---
+
+# Basic AI Agent Workflow Example
+
+This guide walks you through creating a simple but complete AI agent workflow with Motia from scratch. By the end, you'll have a functional AI agent that demonstrates the core concepts of Motia, including steps, events, and flows.
+
+<div className="my-8">
+  {/* ![Basic AI Agent Workflow](../img/basic-workflow.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">A simple Motia AI agent workflow with API, event, and processing steps</p>
+</div>
+
+## What We're Building
+
+We'll build a simple "Text Analysis Agent" workflow that:
+
+1. Receives text input via an API endpoint
+2. Validates the input format
+3. Analyzes the text (sentiment analysis using AI)
+4. Stores the analysis results
+5. Sends a notification that analysis is complete
+
+This example demonstrates:
+- Creating different types of steps (API, event)
+- Connecting steps with events
+- Managing state
+- Error handling
+- Testing the workflow
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- Motia installed (`npm install -g @motia/snap`)
+- A new Motia project created (`motia create text-analysis-agent`)
+- Basic knowledge of JavaScript/TypeScript
+- An OpenAI API key (for the sentiment analysis)
+
+## Project Structure
+
+Our project will have the following structure:
+
+```
+text-analysis-agent/
+├── steps/
+│   ├── receiveText.ts        # API step to receive text input
+│   ├── validateInput.ts      # Event step to validate the input
+│   ├── analyzeSentiment.ts   # Event step to analyze sentiment using AI
+│   ├── storeResults.ts       # Event step to store analysis results
+│   └── sendNotification.ts   # Event step to send notifications
+└── config.yml                # Motia configuration file
+```
+
+## Step 1: Create the Project
+
+First, create a new Motia project:
+
+```bash
+mkdir text-analysis-agent
+cd text-analysis-agent
+motia init
+```
+
+This will create a basic project structure with a `config.yml` file and a `steps` directory.
+
+## Step 2: Define the API Step
+
+Create a file `steps/receiveText.ts` to handle incoming text for analysis:
+
+```typescript
+// steps/receiveText.ts
+export const config = {
+  type: 'api',
+  name: 'ReceiveText',
+  path: '/analyze',
+  method: 'POST',
+  emits: ['text.received'],
+  flows: ['text-analysis']
+};
+
+export const handler = async (req, { emit, logger }) => {
+  logger.info('Received text analysis request');
+  
+  // Extract the text and user info from the request body
+  const { text, userId } = req.body;
+  
+  if (!text) {
+    logger.warn('Missing text in request');
+    return {
+      statusCode: 400,
+      body: {
+        error: 'Missing text to analyze'
+      }
+    };
+  }
+  
+  // Emit an event with the text data
+  await emit({
+    topic: 'text.received',
+    data: {
+      text,
+      userId: userId || 'anonymous',
+      receivedAt: new Date().toISOString()
+    }
+  });
+  
+  // Return a response
+  return {
+    statusCode: 202, // Accepted
+    body: {
+      status: 'Text received and analysis started',
+      estimatedCompletionTime: '2-3 seconds',
+      receivedAt: new Date().toISOString()
+    }
+  };
+};
+```
+
+This step:
+1. Defines an API endpoint at `/analyze` that accepts POST requests
+2. Extracts the text and user ID from the request body
+3. Emits a `text.received` event with the text data
+4. Returns a response to the client with an estimated completion time
+
+## Step 3: Create the Validation Step
+
+Create a file `steps/validateInput.ts` to validate the text input:
+
+```typescript
+// steps/validateInput.ts
+export const config = {
+  type: 'event',
+  name: 'ValidateInput',
+  subscribes: ['text.received'],
+  emits: ['text.validated', 'text.invalid'],
+  flows: ['text-analysis']
+};
+
+export const handler = async (input, { emit, logger }) => {
+  logger.info('Validating text input');
+  
+  const { text, userId } = input;
+  
+  // Validation rules for text analysis
+  if (typeof text !== 'string' || text.trim() === '') {
+    logger.warn('Invalid text format');
+    
+    // Emit an event for invalid text
+    await emit({
+      topic: 'text.invalid',
+      data: {
+        originalText: text,
+        userId,
+        error: 'Text must be a non-empty string',
+        validatedAt: new Date().toISOString()
+      }
+    });
+    
+    return;
+  }
+  
+  // Check text length (AI models often have token limits)
+  if (text.length > 5000) {
+    logger.warn('Text too long for analysis');
+    
+    await emit({
+      topic: 'text.invalid',
+      data: {
+        userId,
+        error: 'Text exceeds maximum length of 5000 characters',
+        validatedAt: new Date().toISOString()
+      }
+    });
+    
+    return;
+  }
+  
+  // Emit an event for valid text
+  await emit({
+    topic: 'text.validated',
+    data: {
+      text,
+      userId,
+      textLength: text.length,
+      validatedAt: new Date().toISOString()
+    }
+  });
+  
+  logger.info('Text validated successfully');
+};
+```
+
+This step:
+1. Subscribes to the `text.received` event
+2. Validates that the text is a non-empty string and within length limits
+3. Emits either a `text.validated` or `text.invalid` event based on the validation result
+
+## Step 4: Create the Sentiment Analysis Step
+
+Create a file `steps/analyzeSentiment.ts` to analyze the sentiment of validated text:
+
+```typescript
+// steps/analyzeSentiment.ts
+import OpenAI from 'openai';
+
+export const config = {
+  type: 'event',
+  name: 'AnalyzeSentiment',
+  subscribes: ['text.validated'],
+  emits: ['analysis.completed', 'analysis.failed'],
+  flows: ['text-analysis']
+};
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+export const handler = async (input, { emit, logger }) => {
+  logger.info('Analyzing text sentiment');
+  
+  const { text, userId, textLength } = input;
+  
+  try {
+    // Call OpenAI API for sentiment analysis
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a sentiment analysis assistant. Analyze the sentiment of the text and respond with a JSON object containing: sentiment (positive, negative, or neutral), confidence (0-1), and a brief explanation."
+        },
+        {
+          role: "user",
+          content: text
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+    
+    // Parse the response
+    const analysisResult = JSON.parse(response.choices[0].message.content);
+    
+    // Add metadata to the result
+    const result = {
+      ...analysisResult,
+      originalText: text,
+      userId,
+      textLength,
+      tokensUsed: response.usage.total_tokens,
+      analyzedAt: new Date().toISOString()
+    };
+    
+    // Emit an event with the analysis result
+    await emit({
+      topic: 'analysis.completed',
+      data: result
+    });
+    
+    logger.info('Sentiment analysis completed successfully');
+  } catch (error) {
+    logger.error('Error analyzing sentiment:', error);
+    
+    // Emit an error event
+    await emit({
+      topic: 'analysis.failed',
+      data: {
+        originalText: text,
+        userId,
+        error: error.message,
+        failedAt: new Date().toISOString()
+      }
+    });
+  }
+};
+```
+
+This step:
+1. Subscribes to the `text.validated` event
+2. Uses the OpenAI API to analyze the sentiment of the text
+3. Emits either an `analysis.completed` or `analysis.failed` event based on the result
+
+## Step 5: Create the Storage Step
+
+Create a file `steps/storeResults.ts` to store analysis results:
+
+```typescript
+// steps/storeResults.ts
+export const config = {
+  type: 'event',
+  name: 'StoreResults',
+  subscribes: ['analysis.completed'],
+  emits: ['results.stored'],
+  flows: ['text-analysis']
+};
+
+export const handler = async (input, { emit, state, logger }) => {
+  logger.info('Storing analysis results');
+  
+  const { originalText, sentiment, confidence, explanation, userId } = input;
+  
+  try {
+    // Get the current analysis results from state
+    const analysisHistory = await state.get('analysisHistory') || [];
+    
+    // Add the new analysis result
+    const analysisRecord = {
+      id: `analysis-${Date.now()}`,
+      userId,
+      text: originalText,
+      result: {
+        sentiment,
+        confidence,
+        explanation
+      },
+      storedAt: new Date().toISOString()
+    };
+    
+    analysisHistory.push(analysisRecord);
+    
+    // Update the state
+    await state.set('analysisHistory', analysisHistory);
+    
+    // Update user statistics
+    const userStats = await state.get(`userStats:${userId}`) || {
+      totalAnalyses: 0,
+      sentimentCounts: { positive: 0, negative: 0, neutral: 0 }
+    };
+    
+    userStats.totalAnalyses += 1;
+    userStats.sentimentCounts[sentiment] += 1;
+    
+    await state.set(`userStats:${userId}`, userStats);
+    
+    // Emit an event indicating the results were stored
+    await emit({
+      topic: 'results.stored',
+      data: {
+        analysisId: analysisRecord.id,
+        userId,
+        sentiment,
+        storedAt: analysisRecord.storedAt
+      }
+    });
+    
+    logger.info('Analysis results stored successfully');
+  } catch (error) {
+    logger.error('Error storing analysis results:', error);
+    
+    // You could emit an error event here if needed
+  }
+};
+```
+
+This step:
+1. Subscribes to the `analysis.completed` event
+2. Stores the analysis results in the state
+3. Updates user statistics
+4. Emits a `results.stored` event with the analysis ID
+
+## Step 6: Create the Notification Step
+
+Create a file `steps/sendNotification.ts` to send notifications:
+
+```typescript
+// steps/sendNotification.ts
+export const config = {
+  type: 'event',
+  name: 'SendNotification',
+  subscribes: ['results.stored'],
+  flows: ['text-analysis']
+};
+
+export const handler = async (input, { logger }) => {
+  logger.info('Sending analysis notification');
+  
+  const { analysisId, userId, sentiment, storedAt } = input;
+  
+  // In a real application, you might send an email, push notification, etc.
+  // For this example, we'll just log the notification
+  logger.info(`Notification: Text analysis ${analysisId} for user ${userId} completed with ${sentiment} sentiment at ${storedAt}`);
+  
+  // You could also trigger additional AI actions based on the sentiment
+  if (sentiment === 'negative') {
+    logger.info('Negative sentiment detected - in a real app, this could trigger an alert or follow-up action');
+  }
+};
+```
+
+This step:
+1. Subscribes to the `results.stored` event
+2. Sends a notification with the analysis results
+3. Could trigger additional actions based on the sentiment
+
+## Step 7: Configure the Flow
+
+Update the `config.yml` file to define the flow:
+
+```yaml
+# config.yml
+flows:
+  - name: text-analysis
+    description: An AI-powered text sentiment analysis flow
+```
+
+## Step 8: Run the Workflow
+
+Start the Motia development server:
+
+```bash
+motia dev
+```
+
+This will start the Motia server and the Workbench interface at http://localhost:3000.
+
+## Step 9: Test the Workflow
+
+You can test the workflow by sending a POST request to the `/analyze` endpoint:
+
+```bash
+curl -X POST http://localhost:3000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"text": "I am really enjoying learning about Motia AI agents!", "userId": "user123"}'
+```
+
+You should see the workflow in action in the Workbench, with each step being triggered in sequence.
+
+## Visualizing the Workflow
+
+In the Workbench, you'll see a visualization of your AI agent workflow:
+
+<div className="my-8">
+  {/* ![Workflow Visualization](../img/basic-workflow-visualization.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">Visualization of the text analysis AI agent workflow in the Workbench</p>
+</div>
+
+The visualization shows:
+- The API step that receives text input
+- The event steps that process and analyze the text
+- The connections between steps (events)
+- The current state of each step
+
+## Extending the AI Agent
+
+This basic AI agent workflow can be extended in many ways:
+
+- Add more sophisticated AI analysis (entity recognition, topic classification)
+- Implement multi-language support
+- Store analysis results in a database for long-term tracking
+- Add a feedback loop to improve analysis accuracy over time
+- Integrate with other AI services for enhanced capabilities
+
+## Key Concepts Demonstrated
+
+This example demonstrates several key Motia AI agent concepts:
+
+- **AI Integration**: Seamlessly incorporating AI capabilities (OpenAI API) into your agent workflow
+- **Event-Driven Architecture**: Building responsive AI agents that react to events and trigger appropriate actions
+- **Modular AI Components**: Breaking down AI functionality into discrete, reusable steps
+- **State Management**: Maintaining context and history for AI analysis and user interactions
+- **Error Handling**: Gracefully handling AI service failures and input validation issues
+- **Workflow Orchestration**: Coordinating multiple AI and non-AI steps in a coherent agent workflow
+
+## Next Steps
+
+Now that you've built a basic AI agent, you can:
+
+- Explore more complex examples like the [Sentiment Analysis](/docs/examples/sentiment-analysis) workflow with advanced AI capabilities
+- Learn about [Debugging AI Workflows](/docs/workbench/debugging-workflows) to troubleshoot issues in your agent
+- Check out [Real-World AI Use Cases](/docs/real-world-use-cases) for inspiration on building production-grade agents
+- Dive deeper into [Core Concepts](/docs/concepts) to understand how to build more sophisticated AI agents with Motia
+- Experiment with different AI models and services to enhance your agent's capabilities

@@ -1,0 +1,457 @@
+---
+title: Events and Topics
+description: Understanding events and topics in Motia - the communication backbone of your workflows
+---
+
+# Events and Topics
+
+Events and topics form the communication backbone of Motia workflows. They enable steps to communicate with each other in a loosely coupled manner, making your workflows more flexible, maintainable, and scalable.
+
+<div className="my-8">
+  {/* ![Events and Topics](./img/events-and-topics.png) */}
+  <p className="text-center text-sm text-gray-500 mt-2">Events flow between steps through topics, enabling decoupled communication</p>
+</div>
+
+## Understanding Events
+
+In Motia, an event is a message that represents something that has happened in your system. Events are the primary means of communication between steps in a workflow.
+
+### Event Structure
+
+Events in Motia have a simple but powerful structure:
+
+```typescript
+// Basic structure of a Motia event
+{
+  topic: 'order.created', // The topic this event belongs to
+  data: {                 // The payload of the event
+    orderId: '12345',
+    customer: 'John Doe',
+    items: [
+      { productId: 'p1', quantity: 2, price: 10.99 },
+      { productId: 'p2', quantity: 1, price: 24.99 }
+    ],
+    total: 46.97
+  },
+  metadata: {            // Optional metadata about the event
+    timestamp: '2023-06-15T10:30:45Z',
+    source: 'CreateOrderStep',
+    correlationId: 'corr-123456'
+  }
+}
+```
+
+The key components of an event are:
+
+- **Topic**: A string identifier that categorizes the event and determines which steps will receive it
+- **Data**: The payload of the event, containing the information relevant to the event
+- **Metadata**: Optional information about the event itself, such as timestamps, source information, and correlation IDs
+
+### Emitting Events
+
+Steps emit events using the `emit` function provided in the handler context:
+
+```typescript
+exports.handler = async (input, { emit }) => {
+  // Process the input
+  const result = processInput(input);
+  
+  // Emit an event
+  await emit({
+    topic: 'data.processed',
+    data: result
+    // Metadata is automatically added by Motia
+  });
+}
+```
+
+When you emit an event:
+
+1. Motia adds metadata to the event, including a timestamp and source information
+2. The event is routed to all steps that subscribe to the specified topic
+3. The event is logged and can be visualized in the Workbench
+
+### Receiving Events
+
+Steps receive events by subscribing to topics in their configuration:
+
+```typescript
+exports.config = {
+  type: 'event',
+  name: 'ProcessOrder',
+  subscribes: ['order.created'], // Subscribe to the 'order.created' topic
+  emits: ['order.processed'],
+  flows: ['order-processing']
+}
+
+exports.handler = async (input, { emit }) => {
+  // The 'input' parameter contains the data from the event
+  console.log('Received order:', input);
+  
+  // Process the order
+  // ...
+}
+```
+
+When an event is emitted with a topic that a step subscribes to:
+
+1. The step's handler function is invoked
+2. The event's data is passed as the `input` parameter
+3. The step can process the data and optionally emit new events
+
+## Understanding Topics
+
+Topics are named channels that events flow through. They provide a way to categorize events and determine which steps should receive them.
+
+### Topic Naming
+
+Topics in Motia are strings that follow a hierarchical naming convention. Common patterns include:
+
+- **Domain-based**: `order.created`, `payment.processed`, `user.registered`
+- **Process-based**: `workflow.started`, `workflow.completed`, `workflow.failed`
+- **Data-based**: `data.received`, `data.transformed`, `data.validated`
+
+The hierarchical structure (using dots as separators) helps organize topics and makes it easier to understand the purpose of each event.
+
+### Topic Subscription
+
+Steps subscribe to topics in their configuration:
+
+```typescript
+exports.config = {
+  type: 'event',
+  name: 'ProcessOrder',
+  subscribes: [
+    'order.created',       // Subscribe to a specific topic
+    'order.*',             // Subscribe to all topics starting with 'order.'
+    '*.high-priority'      // Subscribe to all topics ending with '.high-priority'
+  ],
+  emits: ['order.processed'],
+  flows: ['order-processing']
+}
+```
+
+Motia supports pattern matching in topic subscriptions:
+
+- **Exact match**: `order.created` matches only the exact topic `order.created`
+- **Wildcard match**: `order.*` matches any topic that starts with `order.`, such as `order.created`, `order.updated`, etc.
+- **Multiple wildcards**: `*.high-priority` matches any topic that ends with `.high-priority`
+
+This flexible subscription system allows you to create powerful event routing patterns.
+
+## Event Payload Design
+
+Designing effective event payloads is crucial for building maintainable and flexible workflows. Here are some best practices:
+
+### Include All Necessary Data
+
+Events should contain all the data that subscribers need to process the event. This reduces the need for subscribers to fetch additional data:
+
+```typescript
+// Good: Complete event payload
+await emit({
+  topic: 'order.created',
+  data: {
+    orderId: '12345',
+    customer: {
+      id: 'cust-789',
+      name: 'John Doe',
+      email: 'john@example.com'
+    },
+    items: [
+      { productId: 'p1', name: 'Widget A', quantity: 2, price: 10.99 },
+      { productId: 'p2', name: 'Gadget B', quantity: 1, price: 24.99 }
+    ],
+    shipping: {
+      address: '123 Main St, Anytown, USA',
+      method: 'express',
+      cost: 5.99
+    },
+    total: 46.97,
+    createdAt: '2023-06-15T10:30:45Z'
+  }
+});
+```
+
+### Keep Events Focused
+
+While events should include all necessary data, they should also be focused on a specific domain or action:
+
+```typescript
+// Good: Focused event
+await emit({
+  topic: 'payment.processed',
+  data: {
+    orderId: '12345',
+    paymentId: 'pay-456',
+    amount: 46.97,
+    method: 'credit-card',
+    status: 'succeeded',
+    processedAt: '2023-06-15T10:35:12Z'
+  }
+});
+```
+
+### Use Consistent Structures
+
+Maintain consistency in your event structures to make them easier to work with:
+
+```typescript
+// Consistent event structure pattern
+await emit({
+  topic: 'entity.action',
+  data: {
+    id: 'entity-id',
+    // Entity-specific data
+    actionDetails: {
+      // Action-specific data
+    },
+    timestamp: '2023-06-15T10:30:45Z'
+  }
+});
+```
+
+### Consider Event Evolution
+
+Design events with future evolution in mind:
+
+- Use versioning if needed (e.g., `order.created.v1`)
+- Add new fields without removing existing ones
+- Consider using a schema registry for complex systems
+
+## Event Validation
+
+Validating events ensures that they contain the expected data and structure. Motia doesn't enforce a specific validation approach, but here are some common patterns:
+
+### Inline Validation
+
+Validate events directly in your step handlers:
+
+```typescript
+exports.handler = async (input, { emit }) => {
+  // Validate the input
+  if (!input.orderId || !input.customer || !Array.isArray(input.items)) {
+    throw new Error('Invalid order event: missing required fields');
+  }
+  
+  // Process the validated input
+  // ...
+}
+```
+
+### Schema-Based Validation
+
+Use a schema validation library like Zod, Joi, or JSON Schema:
+
+```typescript
+import { z } from 'zod';
+
+// Define the schema
+const orderSchema = z.object({
+  orderId: z.string(),
+  customer: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string().email()
+  }),
+  items: z.array(
+    z.object({
+      productId: z.string(),
+      quantity: z.number().int().positive(),
+      price: z.number().positive()
+    })
+  ),
+  total: z.number().positive()
+});
+
+exports.handler = async (input, { emit }) => {
+  try {
+    // Validate the input against the schema
+    const validatedOrder = orderSchema.parse(input);
+    
+    // Process the validated order
+    // ...
+  } catch (error) {
+    // Handle validation errors
+    console.error('Validation error:', error);
+    
+    // Optionally emit an error event
+    await emit({
+      topic: 'order.validation.failed',
+      data: {
+        input,
+        errors: error.errors
+      }
+    });
+  }
+}
+```
+
+## Advanced Event Patterns
+
+### Event Sourcing
+
+Event sourcing is a pattern where the state of a system is determined by a sequence of events. In Motia, you can implement event sourcing by:
+
+```typescript
+exports.config = {
+  type: 'event',
+  name: 'OrderEventProcessor',
+  subscribes: [
+    'order.created',
+    'order.updated',
+    'order.item-added',
+    'order.item-removed',
+    'order.shipped',
+    'order.delivered',
+    'order.cancelled'
+  ],
+  flows: ['order-processing']
+}
+
+exports.handler = async (input, { emit, state }) => {
+  // Get the current order state
+  const orderId = input.orderId;
+  let order = await state.get(`order:${orderId}`) || { 
+    id: orderId, 
+    items: [], 
+    status: 'new',
+    events: []
+  };
+  
+  // Add the new event to the history
+  order.events.push({
+    type: input.topic,
+    data: input,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Update the order state based on the event type
+  switch (input.topic) {
+    case 'order.created':
+      // Initialize the order
+      order = { ...order, ...input, status: 'created' };
+      break;
+    case 'order.item-added':
+      // Add an item to the order
+      order.items.push(input.item);
+      order.total = calculateTotal(order.items);
+      break;
+    // Handle other event types
+    // ...
+  }
+  
+  // Save the updated order state
+  await state.set(`order:${orderId}`, order);
+}
+```
+
+### Command-Event Pattern
+
+The command-event pattern separates commands (instructions to do something) from events (notifications that something happened):
+
+```typescript
+// Command handler
+exports.config = {
+  type: 'api',
+  name: 'CreateOrderCommand',
+  path: '/orders',
+  method: 'POST',
+  emits: ['command.create-order'],
+  flows: ['order-processing']
+}
+
+exports.handler = async (req, { emit }) => {
+  // Validate the command
+  const orderData = validateOrderData(req.body);
+  
+  // Emit a command event
+  await emit({
+    topic: 'command.create-order',
+    data: {
+      orderId: generateId(),
+      ...orderData,
+      commandId: generateId(),
+      timestamp: new Date().toISOString()
+    }
+  });
+  
+  // Return a response
+  return {
+    statusCode: 202, // Accepted
+    body: {
+      message: 'Order creation in progress',
+      commandId: commandId
+    }
+  };
+}
+
+// Command processor
+exports.config = {
+  type: 'event',
+  name: 'CreateOrderProcessor',
+  subscribes: ['command.create-order'],
+  emits: ['order.created', 'command.create-order.failed'],
+  flows: ['order-processing']
+}
+
+exports.handler = async (command, { emit }) => {
+  try {
+    // Process the command
+    const order = await createOrder(command);
+    
+    // Emit an event indicating the order was created
+    await emit({
+      topic: 'order.created',
+      data: {
+        ...order,
+        commandId: command.commandId
+      }
+    });
+  } catch (error) {
+    // Emit an event indicating the command failed
+    await emit({
+      topic: 'command.create-order.failed',
+      data: {
+        command,
+        error: {
+          message: error.message,
+          stack: error.stack
+        }
+      }
+    });
+  }
+}
+```
+
+## Best Practices
+
+### Topic Naming
+
+- **Use hierarchical naming**: `domain.action` or `entity.action`
+- **Be specific but not too granular**: Balance between too generic and too specific
+- **Use consistent conventions**: Establish naming patterns and stick to them
+- **Consider versioning**: Use versioning in topics if needed (e.g., `order.created.v1`)
+
+### Event Design
+
+- **Keep events meaningful**: Events should represent significant occurrences in your domain
+- **Design for evolution**: Event schemas should be able to evolve without breaking consumers
+- **Include necessary context**: Events should contain all data needed by consumers
+- **Consider idempotency**: Design events to be processed multiple times without side effects
+
+### Performance Considerations
+
+- **Payload size**: Keep event payloads reasonably sized; consider references for large data
+- **Event frequency**: Be mindful of high-frequency events that could overwhelm the system
+- **Batching**: Consider batching for high-volume, low-priority events
+
+## Conclusion
+
+Events and topics are the lifeblood of Motia workflows. They enable loosely coupled, event-driven architectures that are flexible, maintainable, and scalable. By understanding how to design effective events and topics, you can create powerful workflows that can evolve with your business needs.
+
+## Next Steps
+
+- Learn more about [Steps](/docs/concepts/steps/defining-steps) in Motia
+- Explore [Flows and Visualization](/docs/concepts/flows-and-visualization) to see how events flow through your system
+- Understand [State Management](/docs/concepts/state-management) for handling persistent state in your workflows
