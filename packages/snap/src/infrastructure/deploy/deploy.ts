@@ -5,7 +5,7 @@ import { FileManager } from './file-manager'
 import { logger } from './logger'
 import { GenericDeploymentError, MissingApiKeyError, MissingStepsConfigError } from './error'
 import { DeploymentService } from './services/deployment-service'
-import { getSelectedStage } from '../infrastructure/config-utils'
+import { getSelectedStage } from '../config-utils'
 
 export class DeploymentManager {
   async deploy(

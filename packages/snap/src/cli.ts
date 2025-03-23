@@ -3,6 +3,8 @@
 import { program, Option } from 'commander'
 import path from 'path'
 import fs from 'fs'
+import { build } from '@/builder/build'
+import { DeploymentManager } from '@/infrastructure/deploy/deploy'
 
 const defaultPort = 3000
 
@@ -71,30 +73,6 @@ program
   .action(async () => {
     const { build } = require('./builder/build')
     await build()
-  })
-
-program
-  .command('deploy')
-  .description('Deploy the project to the Motia deployment service')
-  .requiredOption('-k, --api-key <key>', 'The API key for authentication')
-  .addOption(
-    new Option('-e, --env <environment>', 'The environment to deploy to')
-      .default('dev')
-      .choices(['dev', 'staging', 'production']),
-  )
-  .option('-v, --version <version>', 'The version to deploy', 'latest')
-  .action(async (arg) => {
-    try {
-      const { build } = require('./builder/build')
-      await build()
-
-      const { DeploymentManager } = require('./deploy/deploy')
-      const deploymentManager = new DeploymentManager()
-      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.version)
-    } catch (error) {
-      console.error('❌ Deployment failed:', error)
-      process.exit(1)
-    }
   })
 
 program
@@ -203,6 +181,24 @@ infrastructure
     }
   })
 
+infrastructure
+  .command('deploy')
+  .description('Deploy the project to the Motia deployment service')
+  .requiredOption('-k, --api-key <key>', 'The API key for authentication')
+  .option('-v, --version <version>', 'The version to deploy', 'latest')
+  .action(async (arg) => {
+    try {
+      const { build } = require('./builder/build')
+      await build()
+
+      const { DeploymentManager } = require('./infrastructure/deploy/deploy')
+      const deploymentManager = new DeploymentManager()
+      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.version)
+    } catch (error) {
+      console.error('❌ Deployment failed:', error)
+      process.exit(1)
+    }
+  })
 const project = infrastructure.command('project').description('Manage deployment projects')
 
 project

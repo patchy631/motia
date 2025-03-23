@@ -1,6 +1,3 @@
-import fs from 'fs'
-import path from 'path'
-
 export const API_BASE_URL = 'http://localhost:3000'
 
 export interface Project {
@@ -105,14 +102,6 @@ export class ApiService {
     return this.request<Project[]>('/projects')
   }
 
-  async getProject(projectId: string): Promise<Project> {
-    return this.request<Project>(`/projects/${projectId}`)
-  }
-
-  async deleteProject(projectId: string): Promise<void> {
-    return this.request<void>(`/projects/${projectId}`, 'DELETE')
-  }
-
   async updateProject(
     projectId: string, 
     data: { name?: string; description?: string }
@@ -134,10 +123,6 @@ export class ApiService {
 
   async getStages(projectId: string): Promise<Stage[]> {
     return this.request<Stage[]>(`/projects/${projectId}/stages`)
-  }
-  
-  async getStage(projectId: string, stageId: string): Promise<Stage> {
-    return this.request<Stage>(`/projects/${projectId}/stages/${stageId}`)
   }
 
   async deleteStage(projectId: string, stageId: string): Promise<void> {

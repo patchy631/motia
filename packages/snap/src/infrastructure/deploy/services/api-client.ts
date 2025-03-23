@@ -6,15 +6,15 @@ import { logger } from '../logger'
 import { DeploymentError, ZipFileNotFoundError, EmptyStepsConfigError, GenericDeploymentError } from '../error'
 import { handleAxiosError } from '../utils/error-handler'
 
-export const API_URL = 'https://api.motiadev.com/deploy'
+export const API_URL = 'http://localhost:3000'
 
 export class ApiClient {
   private readonly apiKey: string
-  private readonly apiUrl: string
+  private readonly baseUrl: string
 
-  constructor(apiKey: string, apiUrl: string = API_URL) {
+  constructor(apiKey: string, baseUrl: string = API_URL) {
     this.apiKey = apiKey
-    this.apiUrl = apiUrl
+    this.baseUrl = baseUrl
   }
 
   private async makeApiRequest<T, D = unknown>(
@@ -79,7 +79,7 @@ export class ApiClient {
     }
 
     const response = await this.makeApiRequest<{ uploadId: string }>(
-      `${this.apiUrl}/deployments/${deploymentId}/files`,
+      `${this.baseUrl}/deployments/${deploymentId}/files`,
       formData,
       headers,
       'zip file',
@@ -112,7 +112,7 @@ export class ApiClient {
     }
 
     const response = await this.makeApiRequest<{ deploymentId: string }>(
-      `${this.apiUrl}/stages/${stageId}/deployments`,
+      `${this.baseUrl}/stages/${stageId}/deployments`,
       data,
       headers,
       'configuration',
@@ -127,6 +127,6 @@ export class ApiClient {
       'x-api-key': this.apiKey,
     }
 
-    await this.makeApiRequest<void>(`${this.apiUrl}/deployments/${deploymentId}/start`, {}, headers, 'deployment finalization')
+    await this.makeApiRequest<void>(`${this.baseUrl}/deployments/${deploymentId}/start`, {}, headers, 'deployment finalization')
   }
 }
