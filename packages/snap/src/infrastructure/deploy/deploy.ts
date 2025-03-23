@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { DeploymentResult, DeploymentConfig } from './types'
+import { DeploymentResult } from './types'
 import { FileManager } from './file-manager'
 import { logger } from './logger'
 import { GenericDeploymentError, MissingApiKeyError, MissingStepsConfigError } from './error'
