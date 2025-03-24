@@ -1,0 +1,961 @@
+---
+title: Agent Orchestration in Motia
+description: Techniques and patterns for coordinating multiple specialized agents to solve complex problems
+---
+
+# Agent Orchestration
+
+Agent orchestration is an advanced pattern in Motia that involves coordinating multiple specialized agents to solve complex problems. This approach is particularly powerful for tasks that require different types of expertise, capabilities, or access to different resources.
+
+## Understanding Agent Orchestration
+
+In agent orchestration, multiple agents with different specializations work together to accomplish tasks that would be difficult or impossible for a single agent. The orchestration layer manages the coordination, communication, and collaboration between these agents.
+
+Key components of agent orchestration include:
+
+- **Specialized Agents**: Agents with specific capabilities, knowledge, or access to particular resources
+- **Orchestration Layer**: The system that coordinates agent activities and manages workflow
+- **Communication Protocols**: Standardized ways for agents to exchange information
+- **Task Allocation**: Mechanisms for assigning tasks to appropriate agents
+- **Result Integration**: Methods for combining outputs from multiple agents
+- **Conflict Resolution**: Strategies for resolving disagreements between agents
+
+## When to Use Agent Orchestration
+
+Agent orchestration is most valuable when:
+
+- Tasks require multiple types of expertise or capabilities
+- Different parts of a problem benefit from different agent architectures
+- You need to combine deterministic and agentic approaches
+- Problems are too complex for a single agent to handle effectively
+- You need to integrate with multiple external systems or data sources
+- Tasks require both specialized knowledge and general reasoning
+
+## Basic Orchestration Pattern
+
+The simplest form of agent orchestration involves a central coordinator that delegates tasks to specialized agents:
+
+```typescript
+// orchestrator.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Task Orchestrator',
+  subscribes: ['task.submitted'],
+  emits: [
+    'task.research.requested',
+    'task.analysis.requested',
+    'task.generation.requested',
+    'task.response',
+  ],
+  input: inputSchema,
+  flows: ['agent-orchestration'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Analyze the query to determine required agents
+    const taskAnalysis = await analyzeTask(input.query);
+    
+    // Store the task state
+    await state.set(traceId, 'taskState', {
+      query: input.query,
+      userId: input.userId,
+      requiredAgents: taskAnalysis.requiredAgents,
+      agentResults: {},
+      status: 'in_progress',
+      startTime: new Date().toISOString(),
+    });
+    
+    // Step 2: Dispatch tasks to appropriate agents
+    for (const agent of taskAnalysis.requiredAgents) {
+      switch (agent.type) {
+        case 'research':
+          await emit({
+            topic: 'task.research.requested',
+            data: {
+              query: input.query,
+              userId: input.userId,
+              parameters: agent.parameters,
+              traceId,
+            },
+          });
+          break;
+          
+        case 'analysis':
+          await emit({
+            topic: 'task.analysis.requested',
+            data: {
+              query: input.query,
+              userId: input.userId,
+              parameters: agent.parameters,
+              traceId,
+            },
+          });
+          break;
+          
+        case 'generation':
+          await emit({
+            topic: 'task.generation.requested',
+            data: {
+              query: input.query,
+              userId: input.userId,
+              parameters: agent.parameters,
+              traceId,
+            },
+          });
+          break;
+      }
+    }
+    
+    logger.info('Task orchestration initiated', {
+      query: input.query,
+      requiredAgents: taskAnalysis.requiredAgents.map(a => a.type),
+    });
+  } catch (error) {
+    logger.error('Error in task orchestrator', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+
+// resultCollector.step.ts
+export const resultCollectorConfig = {
+  type: 'event',
+  name: 'Result Collector',
+  subscribes: [
+    'task.research.completed',
+    'task.analysis.completed',
+    'task.generation.completed',
+  ],
+  emits: ['task.response'],
+  flows: ['agent-orchestration'],
+};
+
+export const resultCollectorHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Get the current task state
+    const taskState = await state.get(traceId, 'taskState');
+    if (!taskState) {
+      logger.error('Task state not found', { traceId });
+      return;
+    }
+    
+    // Determine which agent type completed
+    let agentType;
+    if (input.__motia.topic === 'task.research.completed') {
+      agentType = 'research';
+    } else if (input.__motia.topic === 'task.analysis.completed') {
+      agentType = 'analysis';
+    } else if (input.__motia.topic === 'task.generation.completed') {
+      agentType = 'generation';
+    }
+    
+    // Store the agent result
+    taskState.agentResults[agentType] = input.result;
+    await state.set(traceId, 'taskState', taskState);
+    
+    // Check if all required agents have completed
+    const completedAgents = Object.keys(taskState.agentResults);
+    const requiredAgents = taskState.requiredAgents.map(a => a.type);
+    const allAgentsCompleted = requiredAgents.every(agent => completedAgents.includes(agent));
+    
+    if (allAgentsCompleted) {
+      // All agents have completed, synthesize the final response
+      const finalResponse = await synthesizeResponse(
+        taskState.query,
+        taskState.agentResults
+      );
+      
+      // Update the task state
+      taskState.status = 'completed';
+      taskState.completionTime = new Date().toISOString();
+      taskState.finalResponse = finalResponse;
+      await state.set(traceId, 'taskState', taskState);
+      
+      // Send the final response
+      await emit({
+        topic: 'task.response',
+        data: {
+          userId: taskState.userId,
+          query: taskState.query,
+          status: 'success',
+          response: finalResponse,
+          agentResults: taskState.agentResults,
+        },
+      });
+      
+      logger.info('Task orchestration completed', {
+        query: taskState.query,
+        executionTimeMs: new Date() - new Date(taskState.startTime),
+      });
+    }
+  } catch (error) {
+    logger.error('Error in result collector', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This basic pattern:
+1. Analyzes the task to determine which specialized agents are needed
+2. Dispatches tasks to the appropriate agents
+3. Collects results from each agent
+4. Synthesizes a final response when all agents have completed
+
+## Advanced Orchestration Patterns
+
+### 1. Dynamic Agent Selection
+
+This pattern dynamically selects agents based on the specific requirements of each task:
+
+```typescript
+// dynamicOrchestrator.step.ts
+export const handler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Analyze the query to determine task type and requirements
+    const taskAnalysis = await analyzeTask(input.query);
+    
+    // Step 2: Select the optimal agent configuration for this task
+    const agentConfiguration = await selectAgentConfiguration(
+      taskAnalysis.taskType,
+      taskAnalysis.requirements
+    );
+    
+    // Step 3: Store the task state with the selected configuration
+    await state.set(traceId, 'taskState', {
+      query: input.query,
+      userId: input.userId,
+      taskType: taskAnalysis.taskType,
+      requirements: taskAnalysis.requirements,
+      agentConfiguration,
+      agentResults: {},
+      status: 'in_progress',
+      startTime: new Date().toISOString(),
+    });
+    
+    // Step 4: Initialize and configure each agent
+    for (const agent of agentConfiguration.agents) {
+      await emit({
+        topic: `task.${agent.type}.requested`,
+        data: {
+          query: input.query,
+          userId: input.userId,
+          configuration: agent.configuration,
+          traceId,
+        },
+      });
+    }
+    
+    logger.info('Dynamic agent orchestration initiated', {
+      query: input.query,
+      taskType: taskAnalysis.taskType,
+      selectedAgents: agentConfiguration.agents.map(a => a.type),
+    });
+  } catch (error) {
+    logger.error('Error in dynamic orchestrator', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+
+// Agent selection function
+async function selectAgentConfiguration(taskType, requirements) {
+  // Retrieve available agent configurations
+  const availableConfigurations = await getAvailableAgentConfigurations();
+  
+  // Score each configuration based on task requirements
+  const scoredConfigurations = availableConfigurations.map(config => ({
+    configuration: config,
+    score: scoreConfiguration(config, taskType, requirements),
+  }));
+  
+  // Select the highest-scoring configuration
+  const bestConfiguration = scoredConfigurations
+    .sort((a, b) => b.score - a.score)
+    .shift();
+  
+  return bestConfiguration.configuration;
+}
+```
+
+This pattern:
+1. Analyzes the task to determine its type and specific requirements
+2. Selects the optimal agent configuration from available options
+3. Initializes and configures each agent according to the selected configuration
+4. Adapts to different task types with specialized agent combinations
+
+### 2. Sequential Agent Pipeline
+
+This pattern arranges agents in a sequential pipeline, where each agent builds upon the work of previous agents:
+
+```typescript
+// pipelineOrchestrator.step.ts
+export const handler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Define the agent pipeline for this task
+    const pipeline = [
+      { stage: 1, type: 'research', config: { depth: 'comprehensive' } },
+      { stage: 2, type: 'analysis', config: { mode: 'critical' } },
+      { stage: 3, type: 'generation', config: { style: 'professional' } },
+    ];
+    
+    // Step 2: Store the pipeline configuration
+    await state.set(traceId, 'pipelineState', {
+      query: input.query,
+      userId: input.userId,
+      pipeline,
+      currentStage: 1,
+      results: {},
+      status: 'in_progress',
+      startTime: new Date().toISOString(),
+    });
+    
+    // Step 3: Start the first stage
+    const firstStage = pipeline.find(stage => stage.stage === 1);
+    
+    await emit({
+      topic: `task.${firstStage.type}.requested`,
+      data: {
+        query: input.query,
+        userId: input.userId,
+        configuration: firstStage.config,
+        traceId,
+        stage: 1,
+      },
+    });
+    
+    logger.info('Pipeline orchestration initiated', {
+      query: input.query,
+      pipelineStages: pipeline.length,
+    });
+  } catch (error) {
+    logger.error('Error in pipeline orchestrator', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+
+// pipelineProcessor.step.ts
+export const pipelineProcessorConfig = {
+  type: 'event',
+  name: 'Pipeline Processor',
+  subscribes: [
+    'task.research.completed',
+    'task.analysis.completed',
+    'task.generation.completed',
+  ],
+  emits: [
+    'task.research.requested',
+    'task.analysis.requested',
+    'task.generation.requested',
+    'task.response',
+  ],
+  flows: ['agent-orchestration'],
+};
+
+export const pipelineProcessorHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Get the current pipeline state
+    const pipelineState = await state.get(traceId, 'pipelineState');
+    if (!pipelineState) {
+      logger.error('Pipeline state not found', { traceId });
+      return;
+    }
+    
+    // Store the result of the completed stage
+    pipelineState.results[pipelineState.currentStage] = input.result;
+    
+    // Check if there are more stages
+    const nextStage = pipelineState.currentStage + 1;
+    const nextStageConfig = pipelineState.pipeline.find(stage => stage.stage === nextStage);
+    
+    if (nextStageConfig) {
+      // Update the current stage
+      pipelineState.currentStage = nextStage;
+      await state.set(traceId, 'pipelineState', pipelineState);
+      
+      // Start the next stage, passing results from previous stages
+      await emit({
+        topic: `task.${nextStageConfig.type}.requested`,
+        data: {
+          query: pipelineState.query,
+          userId: pipelineState.userId,
+          configuration: nextStageConfig.config,
+          previousResults: pipelineState.results,
+          traceId,
+          stage: nextStage,
+        },
+      });
+      
+      logger.info(`Pipeline stage ${nextStage} initiated`, {
+        query: pipelineState.query,
+        agentType: nextStageConfig.type,
+      });
+    } else {
+      // All stages completed, finalize the response
+      const finalResult = pipelineState.results[pipelineState.currentStage];
+      
+      // Update the pipeline state
+      pipelineState.status = 'completed';
+      pipelineState.completionTime = new Date().toISOString();
+      await state.set(traceId, 'pipelineState', pipelineState);
+      
+      // Send the final response
+      await emit({
+        topic: 'task.response',
+        data: {
+          userId: pipelineState.userId,
+          query: pipelineState.query,
+          status: 'success',
+          response: finalResult,
+          pipelineResults: pipelineState.results,
+        },
+      });
+      
+      logger.info('Pipeline orchestration completed', {
+        query: pipelineState.query,
+        executionTimeMs: new Date() - new Date(pipelineState.startTime),
+      });
+    }
+  } catch (error) {
+    logger.error('Error in pipeline processor', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Defines a sequential pipeline of agent stages
+2. Processes each stage in order, passing results from previous stages
+3. Builds upon the work of previous agents to create a cohesive final result
+4. Maintains a clear progression of work through the pipeline
+
+### 3. Hierarchical Agent Organization
+
+This pattern organizes agents in a hierarchical structure, with manager agents coordinating specialized worker agents:
+
+```typescript
+// hierarchicalOrchestrator.step.ts
+export const handler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Create a hierarchical agent structure
+    const agentHierarchy = {
+      managerAgent: {
+        type: 'taskManager',
+        workers: [
+          {
+            type: 'researchManager',
+            workers: [
+              { type: 'webSearchAgent', config: { sources: ['web', 'news'] } },
+              { type: 'databaseAgent', config: { databases: ['internal', 'public'] } },
+            ],
+          },
+          {
+            type: 'analysisManager',
+            workers: [
+              { type: 'dataAnalysisAgent', config: { methods: ['statistical', 'comparative'] } },
+              { type: 'sentimentAnalysisAgent', config: { depth: 'detailed' } },
+            ],
+          },
+          {
+            type: 'contentManager',
+            workers: [
+              { type: 'textGenerationAgent', config: { style: 'professional' } },
+              { type: 'summaryAgent', config: { length: 'concise' } },
+            ],
+          },
+        ],
+      },
+    };
+    
+    // Step 2: Store the hierarchy configuration
+    await state.set(traceId, 'hierarchyState', {
+      query: input.query,
+      userId: input.userId,
+      hierarchy: agentHierarchy,
+      results: {
+        managerResults: {},
+        workerResults: {},
+      },
+      status: 'in_progress',
+      startTime: new Date().toISOString(),
+    });
+    
+    // Step 3: Start with the top-level manager
+    await emit({
+      topic: 'task.manager.requested',
+      data: {
+        query: input.query,
+        userId: input.userId,
+        hierarchy: agentHierarchy,
+        traceId,
+      },
+    });
+    
+    logger.info('Hierarchical orchestration initiated', {
+      query: input.query,
+    });
+  } catch (error) {
+    logger.error('Error in hierarchical orchestrator', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+
+// managerAgent.step.ts
+export const managerAgentConfig = {
+  type: 'event',
+  name: 'Manager Agent',
+  subscribes: ['task.manager.requested'],
+  emits: ['task.worker.requested', 'task.manager.completed'],
+  flows: ['agent-orchestration'],
+};
+
+export const managerAgentHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Get the hierarchy state
+    const hierarchyState = await state.get(traceId, 'hierarchyState');
+    if (!hierarchyState) {
+      logger.error('Hierarchy state not found', { traceId });
+      return;
+    }
+    
+    // Analyze the task and delegate to appropriate worker agents
+    const taskAnalysis = await analyzeManagerTask(input.query, input.hierarchy);
+    
+    // Assign tasks to worker agents
+    for (const worker of taskAnalysis.assignedWorkers) {
+      await emit({
+        topic: 'task.worker.requested',
+        data: {
+          query: input.query,
+          userId: input.userId,
+          workerType: worker.type,
+          taskDetails: worker.taskDetails,
+          managerId: input.hierarchy.managerAgent.type,
+          traceId,
+        },
+      });
+    }
+    
+    // Store the manager's task assignments
+    hierarchyState.results.managerResults[input.hierarchy.managerAgent.type] = {
+      taskAnalysis,
+      assignedWorkers: taskAnalysis.assignedWorkers,
+    };
+    
+    await state.set(traceId, 'hierarchyState', hierarchyState);
+    
+    logger.info('Manager agent delegated tasks', {
+      managerType: input.hierarchy.managerAgent.type,
+      assignedWorkers: taskAnalysis.assignedWorkers.map(w => w.type),
+    });
+  } catch (error) {
+    logger.error('Error in manager agent', { error });
+    
+    // Report the error
+    await emit({
+      topic: 'task.manager.completed',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        managerId: input.hierarchy.managerAgent.type,
+        status: 'error',
+        error: error.message,
+        traceId,
+      },
+    });
+  }
+};
+
+// workerAgent.step.ts
+export const workerAgentConfig = {
+  type: 'event',
+  name: 'Worker Agent',
+  subscribes: ['task.worker.requested'],
+  emits: ['task.worker.completed'],
+  flows: ['agent-orchestration'],
+};
+
+export const workerAgentHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Get the hierarchy state
+    const hierarchyState = await state.get(traceId, 'hierarchyState');
+    if (!hierarchyState) {
+      logger.error('Hierarchy state not found', { traceId });
+      return;
+    }
+    
+    // Execute the worker's task
+    const result = await executeWorkerTask(
+      input.workerType,
+      input.query,
+      input.taskDetails
+    );
+    
+    // Store the worker's result
+    if (!hierarchyState.results.workerResults[input.managerId]) {
+      hierarchyState.results.workerResults[input.managerId] = {};
+    }
+    
+    hierarchyState.results.workerResults[input.managerId][input.workerType] = result;
+    await state.set(traceId, 'hierarchyState', hierarchyState);
+    
+    // Report completion to the manager
+    await emit({
+      topic: 'task.worker.completed',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        workerType: input.workerType,
+        managerId: input.managerId,
+        result,
+        traceId,
+      },
+    });
+    
+    logger.info('Worker agent completed task', {
+      workerType: input.workerType,
+      managerId: input.managerId,
+    });
+  } catch (error) {
+    logger.error('Error in worker agent', { error });
+    
+    // Report the error
+    await emit({
+      topic: 'task.worker.completed',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        workerType: input.workerType,
+        managerId: input.managerId,
+        status: 'error',
+        error: error.message,
+        traceId,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Organizes agents in a hierarchical structure with managers and workers
+2. Delegates tasks from managers to specialized workers
+3. Aggregates results up the hierarchy
+4. Provides clear lines of responsibility and coordination
+
+### 4. Collaborative Agent Network
+
+This pattern creates a network of agents that collaborate and communicate directly with each other:
+
+```typescript
+// collaborativeOrchestrator.step.ts
+export const handler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Define the agent network
+    const agentNetwork = {
+      agents: [
+        { id: 'researcher', type: 'research', capabilities: ['web_search', 'database_query'] },
+        { id: 'analyst', type: 'analysis', capabilities: ['data_analysis', 'pattern_recognition'] },
+        { id: 'writer', type: 'generation', capabilities: ['content_creation', 'summarization'] },
+        { id: 'critic', type: 'evaluation', capabilities: ['fact_checking', 'quality_assessment'] },
+      ],
+      connections: [
+        { from: 'researcher', to: 'analyst' },
+        { from: 'researcher', to: 'writer' },
+        { from: 'analyst', to: 'writer' },
+        { from: 'writer', to: 'critic' },
+        { from: 'critic', to: 'writer' }, // Feedback loop
+      ],
+    };
+    
+    // Step 2: Store the network configuration
+    await state.set(traceId, 'networkState', {
+      query: input.query,
+      userId: input.userId,
+      network: agentNetwork,
+      agentStates: agentNetwork.agents.reduce((acc, agent) => {
+        acc[agent.id] = { status: 'idle', messages: [], results: null };
+        return acc;
+      }, {}),
+      messages: [],
+      status: 'in_progress',
+      startTime: new Date().toISOString(),
+    });
+    
+    // Step 3: Initialize all agents
+    for (const agent of agentNetwork.agents) {
+      await emit({
+        topic: 'agent.initialize',
+        data: {
+          agentId: agent.id,
+          agentType: agent.type,
+          capabilities: agent.capabilities,
+          query: input.query,
+          userId: input.userId,
+          traceId,
+        },
+      });
+    }
+    
+    // Step 4: Start the initial agents (those that don't depend on others)
+    const initialAgents = findInitialAgents(agentNetwork);
+    
+    for (const agentId of initialAgents) {
+      await emit({
+        topic: 'agent.activate',
+        data: {
+          agentId,
+          query: input.query,
+          userId: input.userId,
+          traceId,
+        },
+      });
+    }
+    
+    logger.info('Collaborative network orchestration initiated', {
+      query: input.query,
+      agentCount: agentNetwork.agents.length,
+      initialAgents,
+    });
+  } catch (error) {
+    logger.error('Error in collaborative orchestrator', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+
+// Find agents that don't have incoming connections
+function findInitialAgents(network) {
+  const agentsWithIncoming = new Set(
+    network.connections.map(conn => conn.to)
+  );
+  
+  return network.agents
+    .map(agent => agent.id)
+    .filter(id => !agentsWithIncoming.has(id));
+}
+
+// agentMessageHandler.step.ts
+export const agentMessageHandlerConfig = {
+  type: 'event',
+  name: 'Agent Message Handler',
+  subscribes: ['agent.message'],
+  emits: ['agent.receive', 'task.response'],
+  flows: ['agent-orchestration'],
+};
+
+export const agentMessageHandlerHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Get the network state
+    const networkState = await state.get(traceId, 'networkState');
+    if (!networkState) {
+      logger.error('Network state not found', { traceId });
+      return;
+    }
+    
+    // Record the message
+    networkState.messages.push({
+      from: input.fromAgent,
+      to: input.toAgent,
+      content: input.message,
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Update the recipient's message queue
+    networkState.agentStates[input.toAgent].messages.push({
+      from: input.fromAgent,
+      content: input.message,
+      timestamp: new Date().toISOString(),
+    });
+    
+    await state.set(traceId, 'networkState', networkState);
+    
+    // Deliver the message to the recipient
+    await emit({
+      topic: 'agent.receive',
+      data: {
+        agentId: input.toAgent,
+        fromAgent: input.fromAgent,
+        message: input.message,
+        query: networkState.query,
+        userId: networkState.userId,
+        traceId,
+      },
+    });
+    
+    logger.info('Agent message delivered', {
+      from: input.fromAgent,
+      to: input.toAgent,
+    });
+    
+    // Check if this is a final result message to the orchestrator
+    if (input.toAgent === 'orchestrator' && input.messageType === 'final_result') {
+      // Send the final response
+      await emit({
+        topic: 'task.response',
+        data: {
+          userId: networkState.userId,
+          query: networkState.query,
+          status: 'success',
+          response: input.message.result,
+          agentInteractions: networkState.messages,
+        },
+      });
+      
+      // Update the network state
+      networkState.status = 'completed';
+      networkState.completionTime = new Date().toISOString();
+      await state.set(traceId, 'networkState', networkState);
+      
+      logger.info('Collaborative network orchestration completed', {
+        query: networkState.query,
+        executionTimeMs: new Date() - new Date(networkState.startTime),
+        messageCount: networkState.messages.length,
+      });
+    }
+  } catch (error) {
+    logger.error('Error in agent message handler', { error });
+    
+    // Send an error response
+    await emit({
+      topic: 'task.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        status: 'error',
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Creates a network of agents with defined connections
+2. Enables direct communication between agents
+3. Allows for complex collaboration patterns, including feedback loops
+4. Provides a flexible structure for emergent problem-solving
+
+## Best Practices for Agent Orchestration
+
+### 1. Design Clear Agent Interfaces
+
+Define clear interfaces for how agents communicate:
+
+- **Standardized Message Formats**: Use consistent data structures for agent communication
+- **Well-Defined Capabilities**: Clearly specify what each agent can and cannot do
+- **Explicit Dependencies**: Document which agents depend on others
+- **Version Compatibility**: Ensure agents can work together across versions
+
+### 2. Implement Robust Error Handling
+
+Agent orchestration requires comprehensive error handling:
+
+- **Agent Failure Recovery**: Handle cases where individual agents fail
+- **Partial Results Processing**: Make use of partial results when some agents fail
+- **Timeout Management**: Set appropriate timeouts for agent operations
+- **Fallback Mechanisms**: Implement fallbacks for when primary agents are unavailable
+- **Error Propagation**: Ensure errors are properly communicated up the chain
+
+### 3. Optimize Resource Allocation
+
+Efficiently allocate resources across agents:
+
+- **Prioritization**: Prioritize critical agents when resources are limited
+- **Load Balancing**: Distribute work evenly across similar agents
+- **Resource Pooling**: Share resources when appropriate
+- **Adaptive Scaling**: Scale agent resources based on task complexity
+- **Cost Management**: Consider computational and API costs in agent selection
+
+### 4. Ensure Observability
+
+Make agent orchestration systems observable:
+
+- **Comprehensive Logging**: Log all significant agent activities and interactions
+- **Performance Metrics**: Track execution time, resource usage, and success rates
+- **Interaction Visualization**: Create visualizations of agent interactions
+- **State Inspection**: Provide tools to inspect the state of the orchestration
+- **Audit Trails**: Maintain detailed records of agent decisions and actions
+
+### 5. Design for Evolution
+
+Create orchestration systems that can evolve over time:
+
+- **Pluggable Architecture**: Make it easy to add, remove, or replace agents
+- **Capability Discovery**: Implement mechanisms for agents to discover each other's capabilities
+- **Learning from Interactions**: Use past interactions to improve future orchestration
+- **A/B Testing**: Test different agent combinations for effectiveness

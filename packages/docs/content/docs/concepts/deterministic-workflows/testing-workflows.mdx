@@ -1,0 +1,865 @@
+---
+title: Testing Deterministic Workflows
+description: Comprehensive approaches and best practices for testing Motia deterministic workflows
+---
+
+# Testing Deterministic Workflows
+
+Testing is a critical aspect of building reliable deterministic workflows in Motia. Because deterministic workflows are designed to produce consistent results for the same inputs, they are inherently testable. This guide explores comprehensive approaches to testing your Motia workflows, ensuring they behave as expected under various conditions.
+
+## Why Testing Matters for Deterministic Workflows
+
+Testing deterministic workflows is particularly important because:
+
+- **Predictability verification**: Tests confirm that workflows produce the expected outputs for given inputs
+- **Regression prevention**: Tests catch unintended changes in behavior when modifying workflows
+- **Edge case handling**: Tests verify that workflows handle unusual or extreme inputs correctly
+- **Error recovery**: Tests ensure that error handling mechanisms work as designed
+- **Performance validation**: Tests can measure and validate workflow performance characteristics
+
+## Testing Levels for Motia Workflows
+
+### 1. Unit Testing Individual Steps
+
+Unit tests focus on testing individual steps in isolation:
+
+```typescript
+// validateOrder.step.test.ts
+import { createTestContext } from '@motiadev/testing';
+import { handler } from './validateOrder.step';
+
+describe('ValidateOrder Step', () => {
+  it('should emit order.validated for valid orders', async () => {
+    // Arrange
+    const input = {
+      order: {
+        id: '12345',
+        items: [{ id: 'item1', quantity: 2 }],
+        customer: { id: 'cust1', email: 'customer@example.com' }
+      }
+    };
+    
+    const { emit, done } = createTestContext();
+    
+    // Act
+    await handler(input, { emit });
+    
+    // Assert
+    expect(emit).toHaveBeenCalledWith({
+      topic: 'order.validated',
+      data: { order: input.order }
+    });
+    
+    done();
+  });
+  
+  it('should emit order.invalid for invalid orders', async () => {
+    // Arrange
+    const input = {
+      order: {
+        id: '12345',
+        items: [], // Invalid: no items
+        customer: { id: 'cust1', email: 'customer@example.com' }
+      }
+    };
+    
+    const { emit, done } = createTestContext();
+    
+    // Act
+    await handler(input, { emit });
+    
+    // Assert
+    expect(emit).toHaveBeenCalledWith({
+      topic: 'order.invalid',
+      data: expect.objectContaining({
+        order: input.order,
+        reason: expect.any(String)
+      })
+    });
+    
+    done();
+  });
+});
+```
+
+Unit tests verify that individual steps:
+- Emit the correct events with the right data
+- Handle different input scenarios correctly
+- Process errors appropriately
+- Interact with external systems as expected (using mocks)
+
+### 2. Integration Testing Step Sequences
+
+Integration tests verify that sequences of steps work together correctly:
+
+```typescript
+// orderProcessing.test.ts
+import { createTestFlow } from '@motiadev/testing';
+import { handler as validateOrderHandler } from './validateOrder.step';
+import { handler as processPaymentHandler } from './processPayment.step';
+import { handler as fulfillOrderHandler } from './fulfillOrder.step';
+
+describe('Order Processing Flow', () => {
+  it('should process a valid order through the entire flow', async () => {
+    // Arrange
+    const order = {
+      id: '12345',
+      items: [{ id: 'item1', quantity: 2 }],
+      customer: { id: 'cust1', email: 'customer@example.com' },
+      total: 100
+    };
+    
+    // Create a test flow with the steps in sequence
+    const flow = createTestFlow('order-processing')
+      .step('ValidateOrder', validateOrderHandler)
+      .step('ProcessPayment', processPaymentHandler)
+      .step('FulfillOrder', fulfillOrderHandler);
+    
+    // Mock external services
+    flow.mockService('paymentGateway', {
+      processPayment: jest.fn().mockResolvedValue({ id: 'payment123', status: 'succeeded' })
+    });
+    
+    flow.mockService('fulfillmentService', {
+      fulfillOrder: jest.fn().mockResolvedValue({ trackingId: 'track123' })
+    });
+    
+    // Act
+    const result = await flow.execute({ order });
+    
+    // Assert
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.validated',
+        data: expect.objectContaining({ order })
+      })
+    );
+    
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'payment.succeeded',
+        data: expect.objectContaining({
+          order,
+          paymentResult: expect.objectContaining({ id: 'payment123' })
+        })
+      })
+    );
+    
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.fulfilled',
+        data: expect.objectContaining({ order })
+      })
+    );
+    
+    // Verify service interactions
+    expect(flow.getService('paymentGateway').processPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 100 })
+    );
+    
+    expect(flow.getService('fulfillmentService').fulfillOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ orderId: '12345' })
+    );
+  });
+});
+```
+
+Integration tests verify that:
+- Steps interact correctly through events
+- The entire workflow produces the expected outcome
+- External service interactions happen in the right sequence
+- State is properly maintained between steps
+
+### 3. End-to-End Testing Complete Workflows
+
+End-to-end tests verify the behavior of complete workflows in a more realistic environment:
+
+```typescript
+// orderProcessing.e2e.test.ts
+import { startMotiaServer, stopMotiaServer, triggerEvent } from '@motiadev/testing';
+
+describe('Order Processing E2E', () => {
+  beforeAll(async () => {
+    // Start a test Motia server with real steps
+    await startMotiaServer({
+      stepsDir: './steps',
+      configPath: './config.test.yml'
+    });
+  });
+  
+  afterAll(async () => {
+    // Stop the test server
+    await stopMotiaServer();
+  });
+  
+  it('should process an order from submission to fulfillment', async () => {
+    // Arrange
+    const order = {
+      id: '12345',
+      items: [{ id: 'item1', quantity: 2 }],
+      customer: { id: 'cust1', email: 'customer@example.com' },
+      total: 100
+    };
+    
+    // Act - Trigger the initial event
+    const { traceId } = await triggerEvent('order.submitted', { order });
+    
+    // Wait for the workflow to complete
+    const result = await waitForWorkflowCompletion(traceId, 5000); // 5 second timeout
+    
+    // Assert
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.fulfilled',
+        data: expect.objectContaining({ order })
+      })
+    );
+    
+    // Verify side effects (e.g., database state, external API calls)
+    const dbOrder = await getOrderFromDatabase(order.id);
+    expect(dbOrder.status).toBe('fulfilled');
+    
+    const emailSent = await checkEmailWasSent(order.customer.email);
+    expect(emailSent).toBe(true);
+  });
+  
+  it('should handle payment failures appropriately', async () => {
+    // Arrange
+    const order = {
+      id: 'fail-payment-12345',
+      items: [{ id: 'item1', quantity: 2 }],
+      customer: { id: 'cust1', email: 'customer@example.com' },
+      total: 9999 // Special value that triggers payment failure in test environment
+    };
+    
+    // Act - Trigger the initial event
+    const { traceId } = await triggerEvent('order.submitted', { order });
+    
+    // Wait for the workflow to complete
+    const result = await waitForWorkflowCompletion(traceId, 5000);
+    
+    // Assert
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'payment.failed',
+        data: expect.objectContaining({
+          order,
+          error: expect.stringContaining('payment')
+        })
+      })
+    );
+    
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.cancelled',
+        data: expect.objectContaining({
+          orderId: order.id,
+          reason: expect.stringContaining('payment')
+        })
+      })
+    );
+    
+    // Verify side effects
+    const dbOrder = await getOrderFromDatabase(order.id);
+    expect(dbOrder.status).toBe('cancelled');
+  });
+});
+```
+
+End-to-end tests verify that:
+- The workflow operates correctly in a realistic environment
+- External systems are integrated properly
+- Side effects (database changes, emails, etc.) occur as expected
+- Error handling works across the entire workflow
+
+## Testing State Management
+
+State management is a critical aspect of deterministic workflows. Here's how to test it:
+
+```typescript
+// stateManagement.test.ts
+import { createTestFlow } from '@motiadev/testing';
+import { handler as initHandler } from './initializeState.step';
+import { handler as updateHandler } from './updateState.step';
+import { handler as finalizeHandler } from './finalizeState.step';
+
+describe('State Management in Workflow', () => {
+  it('should maintain state across steps', async () => {
+    // Arrange
+    const flow = createTestFlow('state-test')
+      .step('Initialize', initHandler)
+      .step('Update', updateHandler)
+      .step('Finalize', finalizeHandler);
+    
+    // Act
+    const result = await flow.execute({ id: '12345', value: 'test' });
+    
+    // Assert
+    // Check the final state
+    expect(result.state).toEqual(
+      expect.objectContaining({
+        'entity:12345': {
+          id: '12345',
+          value: 'test',
+          status: 'finalized',
+          history: ['initialized', 'updated', 'finalized']
+        }
+      })
+    );
+    
+    // Check that events were emitted with state data
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'state.finalized',
+        data: expect.objectContaining({
+          id: '12345',
+          status: 'finalized'
+        })
+      })
+    );
+  });
+  
+  it('should clean up state when workflow completes', async () => {
+    // Arrange
+    const flow = createTestFlow('state-cleanup-test')
+      .step('Initialize', initHandler)
+      .step('Finalize', finalizeHandler);
+    
+    // Act
+    const result = await flow.execute({ id: '12345', value: 'test', cleanup: true });
+    
+    // Assert
+    // Check that state was cleaned up
+    expect(result.state).not.toHaveProperty('entity:12345');
+    
+    // Check that cleanup event was emitted
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'state.cleaned',
+        data: expect.objectContaining({
+          id: '12345'
+        })
+      })
+    );
+  });
+});
+```
+
+## Testing Error Handling
+
+Testing error handling is essential for robust workflows:
+
+```typescript
+// errorHandling.test.ts
+import { createTestFlow } from '@motiadev/testing';
+import { handler as processHandler } from './processData.step';
+import { handler as errorHandler } from './handleError.step';
+import { handler as retryHandler } from './retryOperation.step';
+
+describe('Error Handling in Workflow', () => {
+  it('should handle errors and route to error handler', async () => {
+    // Arrange
+    const flow = createTestFlow('error-test')
+      .step('Process', processHandler)
+      .step('HandleError', errorHandler);
+    
+    // Mock a service to throw an error
+    flow.mockService('dataService', {
+      processData: jest.fn().mockRejectedValue(new Error('Service unavailable'))
+    });
+    
+    // Act
+    const result = await flow.execute({ id: '12345', data: 'test' });
+    
+    // Assert
+    // Check that error event was emitted
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'data.processing.failed',
+        data: expect.objectContaining({
+          id: '12345',
+          error: 'Service unavailable'
+        })
+      })
+    );
+    
+    // Check that error handler was triggered
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'error.handled',
+        data: expect.objectContaining({
+          id: '12345',
+          resolution: 'logged'
+        })
+      })
+    );
+  });
+  
+  it('should retry operations on transient errors', async () => {
+    // Arrange
+    const flow = createTestFlow('retry-test')
+      .step('Process', processHandler)
+      .step('HandleError', errorHandler)
+      .step('Retry', retryHandler)
+      .step('Process', processHandler); // Second attempt
+    
+    // Mock a service to fail once then succeed
+    const mockProcessData = jest.fn()
+      .mockRejectedValueOnce(new Error('Temporary failure'))
+      .mockResolvedValueOnce({ id: '12345', status: 'processed' });
+    
+    flow.mockService('dataService', {
+      processData: mockProcessData,
+      isTransientError: jest.fn().mockReturnValue(true)
+    });
+    
+    // Act
+    const result = await flow.execute({ id: '12345', data: 'test' });
+    
+    // Assert
+    // Check that retry was attempted
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'operation.retry',
+        data: expect.objectContaining({
+          id: '12345',
+          retryCount: 1
+        })
+      })
+    );
+    
+    // Check that the operation eventually succeeded
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'data.processed',
+        data: expect.objectContaining({
+          id: '12345',
+          status: 'processed'
+        })
+      })
+    );
+    
+    // Verify the service was called twice
+    expect(mockProcessData).toHaveBeenCalledTimes(2);
+  });
+});
+```
+
+## Testing Parallel Processing
+
+Testing parallel workflows requires special attention:
+
+```typescript
+// parallelProcessing.test.ts
+import { createTestFlow } from '@motiadev/testing';
+import { handler as distributorHandler } from './taskDistributor.step';
+import { handler as processorHandler } from './taskProcessor.step';
+import { handler as aggregatorHandler } from './resultAggregator.step';
+
+describe('Parallel Processing in Workflow', () => {
+  it('should process tasks in parallel and aggregate results', async () => {
+    // Arrange
+    const flow = createTestFlow('parallel-test')
+      .step('Distributor', distributorHandler)
+      .step('Processor', processorHandler, { parallel: true }) // Enable parallel execution
+      .step('Aggregator', aggregatorHandler);
+    
+    const tasks = [
+      { id: 'task1', data: 'data1' },
+      { id: 'task2', data: 'data2' },
+      { id: 'task3', data: 'data3' }
+    ];
+    
+    // Act
+    const result = await flow.execute({ tasks });
+    
+    // Assert
+    // Check that each task was processed
+    tasks.forEach(task => {
+      expect(result.events).toContainEqual(
+        expect.objectContaining({
+          topic: 'task.processed',
+          data: expect.objectContaining({
+            taskId: task.id,
+            result: expect.anything()
+          })
+        })
+      );
+    });
+    
+    // Check that results were aggregated
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'tasks.completed',
+        data: expect.objectContaining({
+          totalProcessed: tasks.length,
+          results: expect.objectContaining({
+            task1: expect.anything(),
+            task2: expect.anything(),
+            task3: expect.anything()
+          })
+        })
+      })
+    );
+  });
+  
+  it('should handle partial failures in parallel processing', async () => {
+    // Arrange
+    const flow = createTestFlow('parallel-failure-test')
+      .step('Distributor', distributorHandler)
+      .step('Processor', processorHandler, { parallel: true })
+      .step('Aggregator', aggregatorHandler);
+    
+    // Mock processor to fail for task2
+    flow.mockImplementation('Processor', async (input, ctx) => {
+      if (input.task.id === 'task2') {
+        throw new Error('Task 2 failed');
+      }
+      
+      // Normal processing for other tasks
+      const result = `Processed ${input.task.data}`;
+      await ctx.emit({
+        topic: 'task.processed',
+        data: { taskId: input.task.id, result }
+      });
+    });
+    
+    const tasks = [
+      { id: 'task1', data: 'data1' },
+      { id: 'task2', data: 'data2' }, // This will fail
+      { id: 'task3', data: 'data3' }
+    ];
+    
+    // Act
+    const result = await flow.execute({ tasks });
+    
+    // Assert
+    // Check that task1 and task3 were processed
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'task.processed',
+        data: expect.objectContaining({ taskId: 'task1' })
+      })
+    );
+    
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'task.processed',
+        data: expect.objectContaining({ taskId: 'task3' })
+      })
+    );
+    
+    // Check that task2 failed
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'task.failed',
+        data: expect.objectContaining({
+          taskId: 'task2',
+          error: 'Task 2 failed'
+        })
+      })
+    );
+    
+    // Check that aggregation handled the partial results
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'tasks.completed',
+        data: expect.objectContaining({
+          totalProcessed: 2, // Only 2 successful
+          failedTasks: ['task2']
+        })
+      })
+    );
+  });
+});
+```
+
+## Testing External Integrations
+
+Testing workflows that integrate with external systems:
+
+```typescript
+// externalIntegration.test.ts
+import { createTestFlow } from '@motiadev/testing';
+import { handler as apiHandler } from './callExternalApi.step';
+import { handler as processHandler } from './processApiResponse.step';
+
+describe('External API Integration', () => {
+  it('should call external API and process response', async () => {
+    // Arrange
+    const flow = createTestFlow('api-test')
+      .step('CallApi', apiHandler)
+      .step('ProcessResponse', processHandler);
+    
+    // Mock the HTTP client
+    flow.mockService('httpClient', {
+      get: jest.fn().mockResolvedValue({
+        status: 200,
+        data: {
+          id: 'ext123',
+          name: 'External Resource',
+          status: 'active'
+        }
+      })
+    });
+    
+    // Act
+    const result = await flow.execute({ resourceId: 'ext123' });
+    
+    // Assert
+    // Check that API was called with correct parameters
+    expect(flow.getService('httpClient').get).toHaveBeenCalledWith(
+      'https://api.example.com/resources/ext123',
+      expect.any(Object)
+    );
+    
+    // Check that response was processed
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'api.response.processed',
+        data: expect.objectContaining({
+          resourceId: 'ext123',
+          name: 'External Resource',
+          isActive: true
+        })
+      })
+    );
+  });
+  
+  it('should handle API errors gracefully', async () => {
+    // Arrange
+    const flow = createTestFlow('api-error-test')
+      .step('CallApi', apiHandler)
+      .step('ProcessResponse', processHandler);
+    
+    // Mock the HTTP client to return an error
+    flow.mockService('httpClient', {
+      get: jest.fn().mockRejectedValue({
+        response: {
+          status: 404,
+          data: {
+            error: 'Resource not found'
+          }
+        }
+      })
+    });
+    
+    // Act
+    const result = await flow.execute({ resourceId: 'nonexistent' });
+    
+    // Assert
+    // Check that error was handled
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        topic: 'api.call.failed',
+        data: expect.objectContaining({
+          resourceId: 'nonexistent',
+          status: 404,
+          error: 'Resource not found'
+        })
+      })
+    );
+  });
+});
+```
+
+## Performance Testing
+
+Testing the performance characteristics of your workflows:
+
+```typescript
+// performance.test.ts
+import { createTestFlow, measurePerformance } from '@motiadev/testing';
+import { handler as step1Handler } from './step1.step';
+import { handler as step2Handler } from './step2.step';
+import { handler as step3Handler } from './step3.step';
+
+describe('Workflow Performance', () => {
+  it('should complete within acceptable time limits', async () => {
+    // Arrange
+    const flow = createTestFlow('performance-test')
+      .step('Step1', step1Handler)
+      .step('Step2', step2Handler)
+      .step('Step3', step3Handler);
+    
+    // Act & Assert
+    const performanceResult = await measurePerformance(
+      () => flow.execute({ id: '12345', data: 'test' }),
+      {
+        maxExecutionTime: 500, // 500ms maximum
+        iterations: 10, // Run 10 times to get average
+        warmupIterations: 2 // 2 warmup iterations
+      }
+    );
+    
+    expect(performanceResult.averageExecutionTime).toBeLessThan(500);
+    expect(performanceResult.maxExecutionTime).toBeLessThan(1000);
+  });
+  
+  it('should scale linearly with input size', async () => {
+    // Arrange
+    const flow = createTestFlow('scaling-test')
+      .step('Distributor', distributorHandler)
+      .step('Processor', processorHandler, { parallel: true })
+      .step('Aggregator', aggregatorHandler);
+    
+    // Test with different input sizes
+    const inputSizes = [10, 20, 50, 100];
+    const results = [];
+    
+    // Act
+    for (const size of inputSizes) {
+      const tasks = Array.from({ length: size }, (_, i) => ({
+        id: `task${i}`,
+        data: `data${i}`
+      }));
+      
+      const performanceResult = await measurePerformance(
+        () => flow.execute({ tasks }),
+        { iterations: 5, warmupIterations: 1 }
+      );
+      
+      results.push({
+        size,
+        averageTime: performanceResult.averageExecutionTime
+      });
+    }
+    
+    // Assert - Check for linear scaling (or better)
+    // This is a simple check - in real tests you might use more sophisticated analysis
+    const scalingFactor = results[results.length - 1].averageTime / results[0].averageTime;
+    const inputSizeFactor = inputSizes[inputSizes.length - 1] / inputSizes[0];
+    
+    // Should scale better than O(n²)
+    expect(scalingFactor).toBeLessThan(inputSizeFactor * inputSizeFactor);
+    
+    // Ideally, with good parallelism, it might scale better than linear
+    console.log('Scaling results:', results);
+  });
+});
+```
+
+## Test Fixtures and Helpers
+
+Creating reusable test fixtures and helpers:
+
+```typescript
+// testHelpers.ts
+import { createTestFlow } from '@motiadev/testing';
+
+// Common test data
+export const testOrders = {
+  valid: {
+    id: 'test-order-1',
+    items: [{ id: 'item1', quantity: 2, price: 10 }],
+    customer: { id: 'cust1', email: 'customer@example.com' },
+    total: 20
+  },
+  invalid: {
+    id: 'test-order-2',
+    items: [], // Invalid: no items
+    customer: { id: 'cust1', email: 'customer@example.com' },
+    total: 0
+  },
+  paymentFailure: {
+    id: 'test-order-3',
+    items: [{ id: 'item1', quantity: 2, price: 10 }],
+    customer: { id: 'cust1', email: 'customer@example.com' },
+    total: 9999 // Special value that triggers payment failure
+  }
+};
+
+// Create a standard order processing flow for testing
+export function createOrderProcessingFlow() {
+  const flow = createTestFlow('order-processing')
+    .step('ValidateOrder', require('./validateOrder.step').handler)
+    .step('ProcessPayment', require('./processPayment.step').handler)
+    .step('FulfillOrder', require('./fulfillOrder.step').handler);
+  
+  // Set up standard mocks
+  flow.mockService('paymentGateway', {
+    processPayment: jest.fn().mockImplementation((params) => {
+      if (params.amount === 9999) {
+        return Promise.reject(new Error('Payment declined'));
+      }
+      return Promise.resolve({ id: 'payment-' + params.orderId, status: 'succeeded' });
+    })
+  });
+  
+  flow.mockService('fulfillmentService', {
+    fulfillOrder: jest.fn().mockResolvedValue({ trackingId: 'track-' + Math.random().toString(36).substring(7) })
+  });
+  
+  return flow;
+}
+
+// Helper to verify standard order flow events
+export function verifyOrderFlowEvents(events, order, expectedOutcome = 'fulfilled') {
+  if (expectedOutcome === 'fulfilled') {
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.validated',
+        data: expect.objectContaining({ order })
+      })
+    );
+    
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        topic: 'payment.succeeded',
+        data: expect.objectContaining({ order })
+      })
+    );
+    
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.fulfilled',
+        data: expect.objectContaining({ order })
+      })
+    );
+  } else if (expectedOutcome === 'invalid') {
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.invalid',
+        data: expect.objectContaining({ order })
+      })
+    );
+  } else if (expectedOutcome === 'payment-failed') {
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.validated',
+        data: expect.objectContaining({ order })
+      })
+    );
+    
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        topic: 'payment.failed',
+        data: expect.objectContaining({ order })
+      })
+    );
+  }
+}
+```
+
+## Best Practices for Testing Deterministic Workflows
+
+1. **Test at multiple levels**: Unit test individual steps, integration test step sequences, and end-to-end test complete workflows
+2. **Mock external dependencies**: Use mocks for external services, APIs, and databases
+3. **Test error paths**: Explicitly test error handling and recovery mechanisms
+4. **Test state management**: Verify that state is correctly maintained and cleaned up
+5. **Test parallel processing**: Ensure parallel operations work correctly and handle race conditions
+6. **Use realistic test data**: Create test fixtures that represent real-world scenarios
+7. **Test performance**: Measure and validate performance characteristics
+8. **Automate tests**: Run tests automatically as part of your CI/CD pipeline
+9. **Use test helpers**: Create reusable test fixtures and helpers
+10. **Test observability**: Verify that logging and monitoring work correctly
+
+## Conclusion
+
+Testing deterministic workflows in Motia is essential for building reliable, maintainable applications. By applying the approaches and best practices described in this guide, you can ensure that your workflows behave as expected under various conditions, handle errors gracefully, and perform efficiently.
+
+## Next Steps
+
+- [Error Handling](./error-handling) - Learn more about implementing robust error handling in your workflows
+- [Parallel Processing](./parallel-processing) - Explore patterns for parallel execution in workflows
+- [State Management](/docs/concepts/core-components/state-management) - Understand how to effectively manage state in your workflows

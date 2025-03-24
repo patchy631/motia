@@ -1,0 +1,1154 @@
+---
+title: Scaling Strategies in Motia
+description: Approaches and patterns for scaling Motia workflows to handle increasing loads while maintaining performance and reliability
+---
+
+# Scaling Strategies
+
+Scaling strategies in Motia focus on designing workflows that can handle increasing loads while maintaining performance and reliability. These patterns are essential for production systems with high throughput requirements, enabling your applications to grow seamlessly as demand increases.
+
+## Understanding Scaling Challenges
+
+As Motia workflows grow in complexity and usage, several scaling challenges may emerge:
+
+- **Increased Event Volume**: More users or integrations generate more events
+- **Complex State Management**: Larger state objects and more frequent state updates
+- **Resource Constraints**: CPU, memory, and network limitations
+- **Latency Requirements**: Maintaining low latency as load increases
+- **Reliability Concerns**: Ensuring system stability under heavy load
+- **Cost Efficiency**: Optimizing resource usage to control costs
+
+Effective scaling strategies address these challenges through a combination of architectural patterns, optimization techniques, and infrastructure approaches.
+
+## Horizontal vs. Vertical Scaling
+
+Motia supports both horizontal and vertical scaling approaches:
+
+### Horizontal Scaling
+
+Horizontal scaling involves adding more instances of Motia services to distribute the load:
+
+- **Pros**: Linear scalability, improved fault tolerance, no single point of failure
+- **Cons**: Requires coordination between instances, potential for increased complexity
+- **Best For**: High-volume workflows, systems requiring high availability
+
+### Vertical Scaling
+
+Vertical scaling involves increasing the resources (CPU, memory) of existing Motia instances:
+
+- **Pros**: Simpler to implement, no coordination overhead, lower operational complexity
+- **Cons**: Limited by hardware constraints, potential single points of failure
+- **Best For**: Workflows with intensive processing requirements, simpler architectures
+
+Most production deployments use a combination of both approaches, scaling vertically until certain thresholds and then scaling horizontally.
+
+## Basic Scaling Patterns
+
+### 1. Stateless Step Design
+
+Design steps to be stateless whenever possible to enable easier horizontal scaling:
+
+```typescript
+// statelessProcessor.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  data: z.any(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Stateless Processor',
+  subscribes: ['data.process'],
+  emits: ['data.processed'],
+  input: inputSchema,
+  flows: ['data-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Process the data without relying on external state
+    const processedData = processData(input.data);
+    
+    // Emit the processed data
+    await emit({
+      topic: 'data.processed',
+      data: {
+        originalData: input.data,
+        processedData,
+        metadata: input.metadata,
+      },
+    });
+    
+    logger.info('Data processed', {
+      dataSize: JSON.stringify(input.data).length,
+      processingTimeMs: processedData.processingTime,
+    });
+  } catch (error) {
+    logger.error('Error processing data', { error });
+    
+    // Emit processing failure event
+    await emit({
+      topic: 'data.processing.failed',
+      data: {
+        originalData: input.data,
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// Pure function for data processing
+function processData(data) {
+  const startTime = Date.now();
+  
+  // Process the data (pure transformation)
+  const result = {
+    // ... transformed data
+  };
+  
+  return {
+    ...result,
+    processingTime: Date.now() - startTime,
+  };
+}
+```
+
+This pattern:
+1. Processes data using pure functions without side effects
+2. Avoids reliance on external state or resources
+3. Makes steps independently scalable
+4. Simplifies horizontal scaling across multiple instances
+
+### 2. Partitioned Processing
+
+Partition data processing to enable parallel execution:
+
+```typescript
+// partitionedProcessor.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  batchId: z.string(),
+  items: z.array(z.any()),
+  partitionKey: z.string(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Batch Partitioner',
+  subscribes: ['batch.process'],
+  emits: ['partition.process', 'batch.partitioning.complete'],
+  input: inputSchema,
+  flows: ['batch-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Determine optimal partition size based on batch size
+    const partitionSize = determineOptimalPartitionSize(input.items.length);
+    
+    // Step 2: Partition the items
+    const partitions = [];
+    for (let i = 0; i < input.items.length; i += partitionSize) {
+      partitions.push(input.items.slice(i, i + partitionSize));
+    }
+    
+    // Step 3: Store partition information in state
+    await state.set(traceId, 'partitionInfo', {
+      batchId: input.batchId,
+      totalPartitions: partitions.length,
+      completedPartitions: 0,
+      partitionResults: {},
+    });
+    
+    // Step 4: Emit events for each partition
+    for (let i = 0; i < partitions.length; i++) {
+      await emit({
+        topic: 'partition.process',
+        data: {
+          batchId: input.batchId,
+          partitionId: `${input.batchId}-${i}`,
+          partitionIndex: i,
+          items: partitions[i],
+          partitionKey: input.partitionKey,
+          metadata: input.metadata,
+        },
+      });
+    }
+    
+    logger.info('Batch partitioned for processing', {
+      batchId: input.batchId,
+      itemCount: input.items.length,
+      partitionCount: partitions.length,
+      partitionSize,
+    });
+  } catch (error) {
+    logger.error('Error partitioning batch', { error });
+    
+    // Emit partitioning failure event
+    await emit({
+      topic: 'batch.partitioning.failed',
+      data: {
+        batchId: input.batchId,
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// partitionProcessor.step.ts
+export const partitionProcessorConfig = {
+  type: 'event',
+  name: 'Partition Processor',
+  subscribes: ['partition.process'],
+  emits: ['partition.processed', 'partition.processing.failed'],
+  flows: ['batch-processing'],
+};
+
+export const partitionProcessorHandler = async (input, { emit, logger }) => {
+  try {
+    // Process the items in this partition
+    const processedItems = await Promise.all(
+      input.items.map(item => processItem(item, input.partitionKey))
+    );
+    
+    // Emit the processed partition
+    await emit({
+      topic: 'partition.processed',
+      data: {
+        batchId: input.batchId,
+        partitionId: input.partitionId,
+        partitionIndex: input.partitionIndex,
+        processedItems,
+        metadata: input.metadata,
+      },
+    });
+    
+    logger.info('Partition processed', {
+      batchId: input.batchId,
+      partitionId: input.partitionId,
+      itemCount: input.items.length,
+    });
+  } catch (error) {
+    logger.error('Error processing partition', { error });
+    
+    // Emit partition processing failure event
+    await emit({
+      topic: 'partition.processing.failed',
+      data: {
+        batchId: input.batchId,
+        partitionId: input.partitionId,
+        partitionIndex: input.partitionIndex,
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// partitionCollector.step.ts
+export const partitionCollectorConfig = {
+  type: 'event',
+  name: 'Partition Collector',
+  subscribes: ['partition.processed', 'partition.processing.failed'],
+  emits: ['batch.processed', 'batch.processing.failed'],
+  flows: ['batch-processing'],
+};
+
+export const partitionCollectorHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Get the partition information from state
+    const partitionInfo = await state.get(traceId, 'partitionInfo');
+    if (!partitionInfo) {
+      logger.error('Partition information not found', { traceId });
+      return;
+    }
+    
+    // Update the partition information
+    if (input.__motia.topic === 'partition.processed') {
+      partitionInfo.completedPartitions += 1;
+      partitionInfo.partitionResults[input.partitionIndex] = input.processedItems;
+    } else {
+      // Handle failed partition
+      partitionInfo.completedPartitions += 1;
+      partitionInfo.partitionResults[input.partitionIndex] = { error: input.error };
+    }
+    
+    // Save the updated partition information
+    await state.set(traceId, 'partitionInfo', partitionInfo);
+    
+    // Check if all partitions are complete
+    if (partitionInfo.completedPartitions === partitionInfo.totalPartitions) {
+      // Combine the results from all partitions
+      const allProcessedItems = [];
+      const failedPartitions = [];
+      
+      for (let i = 0; i < partitionInfo.totalPartitions; i++) {
+        const partitionResult = partitionInfo.partitionResults[i];
+        
+        if (partitionResult.error) {
+          failedPartitions.push({
+            partitionIndex: i,
+            error: partitionResult.error,
+          });
+        } else {
+          allProcessedItems.push(...partitionResult);
+        }
+      }
+      
+      // Emit the appropriate event based on success or failure
+      if (failedPartitions.length === 0) {
+        await emit({
+          topic: 'batch.processed',
+          data: {
+            batchId: partitionInfo.batchId,
+            processedItems: allProcessedItems,
+            partitionCount: partitionInfo.totalPartitions,
+          },
+        });
+        
+        logger.info('Batch processing complete', {
+          batchId: partitionInfo.batchId,
+          itemCount: allProcessedItems.length,
+          partitionCount: partitionInfo.totalPartitions,
+        });
+      } else {
+        await emit({
+          topic: 'batch.processing.failed',
+          data: {
+            batchId: partitionInfo.batchId,
+            failedPartitions,
+            partialResults: allProcessedItems.length > 0 ? allProcessedItems : undefined,
+            partitionCount: partitionInfo.totalPartitions,
+          },
+        });
+        
+        logger.error('Batch processing failed', {
+          batchId: partitionInfo.batchId,
+          failedPartitionCount: failedPartitions.length,
+          successfulPartitionCount: partitionInfo.totalPartitions - failedPartitions.length,
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('Error in partition collector', { error });
+    
+    // Emit batch processing failure event
+    await emit({
+      topic: 'batch.processing.failed',
+      data: {
+        batchId: input.batchId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Divides large batches into smaller partitions
+2. Processes partitions in parallel
+3. Collects and combines results from all partitions
+4. Handles partial failures gracefully
+5. Enables horizontal scaling by distributing partitions across instances
+
+### 3. Caching Strategies
+
+Implement caching to reduce redundant processing and improve performance:
+
+```typescript
+// cachedProcessor.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+import { createHash } from 'crypto';
+
+const inputSchema = z.object({
+  data: z.any(),
+  cacheOptions: z.object({
+    enabled: z.boolean().default(true),
+    ttlSeconds: z.number().optional(),
+  }).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Cached Processor',
+  subscribes: ['data.process.cached'],
+  emits: ['data.processed'],
+  input: inputSchema,
+  flows: ['data-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, logger }) => {
+  try {
+    // Determine if caching is enabled
+    const cacheEnabled = input.cacheOptions?.enabled !== false;
+    
+    if (cacheEnabled) {
+      // Generate a cache key based on the input data
+      const cacheKey = generateCacheKey(input.data);
+      
+      // Try to get the result from cache
+      const cachedResult = await state.get('cache', cacheKey);
+      
+      if (cachedResult) {
+        // Use the cached result
+        await emit({
+          topic: 'data.processed',
+          data: {
+            originalData: input.data,
+            processedData: cachedResult.result,
+            metadata: {
+              ...input.metadata,
+              fromCache: true,
+              cachedAt: cachedResult.timestamp,
+            },
+          },
+        });
+        
+        logger.info('Data processed from cache', {
+          cacheKey,
+          cachedAt: cachedResult.timestamp,
+        });
+        
+        return;
+      }
+    }
+    
+    // Process the data
+    const processedData = await processData(input.data);
+    
+    // Store the result in cache if caching is enabled
+    if (cacheEnabled) {
+      const cacheKey = generateCacheKey(input.data);
+      const ttlSeconds = input.cacheOptions?.ttlSeconds || 3600; // Default 1 hour
+      
+      await state.set('cache', cacheKey, {
+        result: processedData,
+        timestamp: new Date().toISOString(),
+      }, ttlSeconds);
+    }
+    
+    // Emit the processed data
+    await emit({
+      topic: 'data.processed',
+      data: {
+        originalData: input.data,
+        processedData,
+        metadata: {
+          ...input.metadata,
+          fromCache: false,
+        },
+      },
+    });
+    
+    logger.info('Data processed', {
+      dataSize: JSON.stringify(input.data).length,
+      processingTimeMs: processedData.processingTime,
+      cached: false,
+    });
+  } catch (error) {
+    logger.error('Error processing data', { error });
+    
+    // Emit processing failure event
+    await emit({
+      topic: 'data.processing.failed',
+      data: {
+        originalData: input.data,
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// Generate a deterministic cache key from the input data
+function generateCacheKey(data) {
+  const hash = createHash('sha256');
+  hash.update(JSON.stringify(data));
+  return hash.digest('hex');
+}
+```
+
+This pattern:
+1. Checks for cached results before processing
+2. Generates deterministic cache keys based on input data
+3. Stores processed results in cache for future use
+4. Supports configurable cache TTL (time-to-live)
+5. Includes cache metadata in the response
+
+## Advanced Scaling Patterns
+
+### 1. Distributed State Management
+
+Implement distributed state management for horizontally scaled deployments:
+
+```typescript
+// distributedStateManager.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+import { RedisClient } from 'redis';
+
+// Initialize Redis client
+const redisClient = new RedisClient({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  password: process.env.REDIS_PASSWORD,
+});
+
+const inputSchema = z.object({
+  operation: z.enum(['get', 'set', 'delete']),
+  key: z.string(),
+  value: z.any().optional(),
+  options: z.object({
+    ttlSeconds: z.number().optional(),
+    lockTimeout: z.number().optional(),
+  }).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Distributed State Manager',
+  subscribes: ['state.manage'],
+  emits: ['state.operation.result', 'state.operation.failed'],
+  input: inputSchema,
+  flows: ['state-management'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    let result;
+    
+    switch (input.operation) {
+      case 'get':
+        result = await getDistributedState(input.key);
+        break;
+        
+      case 'set':
+        result = await setDistributedState(
+          input.key,
+          input.value,
+          input.options?.ttlSeconds
+        );
+        break;
+        
+      case 'delete':
+        result = await deleteDistributedState(input.key);
+        break;
+    }
+    
+    // Emit the operation result
+    await emit({
+      topic: 'state.operation.result',
+      data: {
+        operation: input.operation,
+        key: input.key,
+        result,
+      },
+    });
+    
+    logger.info('State operation completed', {
+      operation: input.operation,
+      key: input.key,
+    });
+  } catch (error) {
+    logger.error('Error in state operation', { error });
+    
+    // Emit operation failure event
+    await emit({
+      topic: 'state.operation.failed',
+      data: {
+        operation: input.operation,
+        key: input.key,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// Helper function to get state from Redis
+async function getDistributedState(key) {
+  return new Promise((resolve, reject) => {
+    redisClient.get(key, (err, reply) => {
+      if (err) {
+        reject(err);
+      } else {
+        try {
+          resolve(reply ? JSON.parse(reply) : null);
+        } catch (parseError) {
+          reject(parseError);
+        }
+      }
+    });
+  });
+}
+
+// Helper function to set state in Redis
+async function setDistributedState(key, value, ttlSeconds) {
+  return new Promise((resolve, reject) => {
+    const stringValue = JSON.stringify(value);
+    
+    if (ttlSeconds) {
+      redisClient.setex(key, ttlSeconds, stringValue, (err, reply) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ success: reply === 'OK' });
+        }
+      });
+    } else {
+      redisClient.set(key, stringValue, (err, reply) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ success: reply === 'OK' });
+        }
+      });
+    }
+  });
+}
+
+// Helper function to delete state from Redis
+async function deleteDistributedState(key) {
+  return new Promise((resolve, reject) => {
+    redisClient.del(key, (err, reply) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ deleted: reply === 1 });
+      }
+    });
+  });
+}
+```
+
+This pattern:
+1. Uses an external store (Redis) for shared state
+2. Enables consistent state access across multiple instances
+3. Supports TTL for state entries
+4. Provides atomic operations for state management
+5. Decouples state storage from Motia instances
+
+### 2. Backpressure Handling
+
+Implement backpressure handling to manage high event volumes:
+
+```typescript
+// backpressureHandler.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  items: z.array(z.any()),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Backpressure Handler',
+  subscribes: ['items.process'],
+  emits: ['items.process.batch', 'items.processed'],
+  input: inputSchema,
+  flows: ['high-volume-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Check current system load
+    const systemLoad = await getSystemLoad();
+    
+    // Step 2: Determine optimal batch size based on system load
+    const optimalBatchSize = determineOptimalBatchSize(systemLoad);
+    
+    // Step 3: Check if we need to apply backpressure
+    if (input.items.length > optimalBatchSize) {
+      // Apply backpressure by splitting into smaller batches
+      const batches = [];
+      for (let i = 0; i < input.items.length; i += optimalBatchSize) {
+        batches.push(input.items.slice(i, i + optimalBatchSize));
+      }
+      
+      // Store batch information
+      await state.set(traceId, 'batchInfo', {
+        originalItemCount: input.items.length,
+        batchCount: batches.length,
+        processedBatches: 0,
+        results: [],
+      });
+      
+      // Emit events for each batch with controlled concurrency
+      for (let i = 0; i < batches.length; i++) {
+        await emit({
+          topic: 'items.process.batch',
+          data: {
+            batchIndex: i,
+            items: batches[i],
+            metadata: {
+              ...input.metadata,
+              isBackpressureBatch: true,
+              batchIndex: i,
+              totalBatches: batches.length,
+            },
+          },
+        });
+        
+        // Add delay between batch emissions if system is under heavy load
+        if (systemLoad > 0.8 && i < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      logger.info('Applied backpressure', {
+        originalItemCount: input.items.length,
+        batchCount: batches.length,
+        batchSize: optimalBatchSize,
+        systemLoad,
+      });
+    } else {
+      // Process directly if batch size is already optimal
+      const processedItems = await processItems(input.items);
+      
+      await emit({
+        topic: 'items.processed',
+        data: {
+          originalItems: input.items,
+          processedItems,
+          metadata: input.metadata,
+        },
+      });
+      
+      logger.info('Items processed directly', {
+        itemCount: input.items.length,
+        systemLoad,
+      });
+    }
+  } catch (error) {
+    logger.error('Error in backpressure handler', { error });
+    
+    // Emit processing failure event
+    await emit({
+      topic: 'items.processing.failed',
+      data: {
+        items: input.items,
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// batchProcessor.step.ts
+export const batchProcessorConfig = {
+  type: 'event',
+  name: 'Batch Processor',
+  subscribes: ['items.process.batch'],
+  emits: ['batch.processed'],
+  flows: ['high-volume-processing'],
+};
+
+export const batchProcessorHandler = async (input, { emit, logger }) => {
+  try {
+    // Process the items in this batch
+    const processedItems = await processItems(input.items);
+    
+    // Emit the processed batch
+    await emit({
+      topic: 'batch.processed',
+      data: {
+        batchIndex: input.batchIndex,
+        processedItems,
+        metadata: input.metadata,
+      },
+    });
+    
+    logger.info('Batch processed', {
+      batchIndex: input.batchIndex,
+      itemCount: input.items.length,
+    });
+  } catch (error) {
+    logger.error('Error processing batch', { error });
+    
+    // Emit batch processing failure event
+    await emit({
+      topic: 'batch.processing.failed',
+      data: {
+        batchIndex: input.batchIndex,
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// batchCollector.step.ts
+export const batchCollectorConfig = {
+  type: 'event',
+  name: 'Batch Collector',
+  subscribes: ['batch.processed', 'batch.processing.failed'],
+  emits: ['items.processed', 'items.processing.failed'],
+  flows: ['high-volume-processing'],
+};
+
+export const batchCollectorHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Get the batch information
+    const batchInfo = await state.get(traceId, 'batchInfo');
+    if (!batchInfo) {
+      logger.error('Batch information not found', { traceId });
+      return;
+    }
+    
+    // Update the batch information
+    batchInfo.processedBatches += 1;
+    
+    if (input.__motia.topic === 'batch.processed') {
+      // Store the processed items
+      batchInfo.results[input.batchIndex] = input.processedItems;
+    } else {
+      // Store the error
+      batchInfo.results[input.batchIndex] = { error: input.error };
+    }
+    
+    // Save the updated batch information
+    await state.set(traceId, 'batchInfo', batchInfo);
+    
+    // Check if all batches are processed
+    if (batchInfo.processedBatches === batchInfo.batchCount) {
+      // Combine all results
+      const allProcessedItems = [];
+      const failedBatches = [];
+      
+      for (let i = 0; i < batchInfo.batchCount; i++) {
+        const batchResult = batchInfo.results[i];
+        
+        if (batchResult.error) {
+          failedBatches.push({
+            batchIndex: i,
+            error: batchResult.error,
+          });
+        } else {
+          allProcessedItems.push(...batchResult);
+        }
+      }
+      
+      // Emit the appropriate event
+      if (failedBatches.length === 0) {
+        await emit({
+          topic: 'items.processed',
+          data: {
+            processedItems: allProcessedItems,
+            metadata: input.metadata,
+          },
+        });
+        
+        logger.info('All batches processed successfully', {
+          batchCount: batchInfo.batchCount,
+          totalItemCount: allProcessedItems.length,
+        });
+      } else {
+        await emit({
+          topic: 'items.processing.failed',
+          data: {
+            failedBatches,
+            partialResults: allProcessedItems.length > 0 ? allProcessedItems : undefined,
+            metadata: input.metadata,
+          },
+        });
+        
+        logger.error('Some batches failed processing', {
+          failedBatchCount: failedBatches.length,
+          successfulBatchCount: batchInfo.batchCount - failedBatches.length,
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('Error in batch collector', { error });
+    
+    // Emit processing failure event
+    await emit({
+      topic: 'items.processing.failed',
+      data: {
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// Helper function to get current system load
+async function getSystemLoad() {
+  // Implementation would depend on your monitoring system
+  // This is a simplified example
+  return new Promise(resolve => {
+    // Get CPU usage, memory usage, etc.
+    // Return a value between 0 and 1 representing system load
+    resolve(process.cpuUsage().user / 1000000);
+  });
+}
+
+// Helper function to determine optimal batch size
+function determineOptimalBatchSize(systemLoad) {
+  // Adjust batch size based on system load
+  const maxBatchSize = 1000;
+  const minBatchSize = 10;
+  
+  // Reduce batch size as system load increases
+  return Math.max(
+    minBatchSize,
+    Math.floor(maxBatchSize * (1 - systemLoad))
+  );
+}
+```
+
+This pattern:
+1. Monitors system load to detect potential bottlenecks
+2. Dynamically adjusts batch sizes based on current load
+3. Splits large batches into smaller, manageable chunks
+4. Controls concurrency to prevent system overload
+5. Collects and combines results from all batches
+
+### 3. Adaptive Concurrency Control
+
+Implement adaptive concurrency control to optimize resource usage:
+
+```typescript
+// concurrencyController.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  tasks: z.array(z.any()),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Concurrency Controller',
+  subscribes: ['tasks.execute'],
+  emits: ['task.execute', 'tasks.completed', 'tasks.execution.failed'],
+  input: inputSchema,
+  flows: ['adaptive-concurrency'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Get current concurrency settings
+    let concurrencySettings = await state.get('system', 'concurrencySettings');
+    
+    if (!concurrencySettings) {
+      // Initialize default settings
+      concurrencySettings = {
+        maxConcurrentTasks: 10,
+        currentConcurrentTasks: 0,
+        taskSuccessRate: 1.0,
+        averageTaskDuration: 500, // ms
+        lastAdjustmentTime: Date.now(),
+      };
+      
+      await state.set('system', 'concurrencySettings', concurrencySettings);
+    }
+    
+    // Step 2: Store task information
+    await state.set(traceId, 'taskInfo', {
+      totalTasks: input.tasks.length,
+      completedTasks: 0,
+      successfulTasks: 0,
+      failedTasks: 0,
+      results: [],
+      startTime: Date.now(),
+    });
+    
+    // Step 3: Calculate optimal concurrency
+    const optimalConcurrency = calculateOptimalConcurrency(concurrencySettings);
+    
+    // Step 4: Update concurrency settings
+    concurrencySettings.maxConcurrentTasks = optimalConcurrency;
+    await state.set('system', 'concurrencySettings', concurrencySettings);
+    
+    // Step 5: Execute tasks with controlled concurrency
+    const taskBatches = [];
+    for (let i = 0; i < input.tasks.length; i += optimalConcurrency) {
+      taskBatches.push(input.tasks.slice(i, i + optimalConcurrency));
+    }
+    
+    // Execute each batch sequentially, but tasks within a batch concurrently
+    for (let batchIndex = 0; batchIndex < taskBatches.length; batchIndex++) {
+      const batch = taskBatches[batchIndex];
+      
+      // Update concurrency settings
+      concurrencySettings.currentConcurrentTasks = batch.length;
+      await state.set('system', 'concurrencySettings', concurrencySettings);
+      
+      // Execute all tasks in this batch concurrently
+      const batchPromises = batch.map((task, taskIndex) => {
+        const taskId = `${traceId}-${batchIndex}-${taskIndex}`;
+        
+        return emit({
+          topic: 'task.execute',
+          data: {
+            taskId,
+            task,
+            batchIndex,
+            taskIndex: i * optimalConcurrency + taskIndex,
+            metadata: input.metadata,
+          },
+        });
+      });
+      
+      // Wait for all tasks in this batch to be emitted
+      await Promise.all(batchPromises);
+      
+      // Add delay between batches if needed
+      if (batchIndex < taskBatches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+    
+    logger.info('Tasks dispatched with adaptive concurrency', {
+      totalTasks: input.tasks.length,
+      batchCount: taskBatches.length,
+      concurrencyLevel: optimalConcurrency,
+    });
+  } catch (error) {
+    logger.error('Error in concurrency controller', { error });
+    
+    // Emit execution failure event
+    await emit({
+      topic: 'tasks.execution.failed',
+      data: {
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+
+// Helper function to calculate optimal concurrency
+function calculateOptimalConcurrency(settings) {
+  // Base concurrency on success rate and system performance
+  let optimalConcurrency = settings.maxConcurrentTasks;
+  
+  // Reduce concurrency if success rate is low
+  if (settings.taskSuccessRate < 0.9) {
+    optimalConcurrency = Math.max(1, Math.floor(optimalConcurrency * 0.8));
+  }
+  
+  // Increase concurrency if success rate is high and tasks are fast
+  if (settings.taskSuccessRate > 0.95 && settings.averageTaskDuration < 200) {
+    optimalConcurrency = Math.min(50, Math.floor(optimalConcurrency * 1.2));
+  }
+  
+  return optimalConcurrency;
+}
+```
+
+This pattern:
+1. Monitors task success rates and execution times
+2. Dynamically adjusts concurrency levels based on system performance
+3. Executes tasks in batches with controlled parallelism
+4. Adapts to changing system conditions
+5. Prevents system overload while maximizing throughput
+
+## Best Practices for Scaling
+
+### 1. Design for Horizontal Scaling
+
+Create workflows that can scale horizontally:
+
+- **Stateless Design**: Make steps stateless whenever possible
+- **Shared Nothing Architecture**: Minimize dependencies between instances
+- **Distributed State**: Use distributed state management for shared state
+- **Idempotent Operations**: Design operations to be safely retryable
+- **Event-Based Communication**: Leverage Motia's event-driven architecture
+
+### 2. Optimize Resource Usage
+
+Efficiently use available resources:
+
+- **Batch Processing**: Process items in batches for better efficiency
+- **Caching**: Cache expensive computation results
+- **Resource Pooling**: Share resources across steps when appropriate
+- **Lazy Loading**: Load resources only when needed
+- **Garbage Collection**: Release resources promptly when no longer needed
+
+### 3. Implement Effective Monitoring
+
+Monitor system performance to identify bottlenecks:
+
+- **Key Metrics**: Track event rates, processing times, error rates, and resource usage
+- **Alerting**: Set up alerts for abnormal conditions
+- **Distributed Tracing**: Implement tracing across workflow steps
+- **Performance Dashboards**: Create dashboards for key performance indicators
+- **Log Aggregation**: Centralize logs for easier troubleshooting
+
+### 4. Plan for Failure
+
+Design systems that can handle failures gracefully:
+
+- **Circuit Breakers**: Prevent cascading failures
+- **Retry Mechanisms**: Implement intelligent retry strategies
+- **Fallbacks**: Provide fallback mechanisms for critical operations
+- **Partial Success Handling**: Process what you can even if some operations fail
+- **Graceful Degradation**: Maintain core functionality during high load
+
+### 5. Test Scalability
+
+Verify that your workflows can scale as expected:
+
+- **Load Testing**: Test performance under expected and peak loads
+- **Stress Testing**: Identify breaking points
+- **Chaos Testing**: Verify resilience to failures
+- **Scalability Benchmarks**: Establish performance baselines
+- **Continuous Performance Testing**: Monitor performance changes over time
+
+## Infrastructure Considerations
+
+### Containerization and Orchestration
+
+Consider using containerization and orchestration for Motia deployments:
+
+- **Docker Containers**: Package Motia applications in containers
+- **Kubernetes**: Orchestrate containers for automatic scaling and failover
+- **Service Mesh**: Manage service-to-service communication
+- **Auto-scaling**: Configure horizontal pod autoscaling based on metrics
+- **Resource Limits**: Set appropriate CPU and memory limits
+
+### Cloud-Native Deployment
+
+Leverage cloud services for scalable deployments:
+
+- **Serverless Functions**: Deploy steps as serverless functions
+- **Managed Databases**: Use managed services for state storage
+- **Message Queues**: Implement queues for backpressure handling
+- **CDN**: Cache static assets and responses
+- **Load Balancers**: Distribute traffic across instances
+
+### Multi-Region Deployment
+
+Consider multi-region deployments for global applications:
+
+- **Geo-Distributed Instances**: Deploy Motia in multiple regions
+- **Data Replication**: Replicate state across regions
+- **Traffic Routing**: Route users to the nearest region
+- **Disaster Recovery**: Plan for region failures
+- **Compliance**: Address data residency requirements
+
+## Conclusion
+
+Scaling Motia workflows requires a combination of architectural patterns, optimization techniques, and infrastructure approaches. By implementing the strategies outlined in this guide, you can create workflows that scale effectively to handle increasing loads while maintaining performance and reliability.
+
+Remember that scaling is not just about handling more traffic—it's about doing so efficiently, reliably, and cost-effectively. Start with a solid foundation of stateless design, effective partitioning, and caching, then build on that with more advanced patterns as your needs grow.
+
+## Next Steps
+
+- [Custom Extensions](./custom-extensions) - Learn how to extend Motia's capabilities
+- [Agent Orchestration](./agent-orchestration) - Explore techniques for coordinating multiple specialized agents
+- [Hybrid Approaches](./hybrid-approaches) - Discover patterns for combining deterministic and agentic workflows

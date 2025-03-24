@@ -1,0 +1,562 @@
+---
+title: Performance Monitoring
+description: Learn how to monitor and optimize the performance of your Motia workflows
+---
+
+# Performance Monitoring
+
+As your Motia workflows grow in complexity, monitoring and optimizing their performance becomes increasingly important. The Motia Workbench provides tools and features to help you identify performance bottlenecks, monitor resource usage, and optimize your workflows for maximum efficiency.
+
+## Understanding Workflow Performance
+
+Performance in Motia workflows involves several key aspects:
+
+- **Execution Time**: How long steps take to complete
+- **Resource Usage**: CPU, memory, and network utilization
+- **Throughput**: How many events can be processed per unit of time
+- **Latency**: Delays between steps in a workflow
+- **Scalability**: How performance changes as load increases
+
+## Performance Monitoring Tools
+
+The Motia Workbench includes several tools for monitoring workflow performance:
+
+### Performance Dashboard
+
+The Performance Dashboard provides a high-level overview of your workflow's performance:
+
+- **Step Execution Times**: Average, minimum, and maximum execution times for each step
+- **Event Throughput**: Number of events processed per second
+- **Resource Usage**: CPU and memory utilization
+- **Error Rates**: Percentage of steps that result in errors
+
+To access the Performance Dashboard, click the "Performance" tab in the Workbench navigation.
+
+### Step Profiler
+
+The Step Profiler provides detailed performance information for individual steps:
+
+- **Execution Timeline**: Visual representation of step execution over time
+- **Function Profiling**: Breakdown of time spent in different functions
+- **Memory Usage**: Memory allocation and garbage collection patterns
+- **I/O Operations**: Time spent on network and disk operations
+
+To profile a step, select it in the flow visualization and click the "Profile" button in the step details panel.
+
+### Log Explorer
+
+The Log Explorer can be used to analyze performance-related logs:
+
+- Filter logs by step name, flow, or time range
+- Search for performance-related keywords
+- View execution times and resource usage reported in logs
+
+### Real-time Monitoring
+
+The Workbench provides real-time monitoring of workflow execution:
+
+- **Active Steps**: See which steps are currently executing
+- **Queue Lengths**: Monitor event queue lengths
+- **Resource Usage**: Track CPU and memory usage in real-time
+- **Network Activity**: Monitor network requests and responses
+
+## Identifying Performance Bottlenecks
+
+Use these techniques to identify performance bottlenecks in your workflows:
+
+### Step Execution Time Analysis
+
+1. Use the Performance Dashboard to identify steps with high execution times
+2. Profile these steps to understand where time is being spent
+3. Look for patterns in slow executions (e.g., specific input data, time of day)
+
+### Resource Usage Analysis
+
+1. Monitor CPU and memory usage during workflow execution
+2. Identify steps that consume excessive resources
+3. Look for memory leaks or inefficient resource usage
+
+### Throughput Analysis
+
+1. Measure the number of events processed per second
+2. Identify bottlenecks that limit throughput
+3. Look for steps that can be parallelized or optimized
+
+### Latency Analysis
+
+1. Measure the time between steps in a workflow
+2. Identify delays in event propagation
+3. Look for opportunities to reduce latency
+
+## Common Performance Issues
+
+### Slow Database Operations
+
+**Symptoms**:
+- Steps that interact with databases have high execution times
+- Database operations dominate the execution profile
+
+**Solutions**:
+- Optimize database queries
+- Use indexing effectively
+- Implement caching for frequently accessed data
+- Consider using database connection pooling
+
+```typescript
+// Before: Inefficient query
+const results = await db.query('SELECT * FROM orders WHERE status = "pending"');
+
+// After: Optimized query with index
+const results = await db.query('SELECT id, customer_id FROM orders WHERE status = "pending"');
+```
+
+### Inefficient Data Processing
+
+**Symptoms**:
+- High CPU usage during data processing
+- Steps that transform data have high execution times
+
+**Solutions**:
+- Use efficient algorithms and data structures
+- Process data in batches
+- Consider using streams for large datasets
+- Implement caching for expensive computations
+
+```typescript
+// Before: Inefficient data processing
+const processedData = data.map(item => {
+  return expensiveTransformation(item);
+});
+
+// After: Batch processing with caching
+const cache = new Map();
+const processedData = [];
+for (let i = 0; i < data.length; i += BATCH_SIZE) {
+  const batch = data.slice(i, i + BATCH_SIZE);
+  const batchResults = batch.map(item => {
+    if (cache.has(item.id)) {
+      return cache.get(item.id);
+    }
+    const result = expensiveTransformation(item);
+    cache.set(item.id, result);
+    return result;
+  });
+  processedData.push(...batchResults);
+}
+```
+
+### Network Bottlenecks
+
+**Symptoms**:
+- Steps that make external API calls have high execution times
+- Network operations dominate the execution profile
+
+**Solutions**:
+- Implement request batching
+- Use connection pooling
+- Consider caching responses
+- Implement retry strategies with exponential backoff
+
+```typescript
+// Before: Sequential API calls
+for (const item of items) {
+  await api.sendRequest(item);
+}
+
+// After: Batched API calls
+const batches = [];
+for (let i = 0; i < items.length; i += BATCH_SIZE) {
+  batches.push(items.slice(i, i + BATCH_SIZE));
+}
+
+for (const batch of batches) {
+  await Promise.all(batch.map(item => api.sendRequest(item)));
+}
+```
+
+### Memory Leaks
+
+**Symptoms**:
+- Increasing memory usage over time
+- Garbage collection pauses
+- Eventually leads to out-of-memory errors
+
+**Solutions**:
+- Identify and fix memory leaks
+- Implement proper cleanup in steps
+- Consider using WeakMap and WeakSet for caching
+- Monitor memory usage over time
+
+```typescript
+// Before: Potential memory leak
+const cache = {};
+export const handler = async (input, { emit }) => {
+  const key = input.id;
+  if (!cache[key]) {
+    cache[key] = await processData(input);
+  }
+  await emit({
+    topic: 'data.processed',
+    data: cache[key]
+  });
+};
+
+// After: With proper cache management
+const cache = {};
+const MAX_CACHE_SIZE = 1000;
+export const handler = async (input, { emit, logger }) => {
+  const key = input.id;
+  if (!cache[key]) {
+    // Limit cache size
+    if (Object.keys(cache).length >= MAX_CACHE_SIZE) {
+      const oldestKey = Object.keys(cache)[0];
+      delete cache[oldestKey];
+      logger.debug(`Removed ${oldestKey} from cache`);
+    }
+    cache[key] = await processData(input);
+  }
+  await emit({
+    topic: 'data.processed',
+    data: cache[key]
+  });
+};
+```
+
+### Concurrency Issues
+
+**Symptoms**:
+- Inconsistent state
+- Race conditions
+- Deadlocks
+
+**Solutions**:
+- Implement proper locking mechanisms
+- Use atomic operations
+- Design workflows to minimize shared state
+- Consider using optimistic concurrency control
+
+```typescript
+// Before: Potential race condition
+export const handler = async (input, { emit, state }) => {
+  const counter = await state.get('counter') || 0;
+  await state.set('counter', counter + 1);
+  await emit({
+    topic: 'counter.updated',
+    data: { counter: counter + 1 }
+  });
+};
+
+// After: With locking
+export const handler = async (input, { emit, state, lock }) => {
+  // Acquire lock
+  const release = await lock.acquire('counter');
+  try {
+    const counter = await state.get('counter') || 0;
+    await state.set('counter', counter + 1);
+    await emit({
+      topic: 'counter.updated',
+      data: { counter: counter + 1 }
+    });
+  } finally {
+    // Release lock
+    await release();
+  }
+};
+```
+
+## Performance Optimization Techniques
+
+### Step Optimization
+
+Optimize individual steps for better performance:
+
+- **Minimize External Calls**: Reduce the number of external API calls
+- **Efficient Data Processing**: Use efficient algorithms and data structures
+- **Caching**: Implement caching for expensive operations
+- **Resource Management**: Properly manage resources like database connections
+
+```typescript
+// Implementing caching in a step
+const cache = new Map();
+const TTL = 60 * 1000; // 1 minute
+
+export const handler = async (input, { emit, logger }) => {
+  const cacheKey = JSON.stringify(input);
+  const now = Date.now();
+  
+  // Check cache
+  if (cache.has(cacheKey)) {
+    const { data, timestamp } = cache.get(cacheKey);
+    if (now - timestamp < TTL) {
+      logger.debug('Cache hit');
+      await emit({
+        topic: 'data.processed',
+        data
+      });
+      return;
+    }
+    logger.debug('Cache expired');
+  } else {
+    logger.debug('Cache miss');
+  }
+  
+  // Process data
+  const result = await processData(input);
+  
+  // Update cache
+  cache.set(cacheKey, {
+    data: result,
+    timestamp: now
+  });
+  
+  // Clean up old cache entries
+  for (const [key, { timestamp }] of cache.entries()) {
+    if (now - timestamp > TTL) {
+      cache.delete(key);
+    }
+  }
+  
+  await emit({
+    topic: 'data.processed',
+    data: result
+  });
+};
+```
+
+### Workflow Optimization
+
+Optimize the overall workflow structure:
+
+- **Parallelization**: Process independent steps in parallel
+- **Batching**: Process data in batches
+- **Event Filtering**: Filter events to reduce unnecessary processing
+- **Workflow Splitting**: Split complex workflows into smaller, more manageable ones
+
+```typescript
+// Example of event filtering
+export const config = {
+  type: 'event',
+  name: 'FilterImportantEvents',
+  subscribes: ['data.received'],
+  emits: ['data.important'],
+  flows: ['data-processing']
+};
+
+export const handler = async (input, { emit, logger }) => {
+  // Only process important events
+  if (isImportant(input)) {
+    logger.debug('Processing important event');
+    await emit({
+      topic: 'data.important',
+      data: input
+    });
+  } else {
+    logger.debug('Skipping non-important event');
+  }
+};
+```
+
+### State Management Optimization
+
+Optimize state management for better performance:
+
+- **Minimize State Size**: Keep state small and focused
+- **Use Appropriate Storage**: Choose the right storage backend for your needs
+- **Implement Caching**: Cache frequently accessed state
+- **Batch State Updates**: Combine multiple state updates into a single operation
+
+```typescript
+// Before: Multiple state updates
+export const handler = async (input, { state }) => {
+  await state.set('user.name', input.name);
+  await state.set('user.email', input.email);
+  await state.set('user.address', input.address);
+};
+
+// After: Batched state update
+export const handler = async (input, { state }) => {
+  const user = await state.get('user') || {};
+  await state.set('user', {
+    ...user,
+    name: input.name,
+    email: input.email,
+    address: input.address
+  });
+};
+```
+
+### Resource Management
+
+Optimize resource usage:
+
+- **Connection Pooling**: Reuse connections to external services
+- **Resource Cleanup**: Properly close and clean up resources
+- **Lazy Initialization**: Initialize resources only when needed
+- **Resource Limits**: Set appropriate limits on resource usage
+
+```typescript
+// Example of connection pooling
+const pool = createConnectionPool({
+  max: 10,
+  min: 2,
+  idleTimeoutMillis: 30000
+});
+
+export const handler = async (input, { emit }) => {
+  let connection;
+  try {
+    // Get connection from pool
+    connection = await pool.acquire();
+    
+    // Use connection
+    const result = await connection.query('SELECT * FROM users WHERE id = ?', [input.userId]);
+    
+    await emit({
+      topic: 'user.retrieved',
+      data: result
+    });
+  } finally {
+    // Return connection to pool
+    if (connection) {
+      await pool.release(connection);
+    }
+  }
+};
+```
+
+## Performance Testing
+
+### Load Testing
+
+Test your workflows under load to identify performance bottlenecks:
+
+1. **Define Test Scenarios**: Create realistic test scenarios
+2. **Generate Test Data**: Create representative test data
+3. **Run Load Tests**: Gradually increase load until performance degrades
+4. **Analyze Results**: Identify bottlenecks and optimize
+
+### Benchmarking
+
+Benchmark your workflows to establish performance baselines:
+
+1. **Define Metrics**: Decide which metrics to measure
+2. **Create Benchmarks**: Implement benchmark tests
+3. **Run Benchmarks**: Execute benchmarks regularly
+4. **Compare Results**: Compare results over time to detect regressions
+
+### Continuous Performance Monitoring
+
+Implement continuous performance monitoring:
+
+1. **Collect Metrics**: Gather performance metrics during normal operation
+2. **Set Alerts**: Configure alerts for performance degradation
+3. **Analyze Trends**: Look for trends in performance metrics
+4. **Take Action**: Address performance issues proactively
+
+## Best Practices
+
+### Performance-Oriented Design
+
+Design your workflows with performance in mind:
+
+- **Keep Steps Focused**: Each step should do one thing well
+- **Minimize Dependencies**: Reduce dependencies between steps
+- **Design for Parallelism**: Enable parallel execution where possible
+- **Consider Scalability**: Design workflows that can scale horizontally
+
+### Efficient Logging
+
+Implement efficient logging practices:
+
+- **Use Appropriate Log Levels**: Use the right log level for each message
+- **Structured Logging**: Use structured logging for easier analysis
+- **Sampling**: Consider sampling verbose logs in high-throughput scenarios
+- **Contextual Information**: Include relevant context in log messages
+
+```typescript
+// Efficient structured logging
+export const handler = async (input, { emit, logger }) => {
+  // Use appropriate log level
+  logger.debug('Processing input', { 
+    inputId: input.id,
+    inputType: input.type,
+    timestamp: new Date().toISOString()
+  });
+  
+  try {
+    const result = await processData(input);
+    
+    // Log performance metrics
+    logger.info('Processing completed', {
+      inputId: input.id,
+      durationMs: Date.now() - startTime,
+      resultSize: JSON.stringify(result).length
+    });
+    
+    await emit({
+      topic: 'data.processed',
+      data: result
+    });
+  } catch (error) {
+    // Log errors with context
+    logger.error('Processing failed', {
+      inputId: input.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      }
+    });
+    throw error;
+  }
+};
+```
+
+### Resource Pooling
+
+Implement resource pooling for external services:
+
+- **Database Connections**: Use connection pools for databases
+- **HTTP Clients**: Reuse HTTP clients
+- **External Services**: Implement client-side pooling for external services
+
+### Caching Strategies
+
+Implement effective caching strategies:
+
+- **In-Memory Caching**: Cache frequently accessed data in memory
+- **Distributed Caching**: Use distributed caches for shared data
+- **Cache Invalidation**: Implement proper cache invalidation
+- **TTL-Based Caching**: Set appropriate time-to-live for cached items
+
+## Performance Monitoring Checklist
+
+Use this checklist to ensure comprehensive performance monitoring:
+
+1. **Baseline Metrics**:
+   - Establish baseline performance metrics
+   - Document expected performance characteristics
+   - Set performance targets
+
+2. **Monitoring Setup**:
+   - Configure performance monitoring in the Workbench
+   - Set up alerts for performance degradation
+   - Implement logging for performance-critical operations
+
+3. **Regular Analysis**:
+   - Review performance metrics regularly
+   - Identify trends and patterns
+   - Address performance issues proactively
+
+4. **Optimization Process**:
+   - Prioritize optimization efforts based on impact
+   - Implement optimizations incrementally
+   - Measure the impact of each optimization
+   - Document optimization techniques and results
+
+## Next Steps
+
+Now that you understand how to monitor and optimize workflow performance, you might want to explore:
+
+- [Flow Visualization](./visualization): Learn more about visualizing your workflows
+- [Debugging Techniques](./debugging): Discover tools and strategies for debugging workflows
+- [Custom UI Components](./custom-ui): Create custom visualizations for your steps

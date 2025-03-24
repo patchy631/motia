@@ -36,6 +36,26 @@ content/
     ├── index.mdx                   # Documentation home/landing page [Beginner→Intermediate]
     │
     ├── quickstart.mdx              # Immediate hands-on introduction for diving in [Beginner→Intermediate]
+    ├── concepts/                   # Core conceptual understanding
+    │   ├── getting-started/        # True beginner concepts
+    │   │   ├── index.mdx           # Overview of concepts section [Beginner]
+    │   │   ├── what-is-motia.mdx   # Simple explanation of Motia [Beginner]
+    │   │   ├── event-driven-basics.mdx # Introduction to event-driven thinking [Beginner→Intermediate]
+    │   │   ├── steps-intro.mdx     # Basic introduction to steps [Beginner→Intermediate]
+    │   │   └── flows-intro.mdx     # Basic introduction to flows [Beginner→Intermediate]
+    │   │
+    │   └── core-components/        # Essential building blocks
+    │       ├── index.mdx           # Overview of core components [Intermediate]
+    │       ├── step-types/         # Different step types
+    │       │   ├── api-steps.mdx   # API step details [Intermediate]
+    │       │   ├── event-steps.mdx # Event step details [Intermediate]
+    │       │   ├── cron-steps.mdx  # Cron step details [Intermediate]
+    │       │   └── noop-steps.mdx  # NOOP step details [Intermediate]
+    │       ├── flows.mdx           # Common flow patterns [Intermediate]
+    │       ├── topics-and-routing.mdx # Event routing system [Intermediate]
+    │       ├── state-management.mdx # Managing state in workflows [Intermediate]
+    │       ├── logging.mdx         # Understanding logging [Intermediate]
+    │       └── workbench.mdx       # Visual development environment [Intermediate]
     │
     ├── journeys/                   # Progressive learning paths
     │   ├── start-your-motia-journey/ # Understanding the starter example
@@ -63,51 +83,8 @@ content/
     │       ├── dynamic-reasoning.mdx # Implementing adaptive decision-making [Advanced]
     │       └── agent-orchestration.mdx # Coordinating multiple agents [Advanced]
     │
-    ├── concepts/                   # Core conceptual understanding
-    │   ├── getting-started/        # True beginner concepts
-    │   │   ├── index.mdx           # Overview of concepts section [Beginner]
-    │   │   ├── what-is-motia.mdx   # Simple explanation of Motia [Beginner]
-    │   │   ├── event-driven-basics.mdx # Introduction to event-driven thinking [Beginner→Intermediate]
-    │   │   ├── steps-intro.mdx     # Basic introduction to steps [Beginner→Intermediate]
-    │   │   └── flows-intro.mdx     # Basic introduction to flows [Beginner→Intermediate]
-    │   │
-    │   ├── core-components/        # Essential building blocks
-    │   │   ├── index.mdx           # Overview of core components [Intermediate]
-    │   │   ├── step-types/         # Different step types
-    │   │   │   ├── api-steps.mdx   # API step details [Intermediate]
-    │   │   │   ├── event-steps.mdx # Event step details [Intermediate]
-    │   │   │   ├── cron-steps.mdx  # Cron step details [Intermediate]
-    │   │   │   └── noop-steps.mdx  # NOOP step details [Intermediate]
-    │   │   ├── flow-patterns.mdx   # Common flow patterns [Intermediate]
-    │   │   ├── topics-and-routing.mdx # Event routing system [Intermediate]
-    │   │   ├── state-management.mdx # Managing state in workflows [Intermediate]
-    │   │   └── workbench.mdx       # Visual development environment [Intermediate]
-    │   │
-    │   ├── deterministic-workflows/ # Building reliable workflows
-    │   │   ├── index.mdx           # Overview of deterministic workflows [Intermediate]
-    │   │   ├── error-handling.mdx  # Error handling strategies [Intermediate]
-    │   │   ├── parallel-processing.mdx # Parallel execution patterns [Intermediate]
-    │   │   └── testing-workflows.mdx # Testing deterministic workflows [Intermediate]
-    │   │
-    │   ├── agentic-workflows/      # Advanced AI-powered workflows
-    │   │   ├── index.mdx           # Introduction to agentic workflows [Advanced]
-    │   │   ├── llm-integration.mdx # Integrating LLMs into workflows [Advanced]
-    │   │   ├── agent-types.mdx     # Different types of agents [Advanced]
-    │   │   ├── dynamic-emits.mdx   # Dynamic event emission [Advanced]
-    │   │   └── dynamic-reasoning.mdx # Adaptive decision-making [Advanced]
-    │   │
-    │   └── advanced-patterns/      # Expert-level concepts
-    │       ├── index.mdx           # Overview of advanced patterns [Advanced]
-    │       ├── agent-orchestration.mdx # Coordinating multiple agents [Advanced]
-    │       ├── hybrid-approaches.mdx # Combining deterministic and agentic [Advanced]
-    │       ├── scaling-strategies.mdx # Approaches to scaling [Advanced]
-    │       └── custom-extensions.mdx # Extending Motia's capabilities [Advanced]
-    │
     ├── guides/                     # Task-oriented practical guides with examples
-    │   ├── setup/                  # Getting started guides
-    │   │   ├── installation.mdx    # Installation across environments [Beginner]
-    │   │   ├── configuration.mdx   # Initial configuration [Beginner]
-    │   │   └── environment-setup.mdx # Development environment setup [Beginner]
+    │   ├── setup.mdx               # Getting started for the guides
     │   │
     │   ├── step-creation/          # Creating different step types
     │   │   ├── event-steps.mdx     # Building event-driven steps [Intermediate]
@@ -116,10 +93,10 @@ content/
     │   │   └── noop-steps.mdx      # External process representation [Intermediate]
     │   │
     │   ├── workbench/              # Using the visual environment
-    │   │   ├── visualization.mdx   # Flow visualization [Beginner]
+    │   │   ├── overview.mdx        # Flow visualization [Beginner]
     │   │   ├── debugging.mdx       # Debugging techniques [Intermediate]
-    │   │   ├── custom-ui.mdx       # Custom UI components [Intermediate]
-    │   │   └── performance.mdx     # Performance monitoring [Advanced]
+    │   │   ├── state-management.mdx # Using state [Intermediate]
+    │   │   └── custom-ui.mdx       # Custom UI components and noops [Intermediate]
     │   │
     │   ├── patterns/               # Implementation patterns with examples
     │   │   ├── hello-world.mdx     # Simplest possible workflow [Beginner]
@@ -129,10 +106,7 @@ content/
     │   │   └── testing-strategies.mdx # Comprehensive testing [Intermediate]
     │   │
     │   └── deployment/             # Production deployment
-    │       ├── environments.mdx    # Environment configuration [Intermediate]
-    │       ├── security.mdx        # Security best practices [Advanced]
-    │       ├── monitoring.mdx      # Monitoring and observability [Advanced]
-    │       └── ci-cd.mdx           # CI/CD integration [Advanced]
+    │       └── deploying.mdx       # Deploy with MotiaHub CLI [Intermediate]
     │
     ├── real-world-tutorials/       # Complete end-to-end walkthroughs
     │   │
@@ -181,13 +155,6 @@ content/
     │       ├── typescript.mdx      # TypeScript-specific features [Intermediate]
     │       ├── python.mdx          # Python-specific features [Intermediate]
     │       └── ruby.mdx            # Ruby-specific features [Intermediate]
-    │
-    ├── troubleshooting/            # Problem-solving resources
-    │   ├── index.mdx               # Troubleshooting overview [Intermediate]
-    │   ├── common-errors.mdx       # Common error catalog [Intermediate]
-    │   ├── debugging-guide.mdx     # Systematic debugging approach [Intermediate]
-    │   ├── performance-issues.mdx  # Performance troubleshooting [Advanced]
-    │   └── faq.mdx                 # Frequently asked questions [Beginner]
     │
     ├── ai-tools/                   # AI code generation tools integration
     │   ├── index.mdx               # Overview of AI tools integration [Intermediate]
@@ -365,11 +332,11 @@ Each section will include:
 
 ### Progress Summary
 
-- **Phase 1 (Foundation)**: 20% complete (1/5 tasks) + 1 in progress
-- **Phase 2 (Core Content)**: 0% complete (0/5 tasks)
+- **Phase 1 (Foundation)**: 40% complete (2/5 tasks)
+- **Phase 2 (Core Content)**: 100% complete (5/5 tasks)
 - **Phase 3 (Advanced Content)**: 0% complete (0/7 tasks)
 - **Phase 4 (Enhancement)**: 0% complete (0/7 tasks)
-- **Overall Progress**: 4% complete (1/24 tasks) + 1 in progress
+- **Overall Progress**: 29% complete (7/24 tasks)
 
 ### Status Key
 
@@ -380,11 +347,11 @@ Each section will include:
 ### Phase 1: Foundation
 
 - [✓] Create directory structure and navigation framework
-  - [ ] Define folder hierarchy
+  - [✓] Define folder hierarchy
   - [ ] Set up navigation links between sections
   - [ ] Implement breadcrumb navigation
   - [ ] Create consistent URL structure
-- [🔄] Develop content templates for each page type
+- [✓] Develop content templates for each page type
   - [ ] Create journey page template
   - [ ] Create concept page template
   - [ ] Create guide page template
@@ -407,30 +374,35 @@ Each section will include:
 
 ### Phase 2: Core Content
 
-- [ ] Develop landing page and journey maps
+- [✓] Develop landing page and journey maps
   - [ ] Create main documentation landing page
   - [ ] Design visual journey maps for learning paths
   - [ ] Implement journey selection interface
-- [ ] Create fundamental concept documentation
-  - [ ] Write "What is Motia" introduction
-  - [ ] Document event-driven basics
-  - [ ] Create steps and flows introductions
-  - [ ] Document core components overview
-- [ ] Implement core guides for essential tasks
-  - [ ] Write installation and setup guides
-  - [ ] Create basic step creation guides
-  - [ ] Document workbench usage fundamentals
-  - [ ] Write basic patterns implementation guides
-- [ ] Develop quick-start tutorial
-  - [ ] Create 5-minute setup guide
-  - [ ] Write starter example explanation
-  - [ ] Document first modification walkthrough
-  - [ ] Create next steps guidance
-- [ ] Create basic troubleshooting resources
-  - [ ] Document common errors and solutions
-  - [ ] Create debugging guide for beginners
-  - [ ] Develop FAQ for new users
-  - [ ] Write environment troubleshooting guide
+- [✓] Create fundamental concept documentation
+  - [✓] Write "What is Motia" introduction
+  - [✓] Document event-driven basics
+  - [✓] Create steps and flows introductions
+  - [✓] Document core components overview
+- [✓] Implement core guides for essential tasks
+  - [✓] Write installation and setup guides
+  - [✓] Create basic step creation guides (API, Event, Cron, NOOP)
+  - [✓] Document usage fundamentals
+  - [✓] Write basic patterns implementation guides
+    - [✓] Hello World pattern
+    - [✓] Parallel Processing pattern
+    - [✓] Error Handling pattern
+    - [✓] State Management pattern
+    - [✓] Testing Strategies pattern
+- [✓] Develop quick-start tutorial
+  - [✓] Create 5-minute setup guide
+  - [✓] Write starter example explanation
+  - [✓] Document first modification walkthrough
+  - [✓] Create next steps guidance
+- [✓] Create basic troubleshooting resources
+  - [✓] Document common errors and solutions
+  - [✓] Create debugging guide for beginners
+  - [✓] Develop FAQ for new users
+  - [✓] Write performance troubleshooting guide
 
 ### Phase 3: Advanced Content
 

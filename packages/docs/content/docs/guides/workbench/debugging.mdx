@@ -1,0 +1,431 @@
+---
+title: Debugging Techniques
+description: Learn how to effectively debug your Motia workflows using the Workbench's powerful debugging tools
+---
+
+# Debugging Techniques
+
+Debugging is an essential part of developing robust Motia workflows. The Motia Workbench provides powerful tools to help you identify, diagnose, and fix issues in your flows. This guide will walk you through the debugging process and provide strategies for troubleshooting common problems.
+
+## Understanding Workflow Debugging
+
+Effective debugging in Motia involves understanding:
+
+1. **Flow Execution**: How events flow through your steps
+2. **Data Transformation**: How data changes at each step
+3. **Error Handling**: How errors are caught and managed
+4. **State Management**: How state is maintained across steps
+
+## The Debugging Process
+
+### 1. Reproduce the Issue
+
+The first step in debugging is to reliably reproduce the issue:
+
+- Identify the specific API endpoint or event that triggers the problem
+- Document the exact input data that causes the issue
+- Note the expected vs. actual behavior
+- Observe which steps are involved in the problematic flow
+
+### 2. Inspect the Flow Visualization
+
+The Workbench flow visualization helps you understand the execution path:
+
+- Identify which steps are being triggered
+- Check if any steps are being skipped
+- Look for unexpected branches in the flow
+- Verify that events are flowing as expected between steps
+
+Click on any step in the flow visualization to see its details, including configuration and recent executions.
+
+### 3. Analyze Logs
+
+Logs provide detailed information about what's happening during execution:
+
+- Filter logs by flow name to focus on relevant information
+- Look for error messages or warnings
+- Check the sequence of events to understand the execution order
+- Examine input and output data at each step
+
+Example log output:
+
+```
+[INFO] [payment-flow] Received request: POST /api/payments
+[DEBUG] [payment-flow] Input data: { "amount": 50.00, "currency": "USD" }
+[ERROR] [payment-flow] Failed to process payment: Invalid currency format
+```
+
+### 4. Use Test Mode
+
+Test mode allows you to trigger specific parts of your flow:
+
+- Send test requests to API endpoints
+- Inject test events into specific steps
+- Monitor the flow execution in real-time
+- Inspect the data at each stage of the flow
+
+### 5. Add Debug Logging
+
+Enhance your steps with additional logging for debugging:
+
+```typescript
+export const handler = async (input, { emit, logger }) => {
+  // Log the input data
+  logger.debug('Processing input:', input);
+  
+  try {
+    // Process the data
+    const result = processData(input);
+    
+    // Log the result
+    logger.debug('Processing result:', result);
+    
+    // Emit the result
+    await emit({
+      topic: 'data.processed',
+      data: result
+    });
+  } catch (error) {
+    // Log the error
+    logger.error('Processing failed:', error);
+    throw error;
+  }
+};
+```
+
+### 6. Fix and Verify
+
+After identifying the issue:
+
+- Make the necessary changes to your code
+- Restart the Workbench if needed (changes are usually hot-reloaded)
+- Test the flow again to verify the fix
+- Check logs to ensure everything is working as expected
+
+## Using the Log Explorer
+
+The Log Explorer in Motia Workbench is a powerful tool for debugging:
+
+### Log Levels
+
+Motia supports different log levels to help you filter information:
+
+| Level | Description | When to Use |
+|-------|-------------|-------------|
+| ERROR | Critical issues that prevent execution | For capturing failures and exceptions |
+| WARN | Potential issues that don't stop execution | For highlighting concerning conditions |
+| INFO | General information about flow execution | For tracking normal operation |
+| DEBUG | Detailed information for debugging | For development and troubleshooting |
+| TRACE | Very detailed information | For deep debugging of complex issues |
+
+### Filtering Logs
+
+The Log Explorer allows you to filter logs by:
+
+- **Flow name**: Focus on a specific flow
+- **Step name**: See logs from a particular step
+- **Log level**: Filter by severity
+- **Time range**: Focus on a specific time period
+- **Text search**: Find logs containing specific text
+
+### Log Context
+
+Each log entry includes contextual information:
+
+- **Timestamp**: When the log was generated
+- **Flow**: The flow that generated the log
+- **Step**: The step that generated the log
+- **Trace ID**: A unique identifier for tracking a request through multiple steps
+- **Log level**: The severity of the log
+- **Message**: The log message
+- **Data**: Any additional data included with the log
+
+## Advanced Debugging Techniques
+
+### Step Isolation
+
+When debugging complex flows, it can be helpful to isolate steps:
+
+1. **Create a test flow**: Create a separate flow for testing
+2. **Isolate the problematic step**: Move only the step you're debugging to the test flow
+3. **Simulate inputs**: Manually trigger the step with test data
+4. **Analyze behavior**: Observe how the step behaves in isolation
+
+### Mock Dependencies
+
+For steps that depend on external services:
+
+1. **Create mock implementations**: Implement simplified versions of external services
+2. **Control responses**: Simulate different response scenarios
+3. **Test edge cases**: Test how your step handles various responses
+
+### Debugging Multi-Language Steps
+
+When debugging steps written in different languages:
+
+- **Python steps**: Use Python's logging module, which integrates with Motia's logger
+- **Ruby steps**: Use Ruby's logger, which also integrates with Motia
+- **TypeScript/JavaScript steps**: Use the logger provided in the context
+
+Each language has its own debugging patterns, but all logs are centralized in the Workbench.
+
+## Common Issues and Solutions
+
+### Events Not Triggering Steps
+
+**Symptoms**:
+- A step doesn't execute when you expect it to
+- Events seem to disappear
+
+**Possible Causes**:
+1. **Topic mismatch**: The emitted topic doesn't match the subscription
+2. **Typos in topic names**: Small typos can cause events to be missed
+3. **Missing subscription**: The step doesn't subscribe to the topic
+
+**Solutions**:
+1. Verify that the topic in the `emit()` call matches exactly what the step subscribes to
+2. Check for typos in topic names
+3. Ensure the step's `subscribes` array includes the correct topic
+
+```typescript
+// Emitting step
+await emit({
+  topic: 'order.created', // Make sure this matches exactly
+  data: orderData
+});
+
+// Receiving step config
+export const config = {
+  type: 'event',
+  name: 'ProcessOrder',
+  subscribes: ['order.created'], // Must match exactly
+  flows: ['order-processing']
+};
+```
+
+### Data Transformation Issues
+
+**Symptoms**:
+- Data is not in the expected format at a certain step
+- Steps receive incomplete or incorrect data
+
+**Possible Causes**:
+1. **Missing fields**: Required fields are not included in the event data
+2. **Type mismatches**: Data types don't match expectations
+3. **Transformation errors**: Data transformation logic has bugs
+
+**Solutions**:
+1. Log the input and output data at each step to track transformations
+2. Add validation to ensure data meets expectations
+3. Use TypeScript interfaces to enforce data structure
+
+```typescript
+// Define expected data structure
+interface OrderData {
+  orderId: string;
+  customer: {
+    id: string;
+    name: string;
+  };
+  items: Array<{
+    productId: string;
+    quantity: number;
+    price: number;
+  }>;
+  total: number;
+}
+
+export const handler = async (input: OrderData, { emit, logger }) => {
+  // Validate input
+  if (!input.orderId || !input.customer || !Array.isArray(input.items)) {
+    logger.error('Invalid order data:', input);
+    throw new Error('Invalid order data');
+  }
+  
+  // Process the order
+  // ...
+};
+```
+
+### Error Handling Issues
+
+**Symptoms**:
+- Errors are not caught or handled properly
+- Flows stop unexpectedly
+- Error information is lost
+
+**Possible Causes**:
+1. **Missing try/catch blocks**: Errors are not caught
+2. **Incomplete error handling**: Errors are caught but not properly handled
+3. **Async errors**: Promises are not properly awaited or caught
+
+**Solutions**:
+1. Add proper try/catch blocks around critical code
+2. Log detailed error information
+3. Consider emitting error events for centralized handling
+
+```typescript
+export const handler = async (input, { emit, logger }) => {
+  try {
+    // Process the input
+    const result = await processData(input);
+    
+    // Emit the result
+    await emit({
+      topic: 'data.processed',
+      data: result
+    });
+  } catch (error) {
+    // Log the error
+    logger.error('Processing failed:', error);
+    
+    // Emit an error event
+    await emit({
+      topic: 'data.processing.failed',
+      data: {
+        input,
+        error: {
+          message: error.message,
+          stack: error.stack
+        }
+      }
+    });
+    
+    // Optionally rethrow or handle the error
+    // throw error;
+  }
+};
+```
+
+### State Management Issues
+
+**Symptoms**:
+- State is lost between step executions
+- State is not updated as expected
+- Multiple instances of a step interfere with each other
+
+**Possible Causes**:
+1. **State not persisted**: State is not properly saved
+2. **Race conditions**: Multiple instances of a step update state simultaneously
+3. **Incorrect state keys**: State is saved under the wrong key
+
+**Solutions**:
+1. Use the state API correctly to persist state
+2. Implement locking mechanisms for critical state updates
+3. Use unique and consistent state keys
+
+```typescript
+export const handler = async (input, { emit, state, logger }) => {
+  // Get the current state
+  const currentState = await state.get('order-state') || { orders: [] };
+  
+  // Update the state
+  currentState.orders.push(input);
+  
+  // Save the updated state
+  await state.set('order-state', currentState);
+  
+  // Log the state update
+  logger.debug('Updated state:', currentState);
+};
+```
+
+## Best Practices for Debuggable Workflows
+
+### Structured Logging
+
+Use structured logging to make debugging easier:
+
+```typescript
+// Instead of this
+logger.info('Processing order ' + orderId + ' for customer ' + customerId);
+
+// Do this
+logger.info('Processing order', { orderId, customerId, total });
+```
+
+### Meaningful Step Names
+
+Choose clear, descriptive names for your steps:
+
+```typescript
+// Instead of this
+export const config = {
+  type: 'event',
+  name: 'Step1',
+  // ...
+};
+
+// Do this
+export const config = {
+  type: 'event',
+  name: 'ValidateOrderAndCalculateTotal',
+  // ...
+};
+```
+
+### Modular Steps
+
+Keep steps focused on a single responsibility:
+
+- Easier to debug when each step does one thing well
+- Clearer flow visualization
+- Simpler to isolate issues
+
+### Consistent Error Handling
+
+Implement a consistent error handling strategy:
+
+- Decide whether steps should fail fast or recover
+- Use consistent error event topics
+- Include enough context in error events
+
+### Documentation
+
+Document your flows and steps:
+
+- Add comments explaining complex logic
+- Document expected inputs and outputs
+- Note any assumptions or requirements
+
+## Debugging Checklist
+
+When debugging a workflow issue, follow this checklist:
+
+1. **Identify the problem**:
+   - What is the expected behavior?
+   - What is the actual behavior?
+   - When does the issue occur?
+
+2. **Gather information**:
+   - Check logs for errors or warnings
+   - Examine the flow visualization
+   - Review recent changes to the code
+
+3. **Isolate the issue**:
+   - Determine which step is causing the problem
+   - Identify the specific conditions that trigger the issue
+   - Create a minimal test case if possible
+
+4. **Fix the issue**:
+   - Make the necessary code changes
+   - Add appropriate error handling
+   - Improve logging for future debugging
+
+5. **Verify the fix**:
+   - Test the workflow with the original input
+   - Check for any regressions
+   - Ensure logs show the expected behavior
+
+6. **Document the solution**:
+   - Update comments or documentation
+   - Share the solution with your team
+   - Consider adding tests to prevent future issues
+
+## Next Steps
+
+Now that you understand how to debug your workflows, you might want to explore:
+
+- [Flow Visualization](./visualization): Learn more about visualizing your workflows
+- [Custom UI Components](./custom-ui): Create custom visualizations for your steps
+- [Performance Monitoring](./performance): Monitor and optimize your workflow performance

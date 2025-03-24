@@ -1,0 +1,441 @@
+---
+title: "Installing Motia"
+description: "Step-by-step guide to installing Motia across different environments"
+---
+
+# Installing Motia
+
+<div className="beginner-content">
+
+This guide will walk you through the process of installing Motia in your development environment. Motia is designed to be easy to install and requires minimal setup to get started.
+
+## Prerequisites
+
+Before installing Motia, make sure you have the following:
+
+- **Node.js**: Version 16.0.0 or later
+- **npm**, **yarn**, or **pnpm**: For package management
+
+You can check your Node.js version by running:
+
+```bash
+node --version
+```
+
+If you need to install or update Node.js, visit the [official Node.js website](https://nodejs.org/).
+
+## Quick Installation
+
+The fastest way to get started with Motia is to use the create-motia command:
+
+```bash
+# Using npm
+npx create-motia my-project
+
+# Using yarn
+yarn create motia my-project
+
+# Using pnpm
+pnpm create motia my-project
+```
+
+This command creates a new directory with the name you specify (e.g., `my-project`), installs all the necessary dependencies, and sets up a basic Motia project structure.
+
+## Manual Installation
+
+If you prefer to add Motia to an existing project or set up your project manually, follow these steps:
+
+### 1. Create a new directory (if starting a new project)
+
+```bash
+mkdir my-motia-project
+cd my-motia-project
+```
+
+### 2. Initialize a new Node.js project (if starting a new project)
+
+```bash
+npm init -y
+```
+
+### 3. Install Motia core packages
+
+```bash
+# Using npm
+npm install @motia/core @motia/snap
+
+# Using yarn
+yarn add @motia/core @motia/snap
+
+# Using pnpm
+pnpm add @motia/core @motia/snap
+```
+
+### 4. Create a basic project structure
+
+You can create a basic project structure manually or use the Motia CLI to scaffold it:
+
+```bash
+npx @motia/snap create
+```
+
+This will create the necessary directories and files for a basic Motia project.
+
+## Verifying the Installation
+
+To verify that Motia has been installed correctly, you can run the development server:
+
+```bash
+# Using npm
+npm run dev
+
+# Using yarn
+yarn dev
+
+# Using pnpm
+pnpm dev
+```
+
+If the installation was successful, you should see output indicating that the Motia server is running, and you can access the Workbench at [http://localhost:3000](http://localhost:3000).
+
+</div>
+
+<div className="intermediate-content">
+
+## Installation Options
+
+Motia offers several installation options to suit different needs:
+
+### TypeScript Template
+
+For TypeScript projects, you can use the TypeScript template:
+
+```bash
+npx create-motia my-project --template typescript
+```
+
+This creates a project with TypeScript configuration already set up.
+
+### Minimal Template
+
+If you prefer a minimal setup without example steps, you can use the minimal template:
+
+```bash
+npx create-motia my-project --template minimal
+```
+
+### Custom Installation
+
+For more control over the installation process, you can specify various options:
+
+```bash
+npx create-motia my-project --template typescript --package-manager pnpm --skip-install
+```
+
+Available options:
+- `--template`: The template to use (`default`, `typescript`, `minimal`)
+- `--package-manager`: The package manager to use (`npm`, `yarn`, `pnpm`)
+- `--skip-install`: Skip the dependency installation step
+- `--skip-git`: Skip Git initialization
+- `--directory`: Specify a custom directory name
+
+## Project Structure
+
+After installation, your project will have the following structure:
+
+```
+my-project/
+├── node_modules/
+├── steps/
+│   └── starter/
+│       ├── api.ts
+│       ├── event.ts
+│       └── noop.ts
+├── .gitignore
+├── config.yml
+├── package.json
+├── README.md
+└── tsconfig.json (if using TypeScript)
+```
+
+The `steps` directory contains your step definitions, organized by namespace. The starter project includes three example steps:
+
+- `api.ts`: An API step that creates an HTTP endpoint
+- `event.ts`: An event step that responds to events
+- `noop.ts`: A NOOP step that represents an external process
+
+The `config.yml` file contains configuration for your Motia project, including server settings and step registration.
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Installation
+
+### Custom Configuration
+
+For advanced users who need more control over their Motia installation, you can create a custom configuration file:
+
+```yaml
+# config.yml
+server:
+  port: 3000
+  host: localhost
+  cors:
+    enabled: true
+    origin: '*'
+
+steps:
+  directory: ./steps
+  autoRegister: true
+  
+state:
+  provider: memory
+  # For production, you might want to use a persistent provider:
+  # provider: redis
+  # url: redis://localhost:6379
+
+logging:
+  level: info
+  format: json
+  destination: console
+```
+
+### Docker Installation
+
+Motia can also be run in a Docker container. Create a `Dockerfile` in your project root:
+
+```dockerfile
+FROM node:16-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+```
+
+And a `docker-compose.yml` file:
+
+```yaml
+version: '3'
+services:
+  motia:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./steps:/app/steps
+      - ./config.yml:/app/config.yml
+```
+
+Then run:
+
+```bash
+docker-compose up
+```
+
+### Monorepo Setup
+
+For monorepo setups (using Lerna, Nx, or similar), you can install Motia in a specific package:
+
+```bash
+# Navigate to your package directory
+cd packages/my-motia-package
+
+# Install Motia
+npm install @motia/core @motia/snap
+
+# Initialize Motia
+npx @motia/snap create
+```
+
+Make sure to update your monorepo's workspace configuration to include the Motia package.
+
+### CI/CD Integration
+
+For continuous integration and deployment, you can add Motia to your CI/CD pipeline:
+
+```yaml
+# .github/workflows/motia.yml
+name: Motia CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+```
+
+</div>
+
+## Language-Specific Installation
+
+Motia supports multiple programming languages. Here's how to install and set up Motia for each supported language:
+
+### JavaScript/TypeScript
+
+JavaScript and TypeScript are the primary languages for Motia and are supported out of the box with the installation methods described above.
+
+<div className="code-example">
+```javascript
+// JavaScript example
+const { defineStep } = require('@motia/core');
+
+module.exports = defineStep({
+  id: 'example.step',
+  name: 'Example Step',
+  type: 'event',
+  on: ['example.event'],
+  run: async (input) => {
+    console.log('Event received:', input.event);
+    return { success: true };
+  }
+});
+```
+
+```typescript
+// TypeScript example
+import { defineStep } from '@motia/core';
+
+export default defineStep({
+  id: 'example.step',
+  name: 'Example Step',
+  type: 'event',
+  on: ['example.event'],
+  run: async (input) => {
+    console.log('Event received:', input.event);
+    return { success: true };
+  }
+});
+```
+</div>
+
+### Python
+
+To use Motia with Python, you need to install the Python SDK:
+
+```bash
+pip install motia-sdk
+```
+
+Then create a Python step:
+
+<div className="code-example">
+```python
+# example_step.py
+from motia import define_step
+
+def run(input, context):
+    print(f"Event received: {input['event']}")
+    return {"success": True}
+
+step = define_step(
+    id="example.step",
+    name="Example Step",
+    type="event",
+    on=["example.event"],
+    run=run
+)
+```
+</div>
+
+### Ruby
+
+To use Motia with Ruby, you need to install the Ruby gem:
+
+```bash
+gem install motia-sdk
+```
+
+Then create a Ruby step:
+
+<div className="code-example">
+```ruby
+# example_step.rb
+require 'motia'
+
+step = Motia.define_step(
+  id: 'example.step',
+  name: 'Example Step',
+  type: 'event',
+  on: ['example.event'],
+  run: lambda do |input, context|
+    puts "Event received: #{input[:event]}"
+    { success: true }
+  end
+)
+```
+</div>
+
+## Troubleshooting
+
+### Common Installation Issues
+
+#### Node.js Version
+
+If you encounter errors during installation, make sure you're using a compatible Node.js version (16.0.0 or later).
+
+```bash
+node --version
+```
+
+If your Node.js version is too old, update it using your package manager or download the latest version from the [Node.js website](https://nodejs.org/).
+
+#### Permission Errors
+
+If you encounter permission errors when installing globally, you might need to use `sudo` (on Linux/macOS) or run your command prompt as Administrator (on Windows).
+
+Alternatively, you can configure npm to use a different directory:
+
+```bash
+npm config set prefix ~/.npm
+```
+
+Then add `~/.npm/bin` to your PATH.
+
+#### Network Issues
+
+If you're behind a corporate firewall or have network restrictions, you might need to configure npm to use a proxy:
+
+```bash
+npm config set proxy http://your-proxy-url:port
+npm config set https-proxy http://your-proxy-url:port
+```
+
+### Getting Help
+
+If you encounter issues that aren't covered here, you can:
+
+- Check the [Troubleshooting](/docs/troubleshooting) section for more detailed guidance
+- Join our [Community Discord](https://discord.gg/motia) for real-time help
+- Open an issue on our [GitHub repository](https://github.com/motia/motia)
+
+## Next Steps
+
+Now that you have Motia installed, you can:
+
+- Follow the [Quickstart Guide](/docs/quickstart) to build your first Motia application
+- Learn about [Configuration](/docs/guides/setup/configuration) to customize your Motia setup
+- Set up your [Development Environment](/docs/guides/setup/environment-setup) for optimal productivity

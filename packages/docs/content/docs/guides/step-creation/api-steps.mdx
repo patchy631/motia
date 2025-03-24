@@ -1,0 +1,885 @@
+---
+title: "Creating API Steps"
+description: "Learn how to create API steps that expose HTTP endpoints in Motia"
+---
+
+# Creating API Steps
+
+<div className="intermediate-content">
+
+API steps are the entry points for your Motia workflows. They expose HTTP endpoints that external systems can call to trigger events and start workflows. This guide will show you how to create and customize API steps for your applications.
+
+## What Are API Steps?
+
+API steps are steps that:
+
+1. Create HTTP endpoints at specified paths
+2. Handle incoming HTTP requests
+3. Process request data and emit events
+4. Return HTTP responses to the caller
+
+API steps allow your Motia applications to interact with external systems, receive webhooks, and provide REST APIs for clients.
+
+</div>
+
+## Basic API Step
+
+Here's a basic example of an API step:
+
+<div className="code-example">
+```typescript
+// steps/users/createUser.ts
+import { ApiRouteConfig, StepHandler } from '@motia/core';
+
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: 'Create User',
+  path: '/api/users',
+  method: 'POST',
+  emits: ['user.created'],
+  flows: ['user-management']
+};
+
+export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
+  const { body } = req;
+  
+  // Validate the request
+  if (!body.email || !body.name) {
+    return {
+      status: 400,
+      body: { error: 'Email and name are required' }
+    };
+  }
+  
+  // Create a user (in a real app, you'd save to a database)
+  const user = {
+    id: generateId(),
+    email: body.email,
+    name: body.name,
+    createdAt: new Date().toISOString()
+  };
+  
+  // Log the action
+  logger.info('Creating new user', { email: user.email });
+  
+  // Emit an event with the new user
+  await emit({
+    topic: 'user.created',
+    data: user
+  });
+  
+  // Return a success response
+  return {
+    status: 201,
+    body: { success: true, user }
+  };
+};
+
+function generateId() {
+  return Math.random().toString(36).substring(2, 15);
+}
+```
+</div>
+
+This API step:
+1. Creates a POST endpoint at `/api/users`
+2. Validates the request body
+3. Creates a user object
+4. Emits a `user.created` event with the user data
+5. Returns a 201 Created response with the user object
+
+## API Step Properties
+
+API steps have the following properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `id` | `string` | Yes | Unique identifier for the step |
+| `name` | `string` | Yes | Human-readable name for the step |
+| `type` | `string` | Yes | Must be `'api'` for API steps |
+| `path` | `string` | Yes | The URL path for the endpoint |
+| `method` | `string` | Yes | The HTTP method: `'GET'`, `'POST'`, `'PUT'`, `'DELETE'`, etc. |
+| `description` | `string` | No | Description of what the step does |
+| `emits` | `string[]` | No | Array of event topics this step can emit |
+| `run` | `function` | Yes | Function that executes when the endpoint is called |
+
+### The `path` Property
+
+The `path` property specifies the URL path for the endpoint. It can include path parameters using the `:param` syntax:
+
+```typescript
+path: '/api/users/:userId'
+```
+
+Path parameters are available in the `input.params` object:
+
+```typescript
+run: async (input) => {
+  const { userId } = input.params;
+  // ...
+}
+```
+
+### The `method` Property
+
+The `method` property specifies the HTTP method for the endpoint:
+
+```typescript
+method: 'POST' // 'GET', 'PUT', 'DELETE', 'PATCH', etc.
+```
+
+### The `run` Function
+
+The `run` function is where you define the step's behavior. It receives two parameters:
+
+1. `input`: Contains the HTTP request details
+2. `context`: Provides utilities and services for the step
+
+For API steps, the `input` object has this structure:
+
+```typescript
+{
+  path: string;      // The endpoint path
+  method: string;    // The HTTP method
+  params: Record<string, string>; // Path parameters
+  query: Record<string, string>;  // Query parameters
+  headers: Record<string, string>; // Request headers
+  body: any;         // Request body (parsed JSON)
+  raw: {            // Raw request details
+    url: string;     // Full URL
+    body: string;    // Raw body as string
+  };
+}
+```
+
+The `run` function should return an object with the HTTP response:
+
+```typescript
+{
+  status: number;    // HTTP status code
+  body?: any;        // Response body (will be serialized to JSON)
+  headers?: Record<string, string>; // Response headers
+}
+```
+
+<div className="intermediate-content">
+
+## API Step Patterns
+
+### CRUD Operations
+
+A common pattern is to create API steps for CRUD (Create, Read, Update, Delete) operations:
+
+```typescript
+// Create
+export const createUserStep = defineStep({
+  id: 'users.create',
+  name: 'Create User',
+  type: 'api',
+  path: '/api/users',
+  method: 'POST',
+  emits: ['user.created'],
+  run: async (input, { emit }) => {
+    // Create user logic
+    await emit('user.created', user);
+    return { status: 201, body: { user } };
+  }
+});
+
+// Read (all)
+export const listUsersStep = defineStep({
+  id: 'users.list',
+  name: 'List Users',
+  type: 'api',
+  path: '/api/users',
+  method: 'GET',
+  run: async (input) => {
+    // Get users logic
+    return { status: 200, body: { users } };
+  }
+});
+
+// Read (one)
+export const getUserStep = defineStep({
+  id: 'users.get',
+  name: 'Get User',
+  type: 'api',
+  path: '/api/users/:userId',
+  method: 'GET',
+  run: async (input) => {
+    const { userId } = input.params;
+    // Get user logic
+    return { status: 200, body: { user } };
+  }
+});
+
+// Update
+export const updateUserStep = defineStep({
+  id: 'users.update',
+  name: 'Update User',
+  type: 'api',
+  path: '/api/users/:userId',
+  method: 'PUT',
+  emits: ['user.updated'],
+  run: async (input, { emit }) => {
+    const { userId } = input.params;
+    // Update user logic
+    await emit('user.updated', updatedUser);
+    return { status: 200, body: { user: updatedUser } };
+  }
+});
+
+// Delete
+export const deleteUserStep = defineStep({
+  id: 'users.delete',
+  name: 'Delete User',
+  type: 'api',
+  path: '/api/users/:userId',
+  method: 'DELETE',
+  emits: ['user.deleted'],
+  run: async (input, { emit }) => {
+    const { userId } = input.params;
+    // Delete user logic
+    await emit('user.deleted', { userId });
+    return { status: 204 };
+  }
+});
+```
+
+### Webhook Handlers
+
+API steps are perfect for handling webhooks from external services:
+
+```typescript
+import { defineStep } from '@motia/core';
+
+export default defineStep({
+  id: 'github.webhook',
+  name: 'GitHub Webhook Handler',
+  type: 'api',
+  path: '/webhooks/github',
+  method: 'POST',
+  emits: [
+    'github.push',
+    'github.pull_request',
+    'github.issue'
+  ],
+  run: async (input, { emit }) => {
+    const { body, headers } = input;
+    
+    // Verify webhook signature (important for security)
+    const signature = headers['x-hub-signature-256'];
+    if (!verifyGitHubSignature(signature, input.raw.body)) {
+      return { status: 401, body: { error: 'Invalid signature' } };
+    }
+    
+    // Determine the event type from the headers
+    const eventType = headers['x-github-event'];
+    
+    // Emit an event based on the webhook type
+    switch (eventType) {
+      case 'push':
+        await emit('github.push', {
+          repository: body.repository.name,
+          branch: body.ref.replace('refs/heads/', ''),
+          commits: body.commits,
+          sender: body.sender
+        });
+        break;
+        
+      case 'pull_request':
+        await emit('github.pull_request', {
+          repository: body.repository.name,
+          action: body.action,
+          number: body.number,
+          pull_request: body.pull_request,
+          sender: body.sender
+        });
+        break;
+        
+      case 'issues':
+        await emit('github.issue', {
+          repository: body.repository.name,
+          action: body.action,
+          issue: body.issue,
+          sender: body.sender
+        });
+        break;
+        
+      default:
+        // Unhandled event type
+        return { 
+          status: 400, 
+          body: { error: `Unsupported event type: ${eventType}` } 
+        };
+    }
+    
+    return { status: 200, body: { success: true } };
+  }
+});
+
+function verifyGitHubSignature(signature, payload) {
+  // Implementation of GitHub signature verification
+  // See: https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks
+  return true; // Placeholder
+}
+```
+
+### File Upload Handling
+
+API steps can handle file uploads:
+
+```typescript
+import { defineStep } from '@motia/core';
+import { processImage } from '../../services/image';
+
+export default defineStep({
+  id: 'files.uploadImage',
+  name: 'Upload Image',
+  type: 'api',
+  path: '/api/images',
+  method: 'POST',
+  emits: ['image.uploaded'],
+  run: async (input, { emit }) => {
+    const { body, headers } = input;
+    
+    // Check content type
+    const contentType = headers['content-type'] || '';
+    if (!contentType.startsWith('multipart/form-data')) {
+      return { 
+        status: 400, 
+        body: { error: 'Content-Type must be multipart/form-data' } 
+      };
+    }
+    
+    // In a real implementation, you would parse the multipart form data
+    // and process the uploaded file. This is a simplified example.
+    const file = body.file;
+    
+    if (!file) {
+      return { status: 400, body: { error: 'No file uploaded' } };
+    }
+    
+    // Process the image (resize, optimize, etc.)
+    const processedImage = await processImage(file);
+    
+    // Emit an event with the processed image
+    await emit('image.uploaded', {
+      id: generateId(),
+      filename: file.filename,
+      size: processedImage.size,
+      url: processedImage.url,
+      uploadedAt: new Date().toISOString()
+    });
+    
+    return {
+      status: 201,
+      body: {
+        success: true,
+        image: {
+          url: processedImage.url,
+          size: processedImage.size
+        }
+      }
+    };
+  }
+});
+
+function generateId() {
+  return Math.random().toString(36).substring(2, 15);
+}
+```
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced API Step Techniques
+
+### Authentication and Authorization
+
+For protected endpoints, you can implement authentication and authorization:
+
+```typescript
+import { defineStep } from '@motia/core';
+import { verifyToken } from '../../services/auth';
+
+export default defineStep({
+  id: 'users.getProfile',
+  name: 'Get User Profile',
+  type: 'api',
+  path: '/api/users/me',
+  method: 'GET',
+  run: async (input) => {
+    const { headers } = input;
+    
+    // Get the authorization header
+    const authHeader = headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        status: 401,
+        body: { error: 'Authorization header required' }
+      };
+    }
+    
+    // Extract and verify the token
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    try {
+      const user = await verifyToken(token);
+      
+      // Get the user's profile
+      const profile = await getUserProfile(user.id);
+      
+      return {
+        status: 200,
+        body: { profile }
+      };
+    } catch (error) {
+      return {
+        status: 401,
+        body: { error: 'Invalid or expired token' }
+      };
+    }
+  }
+});
+
+async function getUserProfile(userId) {
+  // Implementation to get user profile
+  return {
+    id: userId,
+    name: 'John Doe',
+    email: 'john@example.com',
+    // ...
+  };
+}
+```
+
+### Rate Limiting
+
+For public APIs, you might want to implement rate limiting:
+
+```typescript
+import { defineStep } from '@motia/core';
+
+export default defineStep({
+  id: 'api.rateLimit',
+  name: 'Rate Limited API',
+  type: 'api',
+  path: '/api/limited',
+  method: 'GET',
+  run: async (input, { state }) => {
+    const { headers } = input;
+    
+    // Get client IP or API key for rate limiting
+    const clientId = headers['x-api-key'] || input.raw.ip;
+    
+    // Check rate limit
+    const rateLimitKey = `rateLimit:${clientId}`;
+    const rateLimit = await state.get(rateLimitKey) || {
+      count: 0,
+      resetAt: Date.now() + 3600000 // 1 hour from now
+    };
+    
+    // If the reset time has passed, reset the counter
+    if (Date.now() > rateLimit.resetAt) {
+      rateLimit.count = 0;
+      rateLimit.resetAt = Date.now() + 3600000;
+    }
+    
+    // Check if rate limit exceeded
+    const MAX_REQUESTS_PER_HOUR = 100;
+    if (rateLimit.count >= MAX_REQUESTS_PER_HOUR) {
+      return {
+        status: 429, // Too Many Requests
+        headers: {
+          'X-RateLimit-Limit': MAX_REQUESTS_PER_HOUR.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': Math.floor(rateLimit.resetAt / 1000).toString(),
+          'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString()
+        },
+        body: { error: 'Rate limit exceeded' }
+      };
+    }
+    
+    // Increment the counter and update state
+    rateLimit.count += 1;
+    await state.set(rateLimitKey, rateLimit);
+    
+    // Return the response with rate limit headers
+    return {
+      status: 200,
+      headers: {
+        'X-RateLimit-Limit': MAX_REQUESTS_PER_HOUR.toString(),
+        'X-RateLimit-Remaining': (MAX_REQUESTS_PER_HOUR - rateLimit.count).toString(),
+        'X-RateLimit-Reset': Math.floor(rateLimit.resetAt / 1000).toString()
+      },
+      body: { 
+        message: 'This is a rate-limited API',
+        requestsRemaining: MAX_REQUESTS_PER_HOUR - rateLimit.count
+      }
+    };
+  }
+});
+```
+
+### API Versioning
+
+For evolving APIs, you can implement versioning:
+
+```typescript
+import { defineStep } from '@motia/core';
+
+// Version 1 of the API
+export const apiV1 = defineStep({
+  id: 'api.v1',
+  name: 'API v1',
+  type: 'api',
+  path: '/api/v1/resource',
+  method: 'GET',
+  run: async () => {
+    return {
+      status: 200,
+      body: {
+        version: 'v1',
+        data: {
+          // v1 format
+          name: 'Resource Name',
+          value: 42
+        }
+      }
+    };
+  }
+});
+
+// Version 2 of the API with enhanced response
+export const apiV2 = defineStep({
+  id: 'api.v2',
+  name: 'API v2',
+  type: 'api',
+  path: '/api/v2/resource',
+  method: 'GET',
+  run: async () => {
+    return {
+      status: 200,
+      body: {
+        version: 'v2',
+        data: {
+          // v2 format with additional fields
+          name: 'Resource Name',
+          value: 42,
+          metadata: {
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          tags: ['example', 'resource']
+        }
+      }
+    };
+  }
+});
+
+// Version-agnostic endpoint that detects version from header
+export const apiVersioned = defineStep({
+  id: 'api.versioned',
+  name: 'Versioned API',
+  type: 'api',
+  path: '/api/resource',
+  method: 'GET',
+  run: async (input) => {
+    const { headers } = input;
+    
+    // Get requested version from header or default to latest
+    const version = headers['accept-version'] || 'v2';
+    
+    if (version === 'v1') {
+      return {
+        status: 200,
+        body: {
+          version: 'v1',
+          data: {
+            // v1 format
+            name: 'Resource Name',
+            value: 42
+          }
+        }
+      };
+    } else {
+      return {
+        status: 200,
+        body: {
+          version: 'v2',
+          data: {
+            // v2 format
+            name: 'Resource Name',
+            value: 42,
+            metadata: {
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            },
+            tags: ['example', 'resource']
+          }
+        }
+      };
+    }
+  }
+});
+```
+
+### GraphQL Integration
+
+For more complex APIs, you can integrate GraphQL:
+
+```typescript
+import { defineStep } from '@motia/core';
+import { graphql } from 'graphql';
+import { schema } from '../../graphql/schema';
+
+export default defineStep({
+  id: 'api.graphql',
+  name: 'GraphQL API',
+  type: 'api',
+  path: '/api/graphql',
+  method: 'POST',
+  run: async (input) => {
+    const { body } = input;
+    
+    // Validate the request
+    if (!body.query) {
+      return {
+        status: 400,
+        body: { error: 'Query is required' }
+      };
+    }
+    
+    // Execute the GraphQL query
+    const result = await graphql({
+      schema,
+      source: body.query,
+      variableValues: body.variables,
+      operationName: body.operationName
+    });
+    
+    // Return the result
+    return {
+      status: 200,
+      body: result
+    };
+  }
+});
+```
+
+</div>
+
+## Best Practices for API Steps
+
+### 1. Use RESTful Conventions
+
+Follow RESTful conventions for your API endpoints:
+
+- Use nouns for resources (e.g., `/api/users`, not `/api/getUsers`)
+- Use HTTP methods appropriately:
+  - `GET` for retrieving resources
+  - `POST` for creating resources
+  - `PUT` for updating resources
+  - `DELETE` for deleting resources
+- Use plural nouns for collections (e.g., `/api/users`, not `/api/user`)
+- Use path parameters for specific resources (e.g., `/api/users/:userId`)
+
+### 2. Validate Input
+
+Always validate input to prevent errors and security issues:
+
+```typescript
+run: async (input) => {
+  const { body } = input;
+  
+  // Validate required fields
+  if (!body.email) {
+    return {
+      status: 400,
+      body: { error: 'Email is required' }
+    };
+  }
+  
+  // Validate email format
+  if (!isValidEmail(body.email)) {
+    return {
+      status: 400,
+      body: { error: 'Invalid email format' }
+    };
+  }
+  
+  // Continue with processing
+  // ...
+}
+
+function isValidEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+}
+```
+
+### 3. Use Consistent Response Formats
+
+Use a consistent format for your API responses:
+
+```typescript
+// Success response
+return {
+  status: 200,
+  body: {
+    success: true,
+    data: {
+      // Response data
+    }
+  }
+};
+
+// Error response
+return {
+  status: 400,
+  body: {
+    success: false,
+    error: 'Error message'
+  }
+};
+```
+
+### 4. Include Appropriate HTTP Status Codes
+
+Use appropriate HTTP status codes for different scenarios:
+
+- `200 OK`: Successful request
+- `201 Created`: Resource created successfully
+- `204 No Content`: Successful request with no response body
+- `400 Bad Request`: Invalid input
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: Authentication succeeded but user doesn't have permission
+- `404 Not Found`: Resource not found
+- `500 Internal Server Error`: Server error
+
+### 5. Secure Your Endpoints
+
+Implement security measures for your API endpoints:
+
+- Use HTTPS for all API endpoints
+- Implement authentication for protected endpoints
+- Validate and sanitize all input
+- Implement rate limiting for public APIs
+- Use CORS headers to control access
+
+## Common Questions
+
+### How do I handle query parameters?
+
+Query parameters are available in the `input.query` object:
+
+```typescript
+handler: async (req) => {
+  const { queryParams } = req;
+  
+  // Access query parameters
+  const page = parseInt(queryParams.page as string || '1');
+  const limit = parseInt(queryParams.limit as string || '10');
+  
+  // Use the parameters
+  // ...
+  
+  return {
+    status: 200,
+    body: { /* response data */ }
+  };
+}
+```
+
+### How do I handle path parameters?
+
+Path parameters are available in the `input.params` object:
+
+```typescript
+// Step with path parameter
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: 'Get User',
+  path: '/api/users/:userId',
+  method: 'GET',
+  flows: ['user-management']
+};
+
+export const handler: StepHandler<typeof config> = async (req) => {
+  const { pathParams } = req;
+  const userId = pathParams.userId;
+  
+  // Use the userId parameter
+  // ...
+  
+  return {
+    status: 200,
+    body: { /* user data */ }
+  };
+};
+```
+
+### How do I handle file uploads?
+
+File uploads require parsing multipart form data:
+
+```typescript
+handler: async (req) => {
+  const { headers, body, files } = req;
+  
+  // Check content type
+  const contentType = headers['content-type'] || '';
+  if (!contentType.startsWith('multipart/form-data')) {
+    return { 
+      status: 400, 
+      body: { error: 'Content-Type must be multipart/form-data' } 
+    };
+  }
+  
+  // In Motia, multipart form data is automatically parsed
+  // and available in the body object and files
+  const file = files?.['file']?.[0];
+  
+  if (!file) {
+    return { 
+      status: 400, 
+      body: { error: 'No file uploaded' } 
+    };
+  }
+  
+  // Process the file
+  // ...
+  
+  return {
+    status: 200,
+    body: { /* response data */ }
+  };
+}
+```
+
+### How do I set custom response headers?
+
+You can include headers in your response object:
+
+```typescript
+return {
+  status: 200,
+  headers: {
+    'X-Custom-Header': 'Custom Value',
+    'Cache-Control': 'max-age=3600'
+  },
+  body: {
+    // Response data
+  }
+};
+```
+
+## Next Steps
+
+Now that you know how to create API steps, you might want to:
+
+- Learn about [Event Steps](/docs/guides/step-creation/event-steps) to process events
+- Explore [Cron Steps](/docs/guides/step-creation/cron-steps) for scheduled tasks
+- Understand [NOOP Steps](/docs/guides/step-creation/noop-steps) for external processes
+- Dive into [Flow Patterns](/docs/concepts/core-components/flow-patterns) to design effective workflows

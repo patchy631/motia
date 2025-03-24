@@ -1,0 +1,110 @@
+{
+  "languages": [
+    {
+      "name": "JavaScript",
+      "extension": "js",
+      "standards": {
+        "indentation": "2 spaces",
+        "quotes": "single",
+        "semicolons": true,
+        "lineLength": 80,
+        "commentStyle": "// for single line, /* */ for multi-line"
+      },
+      "linting": "ESLint with Motia's recommended configuration",
+      "formatting": "Prettier"
+    },
+    {
+      "name": "TypeScript",
+      "extension": "ts",
+      "standards": {
+        "indentation": "2 spaces",
+        "quotes": "single",
+        "semicolons": true,
+        "lineLength": 80,
+        "commentStyle": "// for single line, /* */ for multi-line"
+      },
+      "linting": "ESLint with Motia's recommended TypeScript configuration",
+      "formatting": "Prettier",
+      "typeChecking": "strict mode enabled"
+    },
+    {
+      "name": "Python",
+      "extension": "py",
+      "standards": {
+        "indentation": "4 spaces",
+        "quotes": "single",
+        "lineLength": 88,
+        "commentStyle": "# for single line, \"\"\" \"\"\" for multi-line docstrings"
+      },
+      "linting": "Flake8",
+      "formatting": "Black",
+      "typeChecking": "Type hints with mypy"
+    },
+    {
+      "name": "Ruby",
+      "extension": "rb",
+      "standards": {
+        "indentation": "2 spaces",
+        "quotes": "single",
+        "lineLength": 80,
+        "commentStyle": "# for single line, =begin =end for multi-line"
+      },
+      "linting": "RuboCop",
+      "formatting": "RuboCop with auto-correct"
+    }
+  ],
+  "codeExamples": {
+    "includeComments": true,
+    "highlightImportantLines": true,
+    "showLineNumbers": true,
+    "includeErrorHandling": true,
+    "includeTypeAnnotations": true
+  },
+  "stepDefinitions": {
+    "naming": {
+      "id": "namespace.stepName (e.g., github.processIssue)",
+      "name": "Human-readable name (e.g., Process GitHub Issue)"
+    },
+    "structure": {
+      "required": ["id", "name", "type", "run"],
+      "conditional": {
+        "api": ["path", "method"],
+        "event": ["on"],
+        "cron": ["schedule"],
+        "noop": []
+      },
+      "optional": ["description", "emits", "config"]
+    }
+  },
+  "eventNaming": {
+    "pattern": "namespace.entity.action (e.g., github.issue.created)",
+    "examples": [
+      "github.issue.created",
+      "email.message.received",
+      "user.profile.updated"
+    ]
+  },
+  "stateManagement": {
+    "keyNaming": "camelCase",
+    "valueTypes": "JSON-serializable values",
+    "bestPractices": [
+      "Keep state minimal",
+      "Use namespaced keys to avoid collisions",
+      "Document state structure"
+    ]
+  },
+  "errorHandling": {
+    "patterns": [
+      "Try/catch blocks for async operations",
+      "Return error objects with { success: false, error: ... }",
+      "Use step-specific error codes when possible"
+    ],
+    "logging": "Include context information with errors"
+  },
+  "documentation": {
+    "inlineComments": "Explain 'why' not 'what'",
+    "jsdoc": "Use for functions and classes in JavaScript/TypeScript",
+    "docstrings": "Use for functions and classes in Python",
+    "rdoc": "Use for methods and classes in Ruby"
+  }
+}

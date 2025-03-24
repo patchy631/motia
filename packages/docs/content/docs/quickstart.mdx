@@ -1,0 +1,178 @@
+---
+title: "Quickstart Guide"
+description: "Get started with Motia in minutes"
+---
+
+# Quickstart Guide
+
+This guide will help you get up and running with Motia in just a few minutes. You'll install Motia, understand the starter example, and make your first change.
+
+## 5-Minute Setup
+
+### Prerequisites
+
+- Node.js 16 or later
+- npm, yarn, or pnpm
+
+### Installation
+
+1. Create a new directory for your project:
+
+```bash
+mkdir my-motia-project
+cd my-motia-project
+```
+
+2. Initialize a new Node.js project:
+
+```bash
+npm init -y
+```
+
+3. Install Motia:
+
+```bash
+npm install @motia/core @motia/snap
+```
+
+4. Create a starter project:
+
+```bash
+npx @motia/snap create
+```
+
+This command creates a basic Motia project with a simple workflow that includes NOOP, API, and event steps.
+
+5. Start the development server:
+
+```bash
+npm run dev
+```
+
+Your Motia project is now running! You can access the Workbench at [http://localhost:3000](http://localhost:3000).
+
+## Understanding the Example
+
+The starter example includes three types of steps that form the foundation of any Motia workflow:
+
+### NOOP Step
+
+The NOOP (No Operation) step represents an external process or action. In the starter example, it's used to simulate a user action.
+
+```typescript
+// steps/starter/noop.ts
+import { defineStep } from '@motia/core';
+
+export default defineStep({
+  id: 'starter.noop',
+  name: 'Starter NOOP',
+  type: 'noop',
+  emits: ['starter.noop.completed'],
+  run: async (input, { emit }) => {
+    // This step doesn't do anything but emit an event
+    await emit('starter.noop.completed', { message: 'NOOP step completed' });
+    return { success: true };
+  }
+});
+```
+
+### API Step
+
+The API step creates an HTTP endpoint that can be called to trigger your workflow.
+
+```typescript
+// steps/starter/api.ts
+import { defineStep } from '@motia/core';
+
+export default defineStep({
+  id: 'starter.api',
+  name: 'Starter API',
+  type: 'api',
+  path: '/api/starter',
+  method: 'POST',
+  emits: ['starter.api.received'],
+  run: async (input, { emit }) => {
+    // When this endpoint is called, emit an event
+    await emit('starter.api.received', { 
+      message: 'API request received',
+      data: input.body
+    });
+    return { success: true };
+  }
+});
+```
+
+### Event Step
+
+The Event step listens for events and performs actions in response.
+
+```typescript
+// steps/starter/event.ts
+import { defineStep } from '@motia/core';
+
+export default defineStep({
+  id: 'starter.event',
+  name: 'Starter Event',
+  type: 'event',
+  on: ['starter.noop.completed', 'starter.api.received'],
+  run: async (input) => {
+    console.log('Event received:', input.event);
+    console.log('Event data:', input.data);
+    return { success: true };
+  }
+});
+```
+
+## Making Your First Change
+
+Let's modify the Event step to do something more interesting:
+
+1. Open the file `steps/starter/event.ts`
+2. Update the `run` function to process the incoming data:
+
+```typescript
+run: async (input) => {
+  console.log('Event received:', input.event);
+  
+  // Process the data differently based on the event type
+  if (input.event === 'starter.noop.completed') {
+    console.log('NOOP event completed with message:', input.data.message);
+  } else if (input.event === 'starter.api.received') {
+    console.log('API request received with data:', input.data.data);
+    
+    // Add some data processing
+    const processedData = {
+      ...input.data.data,
+      processed: true,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('Processed data:', processedData);
+  }
+  
+  return { 
+    success: true,
+    processedAt: new Date().toISOString()
+  };
+}
+```
+
+3. Save the file and the changes will be automatically applied.
+
+4. Test your changes:
+   - Go to the Workbench at [http://localhost:3000](http://localhost:3000)
+   - Click on the NOOP step to trigger it
+   - Check the console logs to see your enhanced processing
+   - Use a tool like curl or Postman to send a POST request to `http://localhost:3000/api/starter` with some JSON data
+
+## Next Steps
+
+Now that you've got a basic Motia workflow running, here are some suggestions for what to explore next:
+
+- **Learn more about steps**: Explore the [different step types](/docs/concepts/core-components/step-types) and how they work together.
+- **Understand event-driven architecture**: Dive into [event-driven basics](/docs/concepts/getting-started/event-driven-basics) to understand the foundation of Motia.
+- **Follow a learning journey**: Start the [Motia Journey](/docs/journeys/start-your-motia-journey) for a guided learning experience.
+- **Build something real**: Try one of our [real-world tutorials](/docs/real-world-tutorials) to build a practical application.
+- **Explore the Workbench**: Learn how to use the [Workbench](/docs/concepts/core-components/workbench) to visualize and debug your workflows.
+
+Happy building with Motia!

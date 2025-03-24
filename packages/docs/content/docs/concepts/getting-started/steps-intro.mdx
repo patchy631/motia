@@ -1,0 +1,394 @@
+---
+title: "Introduction to Steps"
+description: "Learn about steps, the fundamental building blocks of Motia"
+---
+
+# Introduction to Steps
+
+<div className="beginner-content">
+
+## Simple Definition
+
+Steps are the fundamental building blocks in Motia that perform specific tasks and communicate with each other through events.
+
+## Why Steps Matter
+
+Steps are essential to Motia because they:
+
+- **Break down complexity** into manageable, focused units
+- **Promote reusability** across different workflows
+- **Enable clear separation of concerns**
+- **Make testing and debugging easier**
+- **Allow for flexible workflow composition**
+
+## How Steps Work
+
+Each step in Motia is designed to do one thing well. Steps can:
+
+1. **Receive input** from events or external sources
+2. **Process data** according to their specific logic
+3. **Emit events** to trigger other steps
+4. **Return results** to external callers (for API steps)
+
+<div className="flex justify-center my-8">
+  <img 
+    src="/docs/img/step-lifecycle.png" 
+    alt="Step Lifecycle" 
+    className="rounded-lg border shadow-md"
+    width="600"
+  />
+</div>
+
+### Basic Step Types
+
+Motia includes four primary types of steps:
+
+1. **API Steps**: Create HTTP endpoints to receive external requests
+2. **Event Steps**: Listen for and respond to events
+3. **Cron Steps**: Execute on a scheduled basis
+4. **NOOP Steps**: Represent external processes or manual actions
+
+Each type serves a specific purpose in your workflows, and you'll often use multiple types together to build complete applications.
+
+</div>
+
+<div className="intermediate-content">
+
+## Step Architecture
+
+Steps in Motia follow a consistent architecture that makes them flexible and powerful:
+
+### Step Definition
+
+All steps are defined using the `defineStep` function, which creates a step with a specific configuration:
+
+```typescript
+import { defineStep } from '@motia/core';
+
+const myStep = defineStep({
+  // Required properties
+  id: 'namespace.stepName',
+  name: 'Human-readable Step Name',
+  type: 'event', // or 'api', 'cron', 'noop'
+  
+  // Type-specific properties
+  on: ['event.to.listen.for'], // for event steps
+  path: '/api/endpoint', // for API steps
+  method: 'POST', // for API steps
+  schedule: '0 * * * *', // for cron steps
+  
+  // Optional properties
+  description: 'What this step does',
+  emits: ['events.this.step.can.emit'],
+  
+  // The step's execution logic
+  run: async (input, context) => {
+    // Process input
+    // Emit events using context.emit
+    // Return results
+    return { success: true };
+  }
+});
+```
+
+### Step Lifecycle
+
+Steps go through a defined lifecycle:
+
+1. **Registration**: The step is registered with the Motia runtime
+2. **Initialization**: The step is initialized with its configuration
+3. **Activation**: The step becomes active and ready to handle events or requests
+4. **Execution**: The step's `run` function is called when triggered
+5. **Deactivation**: The step is deactivated when the application shuts down
+
+### Input and Context
+
+When a step executes, it receives two key parameters:
+
+1. **Input**: Contains the data relevant to the step's execution
+   - For API steps: HTTP request details (path, method, headers, body, etc.)
+   - For Event steps: Event data and metadata
+   - For Cron steps: Timing information
+   - For NOOP steps: Any provided input data
+
+2. **Context**: Provides utilities and services for the step
+   - `emit`: Function to emit events
+   - `state`: Access to shared workflow state
+   - `logger`: Logging utilities
+   - Other services depending on configuration
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Step Concepts
+
+### Step Composition
+
+Steps can be composed in various ways to create more complex behaviors:
+
+#### Chaining
+
+Steps can be chained together through events, where one step's output becomes another step's input:
+
+```
+API Step → Event Step → Event Step → ...
+```
+
+This creates a pipeline of processing, with each step handling a specific aspect of the workflow.
+
+#### Branching
+
+Steps can implement conditional logic to emit different events based on their processing:
+
+```
+                 → Event Step A (if condition A)
+API Step → Event Step → Event Step B (if condition B)
+                 → Event Step C (if condition C)
+```
+
+This allows for complex decision trees and routing logic.
+
+#### Aggregation
+
+Multiple steps can emit events that are processed by a single aggregating step:
+
+```
+Event Step A →
+Event Step B → Aggregating Event Step
+Event Step C →
+```
+
+This pattern is useful for collecting and combining results from parallel processes.
+
+### Step Implementation Strategies
+
+#### Pure Functions
+
+For simple steps, implement the `run` function as a pure function that takes input and produces output without side effects:
+
+```typescript
+run: async (input) => {
+  const result = someTransformation(input.data);
+  return { success: true, data: result };
+}
+```
+
+This approach makes steps easier to test and reason about.
+
+#### Service Integration
+
+For steps that integrate with external services, use dependency injection to provide service clients:
+
+```typescript
+run: async (input, { services }) => {
+  const result = await services.database.query(input.data.query);
+  return { success: true, data: result };
+}
+```
+
+This approach makes it easier to mock services for testing.
+
+#### State Management
+
+For steps that need to maintain state across invocations, use the state management utilities:
+
+```typescript
+run: async (input, { state }) => {
+  // Read from state
+  const counter = await state.get('counter') || 0;
+  
+  // Update state
+  await state.set('counter', counter + 1);
+  
+  return { success: true, counter: counter + 1 };
+}
+```
+
+This approach allows for stateful workflows while keeping the state management separate from the business logic.
+
+### Performance Considerations
+
+- **Keep steps focused**: Each step should do one thing well
+- **Minimize state**: Use state only when necessary
+- **Optimize event payloads**: Include only necessary data in events
+- **Consider parallelism**: Design steps to run in parallel when possible
+- **Handle errors gracefully**: Implement proper error handling and recovery
+
+</div>
+
+## Step Types in Detail
+
+### API Steps
+
+API steps create HTTP endpoints that external systems can call to trigger workflows.
+
+<div className="code-example">
+```typescript
+import { defineStep } from '@motia/core';
+
+export const apiStep = defineStep({
+  id: 'example.api',
+  name: 'Example API',
+  type: 'api',
+  path: '/api/example',
+  method: 'POST',
+  emits: ['example.request.received'],
+  run: async (input, { emit }) => {
+    const { body } = input;
+    
+    // Process the request
+    console.log('Received request:', body);
+    
+    // Emit an event with the request data
+    await emit('example.request.received', body);
+    
+    // Return a response
+    return {
+      status: 200,
+      body: { success: true, message: 'Request processed' }
+    };
+  }
+});
+```
+</div>
+
+API steps are useful for:
+- Receiving webhook notifications
+- Creating REST APIs
+- Integrating with external systems
+- Triggering workflows from user interfaces
+
+### Event Steps
+
+Event steps listen for specific events and execute in response to them.
+
+<div className="code-example">
+```typescript
+import { defineStep } from '@motia/core';
+
+export const eventStep = defineStep({
+  id: 'example.process',
+  name: 'Process Example',
+  type: 'event',
+  on: ['example.request.received'],
+  emits: ['example.processing.completed'],
+  run: async (input, { emit }) => {
+    // Get the data from the event
+    const data = input.data;
+    
+    // Process the data
+    console.log('Processing data:', data);
+    const processedData = {
+      ...data,
+      processed: true,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Emit an event with the processed data
+    await emit('example.processing.completed', processedData);
+    
+    return { success: true };
+  }
+});
+```
+</div>
+
+Event steps are useful for:
+- Processing data from other steps
+- Implementing business logic
+- Coordinating between different parts of a workflow
+- Responding to system events
+
+### Cron Steps
+
+Cron steps execute on a scheduled basis using cron syntax.
+
+<div className="code-example">
+```typescript
+import { defineStep } from '@motia/core';
+
+export const cronStep = defineStep({
+  id: 'example.scheduled',
+  name: 'Scheduled Task',
+  type: 'cron',
+  schedule: '0 * * * *', // Run at the start of every hour
+  emits: ['example.scheduled.executed'],
+  run: async (input, { emit }) => {
+    // Perform scheduled task
+    console.log('Running scheduled task at:', new Date().toISOString());
+    
+    // Emit an event indicating the task was executed
+    await emit('example.scheduled.executed', {
+      executedAt: new Date().toISOString()
+    });
+    
+    return { success: true };
+  }
+});
+```
+</div>
+
+Cron steps are useful for:
+- Running periodic tasks
+- Generating reports
+- Data cleanup operations
+- Scheduled notifications
+- Polling external systems
+
+### NOOP Steps
+
+NOOP (No Operation) steps represent external processes or manual actions.
+
+<div className="code-example">
+```typescript
+import { defineStep } from '@motia/core';
+
+export const noopStep = defineStep({
+  id: 'example.manual',
+  name: 'Manual Approval',
+  type: 'noop',
+  emits: ['example.approval.granted', 'example.approval.rejected'],
+  run: async (input, { emit }) => {
+    // This step represents a manual approval process
+    // In the Workbench, users can trigger this step and choose which event to emit
+    
+    // The actual implementation might emit different events based on user input
+    if (input.approved) {
+      await emit('example.approval.granted', { 
+        approvedBy: input.user,
+        approvedAt: new Date().toISOString()
+      });
+    } else {
+      await emit('example.approval.rejected', {
+        rejectedBy: input.user,
+        rejectedAt: new Date().toISOString(),
+        reason: input.reason
+      });
+    }
+    
+    return { success: true };
+  }
+});
+```
+</div>
+
+NOOP steps are useful for:
+- Representing manual processes
+- Testing and debugging workflows
+- Simulating external systems
+- Creating interactive demos
+
+## Related Concepts
+
+- [Event-Driven Basics](/docs/concepts/getting-started/event-driven-basics)
+- [Flows Introduction](/docs/concepts/getting-started/flows-intro)
+- [Step Types in Detail](/docs/concepts/core-components/step-types)
+
+## Next Steps
+
+Now that you understand the basics of steps in Motia, you can:
+
+- Learn about [Flows](/docs/concepts/getting-started/flows-intro) to see how steps connect together
+- Explore [Step Types](/docs/concepts/core-components/step-types) in more detail
+- Try creating your own steps with the [Step Creation Guides](/docs/guides/step-creation)

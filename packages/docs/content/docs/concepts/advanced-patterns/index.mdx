@@ -1,0 +1,147 @@
+---
+title: Advanced Patterns in Motia
+description: Overview of expert-level patterns and techniques for building sophisticated workflows in Motia
+---
+
+# Advanced Patterns in Motia
+
+This section explores expert-level patterns and techniques for building sophisticated, high-performance workflows in Motia. These advanced patterns build upon the foundational concepts and are designed for developers who are already comfortable with Motia's core capabilities and are looking to push the boundaries of what's possible.
+
+## What Are Advanced Patterns?
+
+Advanced patterns in Motia represent sophisticated approaches to workflow design and implementation that address complex requirements, optimize performance, and enhance maintainability. These patterns typically:
+
+- Solve complex, real-world problems
+- Combine multiple Motia features in innovative ways
+- Optimize for performance, reliability, or scalability
+- Implement sophisticated control flows and data handling
+- Integrate with external systems and services
+
+## When to Use Advanced Patterns
+
+Advanced patterns are most appropriate when:
+
+- Basic patterns don't adequately address your requirements
+- You need to optimize for performance or scalability
+- Your workflows involve complex decision-making or data processing
+- You're building mission-critical systems with high reliability requirements
+- You need to integrate with multiple external systems
+
+## Key Advanced Pattern Categories
+
+### Agent Orchestration
+
+[Agent orchestration](./agent-orchestration) involves coordinating multiple specialized agents to solve complex problems. This pattern is particularly useful for tasks that require different types of expertise or capabilities.
+
+Key aspects include:
+- Designing agent communication protocols
+- Managing agent coordination and collaboration
+- Implementing conflict resolution strategies
+- Optimizing resource allocation across agents
+- Ensuring system-wide reliability and fault tolerance
+
+### Hybrid Approaches
+
+[Hybrid approaches](./hybrid-approaches) combine deterministic and agentic workflows to leverage the strengths of both paradigms. This pattern is ideal for systems that require both reliability and adaptability.
+
+Key aspects include:
+- Identifying which parts of a workflow should be deterministic vs. agentic
+- Designing clean interfaces between deterministic and agentic components
+- Implementing fallback mechanisms
+- Managing state across different workflow types
+- Testing hybrid systems effectively
+
+### Scaling Strategies
+
+[Scaling strategies](./scaling-strategies) focus on designing workflows that can handle increasing loads while maintaining performance and reliability. These patterns are essential for production systems with high throughput requirements.
+
+Key aspects include:
+- Horizontal and vertical scaling approaches
+- Optimizing resource utilization
+- Implementing caching strategies
+- Managing state in distributed environments
+- Monitoring and auto-scaling techniques
+
+### Custom Extensions
+
+[Custom extensions](./custom-extensions) allow you to extend Motia's core capabilities with custom functionality tailored to your specific needs. This pattern is useful when you need capabilities beyond what's provided out of the box.
+
+Key aspects include:
+- Creating custom step types
+- Extending the state management system
+- Implementing custom event routing logic
+- Building specialized monitoring and observability tools
+- Developing domain-specific abstractions
+
+## Best Practices for Advanced Patterns
+
+When implementing advanced patterns, consider these best practices:
+
+### 1. Start Simple and Iterate
+
+Even with complex requirements, start with the simplest implementation that could work and iterate from there. This approach helps you:
+
+- Validate core assumptions early
+- Identify potential issues before they become embedded in complex code
+- Maintain a working system throughout development
+- Make incremental improvements based on real-world feedback
+
+### 2. Design for Observability
+
+Advanced patterns can be complex to debug and monitor. Design your workflows with observability in mind:
+
+- Implement comprehensive logging at appropriate levels
+- Add metrics for key performance indicators
+- Create custom visualizations for complex workflows
+- Design clear error messages and failure modes
+- Consider how the system will be debugged in production
+
+### 3. Test Thoroughly
+
+Advanced patterns require advanced testing strategies:
+
+- Implement unit tests for individual components
+- Create integration tests for component interactions
+- Design end-to-end tests for complete workflows
+- Test edge cases and failure scenarios
+- Implement performance and load testing
+- Consider chaos testing for distributed systems
+
+### 4. Document Design Decisions
+
+Complex patterns often involve important design decisions and trade-offs. Document these thoroughly:
+
+- Explain why specific approaches were chosen
+- Document alternatives that were considered
+- Note known limitations and edge cases
+- Provide context for future developers
+- Include performance characteristics and expectations
+
+### 5. Consider Maintenance and Evolution
+
+Advanced patterns should be designed with long-term maintenance in mind:
+
+- Prefer clarity over cleverness
+- Create abstractions that hide complexity where appropriate
+- Design for extensibility and future requirements
+- Consider how the system will evolve over time
+- Document maintenance procedures and considerations
+
+## Getting Started with Advanced Patterns
+
+Before diving into advanced patterns, ensure you have a solid understanding of Motia's core concepts and basic patterns. If you're ready to explore advanced patterns, we recommend:
+
+1. Review the [core concepts](../core-components) to ensure a solid foundation
+2. Explore the [deterministic workflows](../deterministic-workflows) and [agentic workflows](../agentic-workflows) sections
+3. Start with the advanced pattern that most closely aligns with your current needs
+4. Experiment with small, isolated examples before implementing in production systems
+5. Leverage the community for feedback and guidance
+
+## Next Steps
+
+Explore the specific advanced patterns in this section:
+
+- [Agent Orchestration](./agent-orchestration) - Techniques for coordinating multiple specialized agents
+- [Hybrid Approaches](./hybrid-approaches) - Combining deterministic and agentic workflows
+- [Scaling Strategies](./scaling-strategies) - Approaches to scaling Motia workflows
+- [Custom Extensions](./custom-extensions) - Extending Motia's capabilities

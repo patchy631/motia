@@ -1,0 +1,1233 @@
+---
+title: Hybrid Approaches in Motia
+description: Techniques and patterns for combining deterministic and agentic workflows to leverage the strengths of both paradigms
+---
+
+# Hybrid Approaches
+
+Hybrid approaches in Motia combine deterministic and agentic workflows to leverage the strengths of both paradigms. This pattern is ideal for systems that require both reliability and adaptability, allowing you to use deterministic workflows for critical, well-defined processes while incorporating agentic components for tasks that benefit from flexibility and intelligence.
+
+## Understanding Hybrid Approaches
+
+Hybrid approaches recognize that different parts of a system have different requirements:
+
+- **Deterministic components** provide reliability, predictability, and performance for well-understood processes
+- **Agentic components** offer flexibility, adaptability, and intelligence for handling complex, variable, or unstructured tasks
+
+By combining these approaches, you can create systems that are both robust and adaptable, with clear boundaries between deterministic and agentic components.
+
+## When to Use Hybrid Approaches
+
+Hybrid approaches are most valuable when:
+
+- Your system has both well-defined processes and tasks requiring flexibility
+- You need reliability for critical operations but adaptability for others
+- You want to gradually introduce agentic capabilities to an existing deterministic system
+- You need to handle both structured and unstructured data
+- You want to combine the performance of deterministic workflows with the intelligence of agentic ones
+- You need to provide fallbacks for agentic components
+
+## Basic Hybrid Patterns
+
+### 1. Agentic Decision, Deterministic Execution
+
+This pattern uses an agentic component to make decisions, then delegates execution to deterministic workflows:
+
+```typescript
+// decisionRouter.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  request: z.string(),
+  userId: z.string(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Decision Router',
+  subscribes: ['request.received'],
+  emits: [
+    'workflow.order.process',
+    'workflow.support.ticket',
+    'workflow.feedback.process',
+    'workflow.information.provide',
+    'request.unrecognized',
+  ],
+  input: inputSchema,
+  flows: ['hybrid-routing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Use an LLM to analyze the request and determine the appropriate workflow
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a request routing assistant. Analyze the user's request and determine which workflow should handle it.
+          
+          Return a JSON object with the following structure:
+          {
+            "workflowType": "order|support|feedback|information|unknown",
+            "confidence": 0.8, // A number between 0 and 1
+            "extractedData": {
+              // Relevant data extracted from the request, structure depends on workflowType
+            },
+            "reasoning": "Brief explanation of why this workflow was selected"
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.request,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const analysis = JSON.parse(content);
+    
+    // Route to the appropriate deterministic workflow based on the agentic decision
+    switch (analysis.workflowType) {
+      case 'order':
+        await emit({
+          topic: 'workflow.order.process',
+          data: {
+            userId: input.userId,
+            orderDetails: analysis.extractedData,
+            originalRequest: input.request,
+            metadata: input.metadata,
+          },
+        });
+        break;
+        
+      case 'support':
+        await emit({
+          topic: 'workflow.support.ticket',
+          data: {
+            userId: input.userId,
+            ticketDetails: analysis.extractedData,
+            originalRequest: input.request,
+            metadata: input.metadata,
+          },
+        });
+        break;
+        
+      case 'feedback':
+        await emit({
+          topic: 'workflow.feedback.process',
+          data: {
+            userId: input.userId,
+            feedbackDetails: analysis.extractedData,
+            originalRequest: input.request,
+            metadata: input.metadata,
+          },
+        });
+        break;
+        
+      case 'information':
+        await emit({
+          topic: 'workflow.information.provide',
+          data: {
+            userId: input.userId,
+            informationRequest: analysis.extractedData,
+            originalRequest: input.request,
+            metadata: input.metadata,
+          },
+        });
+        break;
+        
+      default:
+        await emit({
+          topic: 'request.unrecognized',
+          data: {
+            userId: input.userId,
+            request: input.request,
+            analysis,
+            metadata: input.metadata,
+          },
+        });
+        break;
+    }
+    
+    logger.info('Request routed', {
+      workflowType: analysis.workflowType,
+      confidence: analysis.confidence,
+      userId: input.userId,
+    });
+  } catch (error) {
+    logger.error('Error in decision router', { error });
+    
+    // Route to a fallback workflow
+    await emit({
+      topic: 'request.unrecognized',
+      data: {
+        userId: input.userId,
+        request: input.request,
+        error: error.message,
+        metadata: input.metadata,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Uses an agentic component (LLM) to analyze the request and make a routing decision
+2. Routes the request to the appropriate deterministic workflow based on the decision
+3. Provides a fallback for unrecognized requests or errors
+4. Extracts relevant data from the request to pass to the deterministic workflow
+
+### 2. Deterministic Workflow with Agentic Steps
+
+This pattern incorporates agentic steps within a deterministic workflow structure:
+
+```typescript
+// orderProcessor.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  orderId: z.string(),
+  userId: z.string(),
+  items: z.array(
+    z.object({
+      productId: z.string(),
+      quantity: z.number(),
+      price: z.number(),
+    })
+  ),
+  shippingAddress: z.object({
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zipCode: z.string(),
+    country: z.string(),
+  }),
+  paymentMethod: z.object({
+    type: z.string(),
+    details: z.record(z.string(), z.any()),
+  }),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Order Processor',
+  subscribes: ['order.submitted'],
+  emits: [
+    'order.validated',
+    'order.validation.failed',
+    'order.customization.requested',
+  ],
+  input: inputSchema,
+  flows: ['order-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Validate the order (deterministic)
+    const validationResult = validateOrder(input);
+    
+    if (!validationResult.valid) {
+      // Emit validation failure event
+      await emit({
+        topic: 'order.validation.failed',
+        data: {
+          orderId: input.orderId,
+          userId: input.userId,
+          errors: validationResult.errors,
+        },
+      });
+      return;
+    }
+    
+    // Step 2: Check if order requires customization (deterministic)
+    const requiresCustomization = checkForCustomization(input);
+    
+    if (requiresCustomization) {
+      // Emit event to request agentic customization
+      await emit({
+        topic: 'order.customization.requested',
+        data: {
+          orderId: input.orderId,
+          userId: input.userId,
+          order: input,
+        },
+      });
+      return;
+    }
+    
+    // Step 3: Emit validated order event for further processing
+    await emit({
+      topic: 'order.validated',
+      data: {
+        orderId: input.orderId,
+        userId: input.userId,
+        order: input,
+        validationResult,
+      },
+    });
+    
+    logger.info('Order processed', {
+      orderId: input.orderId,
+      userId: input.userId,
+    });
+  } catch (error) {
+    logger.error('Error in order processor', { error });
+    
+    // Emit error event
+    await emit({
+      topic: 'order.processing.error',
+      data: {
+        orderId: input.orderId,
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// orderCustomizer.step.ts
+import { OpenAI } from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export const customizerConfig = {
+  type: 'event',
+  name: 'Order Customizer',
+  subscribes: ['order.customization.requested'],
+  emits: ['order.customized', 'order.customization.failed'],
+  flows: ['order-processing'],
+};
+
+export const customizerHandler = async (input, { emit, logger }) => {
+  try {
+    // Use an LLM to handle the customization request (agentic)
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an order customization assistant. Analyze the order and suggest appropriate customizations.
+          
+          Return a JSON object with the following structure:
+          {
+            "customizations": [
+              {
+                "itemIndex": 0, // Index of the item in the order
+                "customizationType": "engraving|gift_wrapping|special_instructions|etc",
+                "details": {
+                  // Customization-specific details
+                },
+                "additionalCost": 10.00, // Additional cost for this customization
+                "estimatedProcessingDays": 2 // Additional processing time in days
+              }
+            ],
+            "customerNotes": "Notes to the customer about the customizations",
+            "internalNotes": "Notes for internal staff about the customizations"
+          }`,
+        },
+        {
+          role: 'user',
+          content: `Process this order for customization: ${JSON.stringify(input.order)}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const customization = JSON.parse(content);
+    
+    // Emit the customized order event
+    await emit({
+      topic: 'order.customized',
+      data: {
+        orderId: input.orderId,
+        userId: input.userId,
+        order: input.order,
+        customization,
+      },
+    });
+    
+    logger.info('Order customized', {
+      orderId: input.orderId,
+      userId: input.userId,
+      customizationCount: customization.customizations.length,
+    });
+  } catch (error) {
+    logger.error('Error in order customizer', { error });
+    
+    // Emit customization failure event
+    await emit({
+      topic: 'order.customization.failed',
+      data: {
+        orderId: input.orderId,
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Uses a deterministic workflow structure with well-defined steps
+2. Incorporates an agentic step (order customization) for handling complex, variable tasks
+3. Maintains clear boundaries between deterministic and agentic components
+4. Provides fallbacks for when the agentic component fails
+
+### 3. Agentic Augmentation of Deterministic Results
+
+This pattern uses agentic components to enhance or augment the results of deterministic processes:
+
+```typescript
+// dataAnalyzer.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  datasetId: z.string(),
+  userId: z.string(),
+  parameters: z.object({
+    timeRange: z.object({
+      start: z.string(),
+      end: z.string(),
+    }),
+    metrics: z.array(z.string()),
+    filters: z.record(z.string(), z.any()).optional(),
+  }),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Data Analyzer',
+  subscribes: ['data.analyze.requested'],
+  emits: ['data.analyzed', 'data.analysis.failed', 'data.insights.requested'],
+  input: inputSchema,
+  flows: ['data-analysis'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Perform deterministic data analysis
+    const analysisResult = await performDataAnalysis(
+      input.datasetId,
+      input.parameters
+    );
+    
+    // Step 2: Emit the analysis result
+    await emit({
+      topic: 'data.analyzed',
+      data: {
+        datasetId: input.datasetId,
+        userId: input.userId,
+        parameters: input.parameters,
+        results: analysisResult,
+      },
+    });
+    
+    // Step 3: Request agentic insights on the analysis results
+    await emit({
+      topic: 'data.insights.requested',
+      data: {
+        datasetId: input.datasetId,
+        userId: input.userId,
+        parameters: input.parameters,
+        analysisResults: analysisResult,
+      },
+    });
+    
+    logger.info('Data analysis completed', {
+      datasetId: input.datasetId,
+      userId: input.userId,
+      metricCount: input.parameters.metrics.length,
+    });
+  } catch (error) {
+    logger.error('Error in data analyzer', { error });
+    
+    // Emit analysis failure event
+    await emit({
+      topic: 'data.analysis.failed',
+      data: {
+        datasetId: input.datasetId,
+        userId: input.userId,
+        parameters: input.parameters,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// insightsGenerator.step.ts
+import { OpenAI } from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export const insightsConfig = {
+  type: 'event',
+  name: 'Insights Generator',
+  subscribes: ['data.insights.requested'],
+  emits: ['data.insights.generated', 'data.insights.failed'],
+  flows: ['data-analysis'],
+};
+
+export const insightsHandler = async (input, { emit, logger }) => {
+  try {
+    // Use an LLM to generate insights from the analysis results
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a data insights assistant. Analyze the provided data analysis results and generate meaningful insights.
+          
+          Return a JSON object with the following structure:
+          {
+            "keyInsights": [
+              {
+                "title": "Insight title",
+                "description": "Detailed description of the insight",
+                "importance": "high|medium|low",
+                "relatedMetrics": ["metric1", "metric2"],
+                "actionableRecommendations": ["recommendation1", "recommendation2"]
+              }
+            ],
+            "trends": [
+              {
+                "trendType": "increasing|decreasing|cyclical|anomaly",
+                "description": "Description of the trend",
+                "affectedMetrics": ["metric1", "metric2"],
+                "potentialCauses": ["cause1", "cause2"],
+                "suggestedActions": ["action1", "action2"]
+              }
+            ],
+            "summary": "Overall summary of the insights",
+            "confidenceLevel": "high|medium|low"
+          }`,
+        },
+        {
+          role: 'user',
+          content: `Generate insights for these analysis results: ${JSON.stringify(input.analysisResults)}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const insights = JSON.parse(content);
+    
+    // Emit the generated insights
+    await emit({
+      topic: 'data.insights.generated',
+      data: {
+        datasetId: input.datasetId,
+        userId: input.userId,
+        parameters: input.parameters,
+        analysisResults: input.analysisResults,
+        insights,
+      },
+    });
+    
+    logger.info('Insights generated', {
+      datasetId: input.datasetId,
+      userId: input.userId,
+      insightCount: insights.keyInsights.length,
+      trendCount: insights.trends.length,
+    });
+  } catch (error) {
+    logger.error('Error in insights generator', { error });
+    
+    // Emit insights failure event
+    await emit({
+      topic: 'data.insights.failed',
+      data: {
+        datasetId: input.datasetId,
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Uses deterministic components for core data analysis
+2. Adds an agentic component to generate insights from the analysis results
+3. Keeps the deterministic analysis independent of the agentic insights
+4. Allows the system to function even if the agentic component fails
+
+## Advanced Hybrid Patterns
+
+### 1. Deterministic Fallbacks for Agentic Components
+
+This pattern implements deterministic fallbacks for when agentic components fail or produce low-confidence results:
+
+```typescript
+// contentGenerator.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  contentRequest: z.object({
+    type: z.enum(['email', 'blog', 'social', 'product']),
+    topic: z.string(),
+    audience: z.string(),
+    tone: z.string(),
+    length: z.number().optional(),
+    keywords: z.array(z.string()).optional(),
+  }),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Content Generator',
+  subscribes: ['content.generate.requested'],
+  emits: ['content.generated', 'content.generation.failed'],
+  input: inputSchema,
+  flows: ['content-generation'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Try to generate content using the agentic approach
+    const agenticResult = await generateContentWithLLM(input.contentRequest);
+    
+    // Step 2: Evaluate the quality of the generated content
+    const qualityScore = evaluateContentQuality(agenticResult.content);
+    
+    // Step 3: Decide whether to use the agentic result or fall back to templates
+    if (qualityScore >= 0.7 && agenticResult.confidence >= 0.8) {
+      // Use the agentic result
+      await emit({
+        topic: 'content.generated',
+        data: {
+          userId: input.userId,
+          contentRequest: input.contentRequest,
+          content: agenticResult.content,
+          metadata: {
+            generationMethod: 'agentic',
+            qualityScore,
+            confidence: agenticResult.confidence,
+          },
+        },
+      });
+      
+      logger.info('Content generated using agentic approach', {
+        contentType: input.contentRequest.type,
+        userId: input.userId,
+        qualityScore,
+        confidence: agenticResult.confidence,
+      });
+    } else {
+      // Fall back to deterministic template-based generation
+      const templateResult = await generateContentWithTemplates(input.contentRequest);
+      
+      await emit({
+        topic: 'content.generated',
+        data: {
+          userId: input.userId,
+          contentRequest: input.contentRequest,
+          content: templateResult.content,
+          metadata: {
+            generationMethod: 'template',
+            templateId: templateResult.templateId,
+            agenticQualityScore: qualityScore,
+            agenticConfidence: agenticResult.confidence,
+          },
+        },
+      });
+      
+      logger.info('Content generated using template fallback', {
+        contentType: input.contentRequest.type,
+        userId: input.userId,
+        templateId: templateResult.templateId,
+        agenticQualityScore: qualityScore,
+        agenticConfidence: agenticResult.confidence,
+      });
+    }
+  } catch (error) {
+    logger.error('Error in content generator', { error });
+    
+    try {
+      // Attempt to use the deterministic fallback
+      const fallbackResult = await generateContentWithTemplates(input.contentRequest);
+      
+      await emit({
+        topic: 'content.generated',
+        data: {
+          userId: input.userId,
+          contentRequest: input.contentRequest,
+          content: fallbackResult.content,
+          metadata: {
+            generationMethod: 'template_fallback',
+            templateId: fallbackResult.templateId,
+            originalError: error.message,
+          },
+        },
+      });
+      
+      logger.info('Content generated using template after error', {
+        contentType: input.contentRequest.type,
+        userId: input.userId,
+        templateId: fallbackResult.templateId,
+      });
+    } catch (fallbackError) {
+      // Both approaches failed
+      logger.error('Error in fallback content generation', { error: fallbackError });
+      
+      await emit({
+        topic: 'content.generation.failed',
+        data: {
+          userId: input.userId,
+          contentRequest: input.contentRequest,
+          error: error.message,
+          fallbackError: fallbackError.message,
+        },
+      });
+    }
+  }
+};
+
+// Helper function for agentic content generation
+async function generateContentWithLLM(contentRequest) {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a content generation assistant. Create ${contentRequest.type} content about ${contentRequest.topic} for ${contentRequest.audience} in a ${contentRequest.tone} tone.`,
+      },
+      {
+        role: 'user',
+        content: `Generate ${contentRequest.type} content about ${contentRequest.topic}.
+        
+        Audience: ${contentRequest.audience}
+        Tone: ${contentRequest.tone}
+        Length: ${contentRequest.length || 'standard'}
+        Keywords: ${contentRequest.keywords?.join(', ') || 'none specified'}`,
+      },
+    ],
+  });
+  
+  return {
+    content: response.choices[0]?.message?.content || '',
+    confidence: calculateConfidence(response),
+  };
+}
+
+// Helper function for template-based content generation
+async function generateContentWithTemplates(contentRequest) {
+  // Get appropriate template for the content type
+  const template = await getContentTemplate(
+    contentRequest.type,
+    contentRequest.tone,
+    contentRequest.audience
+  );
+  
+  // Fill in the template with the request details
+  const content = fillTemplate(template, contentRequest);
+  
+  return {
+    content,
+    templateId: template.id,
+  };
+}
+```
+
+This pattern:
+1. Attempts to generate content using an agentic approach first
+2. Evaluates the quality and confidence of the agentic result
+3. Falls back to a deterministic template-based approach if the agentic result is unsatisfactory
+4. Provides a deterministic fallback for when the agentic component fails entirely
+5. Includes metadata about which approach was used and why
+
+### 2. Progressive Enhancement with Agentic Components
+
+This pattern starts with a deterministic base and progressively enhances it with agentic capabilities:
+
+```typescript
+// supportTicketProcessor.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  ticketId: z.string(),
+  userId: z.string(),
+  subject: z.string(),
+  description: z.string(),
+  category: z.string().optional(),
+  priority: z.string().optional(),
+  attachments: z.array(z.string()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Support Ticket Processor',
+  subscribes: ['support.ticket.created'],
+  emits: [
+    'support.ticket.processed',
+    'support.ticket.processing.failed',
+    'support.ticket.enhancement.requested',
+  ],
+  input: inputSchema,
+  flows: ['support-ticket-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Basic deterministic processing
+    const processedTicket = {
+      ticketId: input.ticketId,
+      userId: input.userId,
+      subject: input.subject,
+      description: input.description,
+      category: input.category || 'uncategorized',
+      priority: input.priority || 'medium',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      assignedTo: null,
+      tags: [],
+    };
+    
+    // Step 2: Apply deterministic rules for categorization and prioritization
+    if (!input.category) {
+      processedTicket.category = determineCategory(input.subject, input.description);
+    }
+    
+    if (!input.priority) {
+      processedTicket.priority = determinePriority(processedTicket.category, input.description);
+    }
+    
+    // Step 3: Emit the processed ticket
+    await emit({
+      topic: 'support.ticket.processed',
+      data: {
+        ticket: processedTicket,
+        processingLevel: 'basic',
+      },
+    });
+    
+    // Step 4: Request agentic enhancement
+    await emit({
+      topic: 'support.ticket.enhancement.requested',
+      data: {
+        ticketId: input.ticketId,
+        processedTicket,
+        originalInput: input,
+      },
+    });
+    
+    logger.info('Support ticket processed (basic)', {
+      ticketId: input.ticketId,
+      userId: input.userId,
+      category: processedTicket.category,
+      priority: processedTicket.priority,
+    });
+  } catch (error) {
+    logger.error('Error in support ticket processor', { error });
+    
+    // Emit processing failure event
+    await emit({
+      topic: 'support.ticket.processing.failed',
+      data: {
+        ticketId: input.ticketId,
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// ticketEnhancer.step.ts
+export const enhancerConfig = {
+  type: 'event',
+  name: 'Ticket Enhancer',
+  subscribes: ['support.ticket.enhancement.requested'],
+  emits: ['support.ticket.enhanced', 'support.ticket.enhancement.failed'],
+  flows: ['support-ticket-processing'],
+};
+
+export const enhancerHandler = async (input, { emit, logger }) => {
+  try {
+    const { processedTicket, originalInput } = input;
+    
+    // Use an LLM to enhance the ticket with advanced analysis
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a support ticket analysis assistant. Analyze the ticket and provide enhanced information.
+          
+          Return a JSON object with the following structure:
+          {
+            "refinedCategory": "More specific category",
+            "refinedPriority": "high|medium|low",
+            "suggestedTags": ["tag1", "tag2"],
+            "sentimentAnalysis": {
+              "sentiment": "positive|negative|neutral",
+              "urgency": "high|medium|low",
+              "frustrationLevel": "high|medium|low"
+            },
+            "suggestedAssignee": "team or person best suited to handle this",
+            "potentialSolution": "Possible solution or troubleshooting steps",
+            "relatedKnowledgeBaseArticles": ["article1", "article2"],
+            "estimatedResolutionTime": "Estimated time to resolve this issue",
+            "customerContextNotes": "Additional context about the customer's situation"
+          }`,
+        },
+        {
+          role: 'user',
+          content: `Analyze this support ticket:
+          
+          Subject: ${originalInput.subject}
+          Description: ${originalInput.description}
+          Current Category: ${processedTicket.category}
+          Current Priority: ${processedTicket.priority}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const enhancement = JSON.parse(content);
+    
+    // Create the enhanced ticket
+    const enhancedTicket = {
+      ...processedTicket,
+      category: enhancement.refinedCategory || processedTicket.category,
+      priority: enhancement.refinedPriority || processedTicket.priority,
+      tags: enhancement.suggestedTags || [],
+      assignedTo: enhancement.suggestedAssignee || null,
+      sentimentAnalysis: enhancement.sentimentAnalysis,
+      potentialSolution: enhancement.potentialSolution,
+      relatedKnowledgeBaseArticles: enhancement.relatedKnowledgeBaseArticles,
+      estimatedResolutionTime: enhancement.estimatedResolutionTime,
+      customerContextNotes: enhancement.customerContextNotes,
+    };
+    
+    // Emit the enhanced ticket
+    await emit({
+      topic: 'support.ticket.enhanced',
+      data: {
+        ticketId: processedTicket.ticketId,
+        originalTicket: processedTicket,
+        enhancedTicket,
+        enhancement,
+      },
+    });
+    
+    logger.info('Support ticket enhanced', {
+      ticketId: processedTicket.ticketId,
+      userId: processedTicket.userId,
+      originalCategory: processedTicket.category,
+      enhancedCategory: enhancedTicket.category,
+      originalPriority: processedTicket.priority,
+      enhancedPriority: enhancedTicket.priority,
+    });
+  } catch (error) {
+    logger.error('Error in ticket enhancer', { error });
+    
+    // Emit enhancement failure event
+    await emit({
+      topic: 'support.ticket.enhancement.failed',
+      data: {
+        ticketId: input.processedTicket.ticketId,
+        userId: input.processedTicket.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This pattern:
+1. Processes the ticket using deterministic rules first
+2. Emits the processed ticket immediately for downstream consumers
+3. Requests agentic enhancement in parallel
+4. Enhances the ticket with additional information and insights
+5. Allows the system to function with basic processing even if enhancement fails
+
+### 3. Confidence-Based Switching
+
+This pattern dynamically switches between deterministic and agentic approaches based on confidence levels:
+
+```typescript
+// queryResponder.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+  context: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Query Responder',
+  subscribes: ['query.received'],
+  emits: ['query.response', 'query.response.failed'],
+  input: inputSchema,
+  flows: ['query-response'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Analyze the query to determine the best approach
+    const queryAnalysis = analyzeQuery(input.query);
+    
+    // Step 2: Choose the appropriate approach based on the analysis
+    if (queryAnalysis.isStructured && queryAnalysis.matchesKnownPattern) {
+      // Use deterministic approach for structured, known queries
+      const deterministicResponse = generateDeterministicResponse(
+        input.query,
+        queryAnalysis.pattern,
+        input.context
+      );
+      
+      await emit({
+        topic: 'query.response',
+        data: {
+          userId: input.userId,
+          query: input.query,
+          response: deterministicResponse.response,
+          metadata: {
+            responseMethod: 'deterministic',
+            pattern: queryAnalysis.pattern,
+            confidence: deterministicResponse.confidence,
+          },
+        },
+      });
+      
+      logger.info('Query handled deterministically', {
+        userId: input.userId,
+        pattern: queryAnalysis.pattern,
+        confidence: deterministicResponse.confidence,
+      });
+    } else if (queryAnalysis.isStructured && !queryAnalysis.matchesKnownPattern) {
+      // Try deterministic approach first, but with low confidence threshold
+      const deterministicResponse = generateDeterministicResponse(
+        input.query,
+        queryAnalysis.closestPattern,
+        input.context
+      );
+      
+      if (deterministicResponse.confidence >= 0.6) {
+        // Use deterministic response if confidence is acceptable
+        await emit({
+          topic: 'query.response',
+          data: {
+            userId: input.userId,
+            query: input.query,
+            response: deterministicResponse.response,
+            metadata: {
+              responseMethod: 'deterministic',
+              pattern: queryAnalysis.closestPattern,
+              confidence: deterministicResponse.confidence,
+            },
+          },
+        });
+        
+        logger.info('Query handled deterministically (closest pattern)', {
+          userId: input.userId,
+          pattern: queryAnalysis.closestPattern,
+          confidence: deterministicResponse.confidence,
+        });
+      } else {
+        // Fall back to agentic approach
+        const agenticResponse = await generateAgenticResponse(
+          input.query,
+          input.context
+        );
+        
+        await emit({
+          topic: 'query.response',
+          data: {
+            userId: input.userId,
+            query: input.query,
+            response: agenticResponse.response,
+            metadata: {
+              responseMethod: 'agentic',
+              confidence: agenticResponse.confidence,
+              deterministicConfidence: deterministicResponse.confidence,
+            },
+          },
+        });
+        
+        logger.info('Query handled agentically (deterministic confidence too low)', {
+          userId: input.userId,
+          deterministicConfidence: deterministicResponse.confidence,
+          agenticConfidence: agenticResponse.confidence,
+        });
+      }
+    } else {
+      // Use agentic approach for unstructured queries
+      const agenticResponse = await generateAgenticResponse(
+        input.query,
+        input.context
+      );
+      
+      await emit({
+        topic: 'query.response',
+        data: {
+          userId: input.userId,
+          query: input.query,
+          response: agenticResponse.response,
+          metadata: {
+            responseMethod: 'agentic',
+            confidence: agenticResponse.confidence,
+          },
+        },
+      });
+      
+      logger.info('Query handled agentically', {
+        userId: input.userId,
+        confidence: agenticResponse.confidence,
+      });
+    }
+  } catch (error) {
+    logger.error('Error in query responder', { error });
+    
+    // Emit response failure event
+    await emit({
+      topic: 'query.response.failed',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// Helper function for agentic response generation
+async function generateAgenticResponse(query, context) {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a query response assistant. Provide a helpful, accurate response to the user's query.
+        ${context ? `Context: ${JSON.stringify(context)}` : ''}`,
+      },
+      {
+        role: 'user',
+        content: query,
+      },
+    ],
+  });
+  
+  return {
+    response: response.choices[0]?.message?.content || '',
+    confidence: calculateConfidence(response),
+  };
+}
+```
+
+This pattern:
+1. Analyzes the query to determine its structure and whether it matches known patterns
+2. Uses deterministic approaches for structured, known queries
+3. Tries deterministic approaches first for structured but unknown queries, with a confidence threshold
+4. Falls back to agentic approaches when deterministic confidence is low
+5. Uses agentic approaches directly for unstructured queries
+
+## Best Practices for Hybrid Approaches
+
+### 1. Define Clear Boundaries
+
+Establish clear boundaries between deterministic and agentic components:
+
+- **Explicit Interfaces**: Define clear interfaces between components
+- **Well-Defined Responsibilities**: Specify which tasks each component handles
+- **Consistent Data Formats**: Use consistent data structures for communication
+- **Documented Handoffs**: Document how control passes between components
+- **Error Boundaries**: Define how errors are handled at component boundaries
+
+### 2. Implement Graceful Degradation
+
+Design systems that can function even when agentic components fail:
+
+- **Fallback Mechanisms**: Provide deterministic fallbacks for agentic components
+- **Tiered Functionality**: Offer basic functionality without agentic components
+- **Progressive Enhancement**: Add agentic capabilities incrementally
+- **Confidence Thresholds**: Use confidence scores to decide when to use agentic results
+- **Timeout Handling**: Handle cases where agentic components take too long
+
+### 3. Monitor and Evaluate Both Approaches
+
+Implement comprehensive monitoring for both deterministic and agentic components:
+
+- **Component-Specific Metrics**: Track performance metrics for each component type
+- **Comparative Analysis**: Compare outcomes from different approaches
+- **Quality Evaluation**: Assess the quality of results from both approaches
+- **Error Tracking**: Monitor errors by component type
+- **User Satisfaction**: Measure user satisfaction with different approaches
+
+### 4. Design for Evolution
+
+Create systems that can evolve as agentic capabilities improve:
+
+- **Pluggable Architecture**: Make it easy to replace components
+- **A/B Testing Framework**: Test different approaches in production
+- **Feedback Loops**: Use feedback to improve both approaches
+- **Gradual Migration**: Plan for gradual migration from deterministic to agentic
+- **Version Compatibility**: Ensure compatibility across component versions
+
+### 5. Optimize Resource Allocation
+
+Efficiently allocate resources between deterministic and agentic components:
+
+- **Cost-Aware Routing**: Route requests based on cost considerations
+- **Caching Strategies**: Cache results from expensive agentic operations
+- **Batching**: Batch requests to agentic components when possible
+- **Prioritization**: Prioritize critical operations for resource allocation
+- **Scaling Policies**: Implement different scaling policies for different components
+
+## Conclusion
+
+Hybrid approaches in Motia combine the reliability and performance of deterministic workflows with the flexibility and intelligence of agentic workflows. By carefully designing the boundaries between these components and implementing appropriate patterns, you can create systems that are both robust and adaptable.
+
+The key to successful hybrid approaches is understanding when to use each paradigm:
+
+- Use deterministic components for well-defined, critical processes where reliability and performance are paramount
+- Use agentic components for complex, variable tasks that benefit from flexibility and intelligence
+- Implement clear interfaces and fallback mechanisms between components
+- Monitor and evaluate both approaches to continuously improve your system
+
+By following the patterns and best practices outlined in this guide, you can create sophisticated hybrid systems that leverage the strengths of both deterministic and agentic approaches while mitigating their respective weaknesses.
+
+## Next Steps
+
+- [Scaling Strategies](./scaling-strategies) - Learn about approaches to scaling Motia workflows
+- [Custom Extensions](./custom-extensions) - Discover how to extend Motia's capabilities
+- [Agent Orchestration](./agent-orchestration) - Explore techniques for coordinating multiple specialized agents

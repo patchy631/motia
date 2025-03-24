@@ -1,0 +1,558 @@
+---
+title: Parallel Processing in Deterministic Workflows
+description: Patterns and strategies for implementing parallel execution in Motia deterministic workflows
+---
+
+# Parallel Processing in Deterministic Workflows
+
+Parallel processing is a powerful technique in Motia that allows you to execute multiple operations concurrently, improving performance and throughput in your deterministic workflows. This guide explores patterns and best practices for implementing parallel execution while maintaining the predictability and reliability that deterministic workflows provide.
+
+## Why Use Parallel Processing
+
+Parallel processing in deterministic workflows offers several benefits:
+
+- **Improved performance**: Execute independent operations simultaneously rather than sequentially
+- **Better resource utilization**: Make efficient use of available computing resources
+- **Reduced latency**: Decrease the overall time to complete complex workflows
+- **Enhanced scalability**: Handle larger workloads by distributing processing across multiple steps
+- **Increased throughput**: Process more events in the same amount of time
+
+## Parallel Processing Patterns in Motia
+
+Motia's event-driven architecture naturally supports parallel processing through its topic-based subscription model. Here are the key patterns for implementing parallel execution in your workflows:
+
+### 1. Fan-Out Pattern
+
+The fan-out pattern distributes work across multiple parallel steps:
+
+```typescript
+// distributor.step.ts
+export const config = {
+  type: 'event',
+  name: 'TaskDistributor',
+  subscribes: ['tasks.process'],
+  emits: ['task.process.single'],
+  flows: ['task-processing']
+};
+
+export const handler = async (input, { emit }) => {
+  const { tasks } = input;
+  
+  // Fan out - emit an event for each task
+  for (const task of tasks) {
+    await emit({
+      topic: 'task.process.single',
+      data: { task }
+    });
+  }
+};
+
+// processor.step.ts
+export const config = {
+  type: 'event',
+  name: 'TaskProcessor',
+  subscribes: ['task.process.single'],
+  emits: ['task.processed'],
+  flows: ['task-processing']
+};
+
+export const handler = async (input, { emit }) => {
+  const { task } = input;
+  
+  // Process the individual task
+  const result = await processTask(task);
+  
+  // Emit the result
+  await emit({
+    topic: 'task.processed',
+    data: { 
+      taskId: task.id,
+      result
+    }
+  });
+};
+```
+
+In this pattern, the `TaskDistributor` step receives a batch of tasks and emits a separate event for each task. The `TaskProcessor` step then processes these tasks in parallel, as Motia will create multiple instances of the step to handle concurrent events.
+
+### 2. Fan-In (Aggregation) Pattern
+
+The fan-in pattern collects and aggregates results from parallel operations:
+
+```typescript
+// aggregator.step.ts
+export const config = {
+  type: 'event',
+  name: 'ResultAggregator',
+  subscribes: ['task.processed'],
+  emits: ['tasks.completed'],
+  flows: ['task-processing']
+};
+
+export const handler = async (input, { emit, state, traceId }) => {
+  const { taskId, result } = input;
+  
+  // Get the current results collection
+  const resultsKey = 'processedResults';
+  const results = await state.get(traceId, resultsKey) || {};
+  
+  // Add this result to the collection
+  results[taskId] = result;
+  await state.set(traceId, resultsKey, results);
+  
+  // Get the expected task count
+  const expectedCountKey = 'expectedTaskCount';
+  const expectedCount = await state.get(traceId, expectedCountKey);
+  
+  // Check if all tasks are complete
+  if (expectedCount && Object.keys(results).length === expectedCount) {
+    // All tasks are complete, emit aggregated results
+    await emit({
+      topic: 'tasks.completed',
+      data: { 
+        results,
+        totalProcessed: expectedCount
+      }
+    });
+    
+    // Clean up state
+    await state.delete(traceId, resultsKey);
+    await state.delete(traceId, expectedCountKey);
+  }
+};
+```
+
+This pattern uses Motia's state management to collect results from parallel task processors. When all expected results have been collected, it emits a single event with the aggregated data.
+
+### 3. Complete Fan-Out/Fan-In Workflow
+
+Combining the fan-out and fan-in patterns creates a complete parallel processing workflow:
+
+```typescript
+// initiator.step.ts
+export const config = {
+  type: 'event',
+  name: 'WorkflowInitiator',
+  subscribes: ['batch.process'],
+  emits: ['tasks.process'],
+  flows: ['parallel-workflow']
+};
+
+export const handler = async (input, { emit, state, traceId }) => {
+  const { tasks } = input;
+  
+  // Store the expected count for the aggregator
+  await state.set(traceId, 'expectedTaskCount', tasks.length);
+  
+  // Start the parallel processing
+  await emit({
+    topic: 'tasks.process',
+    data: { tasks }
+  });
+};
+
+// distributor.step.ts (as shown above)
+// processor.step.ts (as shown above)
+// aggregator.step.ts (as shown above)
+
+// finalizer.step.ts
+export const config = {
+  type: 'event',
+  name: 'WorkflowFinalizer',
+  subscribes: ['tasks.completed'],
+  emits: ['batch.completed'],
+  flows: ['parallel-workflow']
+};
+
+export const handler = async (input, { emit }) => {
+  const { results, totalProcessed } = input;
+  
+  // Perform any final processing on the aggregated results
+  const summary = summarizeResults(results);
+  
+  // Emit the final completion event
+  await emit({
+    topic: 'batch.completed',
+    data: { 
+      summary,
+      totalProcessed
+    }
+  });
+};
+```
+
+This complete workflow:
+1. Initiates the process and stores the expected task count
+2. Distributes tasks for parallel processing
+3. Processes each task independently and in parallel
+4. Aggregates the results as they complete
+5. Finalizes the workflow when all tasks are done
+
+### 4. Parallel Branches Pattern
+
+The parallel branches pattern executes different types of operations in parallel:
+
+```typescript
+// orchestrator.step.ts
+export const config = {
+  type: 'event',
+  name: 'OrderOrchestrator',
+  subscribes: ['order.created'],
+  emits: [
+    'payment.process',
+    'inventory.check',
+    'notification.send'
+  ],
+  flows: ['order-processing']
+};
+
+export const handler = async (input, { emit }) => {
+  const { order } = input;
+  
+  // Start multiple parallel processes
+  await Promise.all([
+    emit({
+      topic: 'payment.process',
+      data: { 
+        orderId: order.id,
+        amount: order.total
+      }
+    }),
+    
+    emit({
+      topic: 'inventory.check',
+      data: { 
+        orderId: order.id,
+        items: order.items
+      }
+    }),
+    
+    emit({
+      topic: 'notification.send',
+      data: { 
+        orderId: order.id,
+        recipient: order.customer.email,
+        template: 'order-received'
+      }
+    })
+  ]);
+};
+```
+
+This pattern starts multiple different processes in parallel, each handled by different steps in the workflow.
+
+### 5. Parallel with Dependencies Pattern
+
+This pattern handles parallel operations with dependencies between them:
+
+```typescript
+// paymentProcessor.step.ts
+export const config = {
+  type: 'event',
+  name: 'PaymentProcessor',
+  subscribes: ['payment.process'],
+  emits: ['payment.completed'],
+  flows: ['order-processing']
+};
+
+export const handler = async (input, { emit }) => {
+  const { orderId, amount } = input;
+  
+  // Process payment
+  const paymentResult = await processPayment(orderId, amount);
+  
+  // Emit completion event
+  await emit({
+    topic: 'payment.completed',
+    data: { 
+      orderId,
+      paymentId: paymentResult.id,
+      status: paymentResult.status
+    }
+  });
+};
+
+// inventoryChecker.step.ts
+export const config = {
+  type: 'event',
+  name: 'InventoryChecker',
+  subscribes: ['inventory.check'],
+  emits: ['inventory.checked'],
+  flows: ['order-processing']
+};
+
+export const handler = async (input, { emit }) => {
+  const { orderId, items } = input;
+  
+  // Check inventory
+  const inventoryResult = await checkInventory(items);
+  
+  // Emit completion event
+  await emit({
+    topic: 'inventory.checked',
+    data: { 
+      orderId,
+      available: inventoryResult.available,
+      unavailableItems: inventoryResult.unavailableItems
+    }
+  });
+};
+
+// orderFulfiller.step.ts
+export const config = {
+  type: 'event',
+  name: 'OrderFulfiller',
+  subscribes: ['payment.completed', 'inventory.checked'],
+  emits: ['order.fulfilled', 'order.failed'],
+  flows: ['order-processing']
+};
+
+export const handler = async (input, { emit, state, traceId }) => {
+  const { orderId } = input;
+  const stateKey = `order:${orderId}`;
+  
+  // Get or initialize the order state
+  const orderState = await state.get(traceId, stateKey) || {
+    paymentCompleted: false,
+    inventoryChecked: false,
+    paymentStatus: null,
+    inventoryAvailable: null
+  };
+  
+  // Update the state based on the event type
+  if (input.__motia.topic === 'payment.completed') {
+    orderState.paymentCompleted = true;
+    orderState.paymentStatus = input.status;
+  } else if (input.__motia.topic === 'inventory.checked') {
+    orderState.inventoryChecked = true;
+    orderState.inventoryAvailable = input.available;
+    orderState.unavailableItems = input.unavailableItems;
+  }
+  
+  // Save the updated state
+  await state.set(traceId, stateKey, orderState);
+  
+  // Check if both parallel processes are complete
+  if (orderState.paymentCompleted && orderState.inventoryChecked) {
+    // Both processes are complete, determine the outcome
+    if (orderState.paymentStatus === 'succeeded' && orderState.inventoryAvailable) {
+      // Everything is good, fulfill the order
+      await emit({
+        topic: 'order.fulfilled',
+        data: { 
+          orderId,
+          status: 'fulfilled'
+        }
+      });
+    } else {
+      // Something failed, handle the failure
+      await emit({
+        topic: 'order.failed',
+        data: { 
+          orderId,
+          paymentStatus: orderState.paymentStatus,
+          inventoryAvailable: orderState.inventoryAvailable,
+          unavailableItems: orderState.unavailableItems
+        }
+      });
+    }
+    
+    // Clean up state
+    await state.delete(traceId, stateKey);
+  }
+};
+```
+
+This pattern uses Motia's state management to track the completion of parallel processes and only proceeds when all dependencies are satisfied.
+
+## State Management in Parallel Workflows
+
+Effective state management is crucial for parallel processing in Motia. Here are key considerations:
+
+### Shared State
+
+When multiple parallel steps need to access or modify shared state, use atomic operations and proper synchronization:
+
+```typescript
+export const handler = async (input, { state, traceId }) => {
+  const counterKey = 'processedCount';
+  
+  // Get the current count
+  const currentCount = await state.get(traceId, counterKey) || 0;
+  
+  // Increment the count
+  await state.set(traceId, counterKey, currentCount + 1);
+};
+```
+
+### Partitioned State
+
+For better performance, partition state by entity or process ID:
+
+```typescript
+export const handler = async (input, { state, traceId }) => {
+  const { entityId } = input;
+  const stateKey = `entity:${entityId}`;
+  
+  // Get entity-specific state
+  const entityState = await state.get(traceId, stateKey);
+  
+  // Update entity-specific state
+  await state.set(traceId, stateKey, {
+    ...entityState,
+    lastUpdated: new Date().toISOString()
+  });
+};
+```
+
+### Temporary State
+
+Use temporary state for coordination between parallel steps:
+
+```typescript
+export const handler = async (input, { state, traceId }) => {
+  const tempKey = `temp:${input.processId}`;
+  
+  // Store temporary data
+  await state.set(traceId, tempKey, input.intermediateResult);
+  
+  // Later, in another step:
+  // const tempData = await state.get(traceId, tempKey);
+  // ... use the data ...
+  // await state.delete(traceId, tempKey); // Clean up when done
+};
+```
+
+## Handling Race Conditions
+
+Parallel processing can introduce race conditions. Here are strategies to handle them:
+
+### Idempotent Operations
+
+Design your steps to be idempotent, so they can safely be executed multiple times:
+
+```typescript
+export const handler = async (input, { emit, state, traceId }) => {
+  const { operationId } = input;
+  const processedKey = `processed:${operationId}`;
+  
+  // Check if this operation has already been processed
+  const alreadyProcessed = await state.get(traceId, processedKey);
+  if (alreadyProcessed) {
+    // Already processed, do nothing
+    return;
+  }
+  
+  // Process the operation
+  const result = await performOperation(input);
+  
+  // Mark as processed
+  await state.set(traceId, processedKey, true);
+  
+  // Emit the result
+  await emit({
+    topic: 'operation.completed',
+    data: { operationId, result }
+  });
+};
+```
+
+### Optimistic Concurrency
+
+Use version numbers or timestamps to detect and handle concurrent modifications:
+
+```typescript
+export const handler = async (input, { state, traceId }) => {
+  const { entityId, updates } = input;
+  const entityKey = `entity:${entityId}`;
+  
+  // Get the current entity with its version
+  const entity = await state.get(traceId, entityKey) || { version: 0, data: {} };
+  const currentVersion = entity.version;
+  
+  // Check if our expected version matches
+  if (input.expectedVersion !== currentVersion) {
+    throw new Error(`Concurrency conflict: expected version ${input.expectedVersion}, found ${currentVersion}`);
+  }
+  
+  // Update the entity with a new version
+  await state.set(traceId, entityKey, {
+    version: currentVersion + 1,
+    data: {
+      ...entity.data,
+      ...updates
+    }
+  });
+};
+```
+
+### Locking
+
+Implement simple locking mechanisms for critical sections:
+
+```typescript
+export const handler = async (input, { state, traceId }) => {
+  const { resourceId } = input;
+  const lockKey = `lock:${resourceId}`;
+  
+  // Try to acquire the lock
+  const lock = await state.get(traceId, lockKey);
+  if (lock) {
+    throw new Error(`Resource ${resourceId} is locked`);
+  }
+  
+  try {
+    // Set the lock
+    await state.set(traceId, lockKey, {
+      acquiredBy: input.processId,
+      timestamp: Date.now()
+    });
+    
+    // Perform the critical operation
+    await performCriticalOperation(resourceId);
+  } finally {
+    // Release the lock
+    await state.delete(traceId, lockKey);
+  }
+};
+```
+
+## Performance Considerations
+
+To optimize parallel processing performance in Motia:
+
+1. **Batch operations**: Group related operations to reduce overhead
+2. **Minimize state size**: Keep state data small and focused
+3. **Use appropriate concurrency**: Don't create too many parallel operations at once
+4. **Consider resource constraints**: Be aware of external system limitations
+5. **Monitor and tune**: Adjust parallelism based on observed performance
+
+## Testing Parallel Workflows
+
+Testing parallel workflows requires special attention:
+
+1. **Test individual steps**: Verify each step works correctly in isolation
+2. **Test coordination logic**: Ensure steps properly coordinate through state
+3. **Test race conditions**: Deliberately create race conditions to verify handling
+4. **Test scaling**: Verify behavior under different load conditions
+5. **Test failure scenarios**: Ensure partial failures are handled correctly
+
+## Best Practices for Parallel Processing
+
+1. **Start simple**: Begin with sequential workflows and add parallelism incrementally
+2. **Use clear naming conventions**: Make it obvious which steps are part of parallel processes
+3. **Document dependencies**: Clearly document dependencies between parallel steps
+4. **Handle partial failures**: Design for scenarios where some parallel operations fail
+5. **Clean up state**: Always clean up temporary state when parallel operations complete
+6. **Monitor parallel operations**: Implement logging and metrics for parallel steps
+7. **Set timeouts**: Use timeouts to prevent stuck operations
+
+## Conclusion
+
+Parallel processing in Motia's deterministic workflows allows you to build high-performance, scalable applications while maintaining predictability and reliability. By applying the patterns and best practices described in this guide, you can effectively implement parallel execution in your workflows and avoid common pitfalls associated with concurrent operations.
+
+## Next Steps
+
+- [Error Handling](./error-handling) - Learn strategies for handling errors in parallel workflows
+- [Testing Workflows](./testing-workflows) - Discover approaches to testing parallel execution
+- [State Management](/docs/concepts/core-components/state-management) - Understand how to effectively manage state in parallel operations

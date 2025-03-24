@@ -1,0 +1,200 @@
+---
+title: "Setup Guides"
+description: "Guides for installing, configuring, and setting up your Motia development environment"
+---
+
+# Setup Guides
+
+<div className="beginner-content">
+
+Welcome to the Motia setup guides! This section will help you get started with Motia, from installation to configuration and development environment setup.
+
+## Getting Started
+
+If you're new to Motia, we recommend following these guides in order:
+
+1. [Installation](/docs/guides/setup/installation) - Install Motia on your system
+2. [Configuration](/docs/guides/setup/configuration) - Configure Motia for your needs
+3. [Development Environment Setup](/docs/guides/setup/environment-setup) - Set up an optimal development environment
+
+These guides will take you from zero to a fully functional Motia development environment, ready to build event-driven workflows.
+
+</div>
+
+## Setup Guides Overview
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/guides/setup/installation">Installation</a>
+    </h3>
+    <p className="mt-2">
+      Step-by-step guide to installing Motia across different environments. Learn how to install Motia using npm, yarn, or pnpm, and explore different installation options.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+        Beginner
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/guides/setup/configuration">Configuration</a>
+    </h3>
+    <p className="mt-2">
+      Learn how to configure your Motia application for different environments and use cases. Explore configuration options for server settings, steps, state management, and more.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+        Beginner
+      </span>
+      <span className="inline-block ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/guides/setup/environment-setup">Development Environment Setup</a>
+    </h3>
+    <p className="mt-2">
+      Set up an optimal development environment for working with Motia. Learn about recommended tools, configurations, and workflows for productive development.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+        Beginner
+      </span>
+      <span className="inline-block ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+</div>
+
+<div className="intermediate-content">
+
+## Setup for Different Environments
+
+Motia can be set up in various environments, from local development to production deployments. Here's a quick overview of the different setup approaches:
+
+### Local Development
+
+For local development, you'll typically:
+
+1. Install Motia using npm, yarn, or pnpm
+2. Configure it with a basic `config.yml` file
+3. Set up your development environment with your preferred editor and tools
+4. Run the development server with `npm run dev`
+
+This setup is covered in detail in the [Installation](/docs/guides/setup/installation) and [Development Environment Setup](/docs/guides/setup/environment-setup) guides.
+
+### Team Development
+
+For team development, consider:
+
+1. Using Docker for consistent development environments
+2. Setting up a shared configuration approach
+3. Implementing testing and CI/CD pipelines
+4. Establishing coding standards and conventions
+
+The [Development Environment Setup](/docs/guides/setup/environment-setup) guide covers these topics in the intermediate and advanced sections.
+
+### Production Deployment
+
+For production deployments, you'll want to:
+
+1. Configure Motia for production use
+2. Set up appropriate security measures
+3. Implement monitoring and logging
+4. Consider scaling and high availability
+
+The [Configuration](/docs/guides/setup/configuration) guide covers production configuration in the advanced section.
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Setup Considerations
+
+### Multi-language Support
+
+Motia supports multiple programming languages, including JavaScript, TypeScript, Python, and Ruby. To set up a multi-language environment:
+
+1. Install the language-specific SDKs
+2. Configure Motia to recognize steps in different languages
+3. Set up appropriate development tools for each language
+
+See the [Installation](/docs/guides/setup/installation#language-specific-installation) and [Development Environment Setup](/docs/guides/setup/environment-setup#multi-language-development) guides for details.
+
+### Containerization and Orchestration
+
+For containerized deployments:
+
+1. Create Docker images for your Motia application
+2. Set up container orchestration with Kubernetes or similar
+3. Configure networking, storage, and scaling
+4. Implement monitoring and observability
+
+The [Development Environment Setup](/docs/guides/setup/environment-setup#docker-development-environment) guide covers Docker setup, which can be extended for production use.
+
+### Enterprise Integration
+
+For enterprise environments:
+
+1. Configure authentication and authorization
+2. Set up integration with existing systems
+3. Implement compliance and security measures
+4. Establish monitoring and alerting
+
+These topics are covered in various sections of the setup guides, particularly in the advanced sections of [Configuration](/docs/guides/setup/configuration#production-configuration).
+
+</div>
+
+## Common Setup Questions
+
+### What are the system requirements for Motia?
+
+Motia requires:
+- Node.js 16 or later
+- npm, yarn, or pnpm for package management
+- Sufficient disk space for dependencies (typically a few hundred MB)
+- Memory: 512MB minimum, 1GB+ recommended
+
+### Can I use Motia with my existing project?
+
+Yes, you can add Motia to an existing project by installing the Motia packages and configuring it to work with your project structure. See the [Installation](/docs/guides/setup/installation#manual-installation) guide for details.
+
+### How do I update Motia to a newer version?
+
+To update Motia, use your package manager:
+
+```bash
+# Using npm
+npm update @motia/core @motia/snap
+
+# Using yarn
+yarn upgrade @motia/core @motia/snap
+
+# Using pnpm
+pnpm update @motia/core @motia/snap
+```
+
+### How do I troubleshoot installation issues?
+
+If you encounter issues during installation, check:
+- Your Node.js version (`node --version`)
+- Network connectivity
+- Permission issues
+- Compatibility with other packages
+
+See the [Installation](/docs/guides/setup/installation#troubleshooting) guide for more troubleshooting tips.
+
+## Next Steps
+
+After setting up Motia, you might want to:
+
+- Follow the [Quickstart Guide](/docs/quickstart) to build your first Motia application
+- Learn about [Step Creation](/docs/guides/step-creation) to build different types of steps
+- Explore the [Workbench](/docs/concepts/core-components/workbench) to visualize and debug your workflows

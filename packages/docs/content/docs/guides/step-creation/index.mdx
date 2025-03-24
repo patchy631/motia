@@ -1,0 +1,495 @@
+---
+title: "Step Creation Guides"
+description: "Learn how to create different types of steps in Motia"
+---
+
+# Step Creation Guides
+
+<div className="intermediate-content">
+
+Welcome to the Step Creation guides! This section will teach you how to create different types of steps in Motia, the fundamental building blocks of your workflows.
+
+## What Are Steps?
+
+Steps are the basic units of functionality in Motia. Each step performs a specific task and can communicate with other steps through events. Motia includes several built-in step types, each designed for a specific purpose:
+
+- **API Steps**: Create HTTP endpoints to receive external requests
+- **Event Steps**: Listen for and respond to events
+- **Cron Steps**: Execute on a scheduled basis
+- **NOOP Steps**: Represent external processes or manual actions
+
+These guides will show you how to create and customize each type of step to build your workflows.
+
+</div>
+
+## Step Types Overview
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/guides/step-creation/api-steps">API Steps</a>
+    </h3>
+    <p className="mt-2">
+      Learn how to create API steps that expose HTTP endpoints to receive external requests. API steps are the entry points for your workflows, allowing external systems to trigger events.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/guides/step-creation/event-steps">Event Steps</a>
+    </h3>
+    <p className="mt-2">
+      Learn how to create event steps that listen for and respond to events. Event steps are the core of your workflows, processing data and triggering further actions.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/guides/step-creation/cron-steps">Cron Steps</a>
+    </h3>
+    <p className="mt-2">
+      Learn how to create cron steps that execute on a scheduled basis. Cron steps are useful for periodic tasks like data cleanup, report generation, or scheduled notifications.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/guides/step-creation/noop-steps">NOOP Steps</a>
+    </h3>
+    <p className="mt-2">
+      Learn how to create NOOP (No Operation) steps that represent external processes or manual actions. NOOP steps are useful for modeling workflows that include human intervention or external systems.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+</div>
+
+<div className="intermediate-content">
+
+## Step Creation Basics
+
+All steps in Motia are created by exporting a `config` object and a `handler` function. Here's a basic example:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+// Define the input schema for type safety (for TypeScript)
+const inputSchema = z.object({
+  // Define the expected input structure
+  message: z.string()
+});
+
+// Step configuration
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event', // or 'api', 'cron', 'noop'
+  name: 'Human-readable Step Name',
+  
+  // Type-specific properties
+  subscribes: ['event.to.listen.for'], // for event steps
+  path: '/api/endpoint', // for API steps
+  method: 'POST', // for API steps
+  cron: '0 * * * *', // for cron steps
+  
+  // Optional properties
+  description: 'What this step does',
+  emits: ['events.this.step.can.emit'],
+  flows: ['flow-name'], // Assign to a flow for visualization
+  input: inputSchema, // For TypeScript type safety
+};
+
+// Step implementation
+export const handler: StepHandler<typeof config> = async (input, context) => {
+  const { emit, logger, state, traceId } = context;
+  
+  // Process input
+  logger.info('Processing input', input);
+  
+  // Emit events
+  await emit({
+    topic: 'events.this.step.can.emit',
+    data: { /* event data */ }
+  });
+  
+  // For API steps, return a response
+  // return {
+  //   status: 200,
+  //   body: { success: true }
+  // };
+};
+```
+
+Each step type has specific properties and behaviors, which are covered in detail in the respective guides.
+
+## Common Step Properties
+
+All steps share these common properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `type` | `string` | The type of step: `'api'`, `'event'`, `'cron'`, or `'noop'` |
+| `name` | `string` | Human-readable name for the step |
+| `description` | `string` (optional) | Description of what the step does |
+| `subscribes` | `string[]` | For event steps: Array of event topics to listen for |
+| `path` | `string` | For API steps: The URL path for the endpoint |
+| `method` | `string` | For API steps: The HTTP method (`'GET'`, `'POST'`, etc.) |
+| `cron` | `string` | For cron steps: The cron schedule expression |
+| `emits` | `string[]` (optional) | Array of event topics this step can emit |
+| `flows` | `string[]` (optional) | Array of flow identifiers this step belongs to |
+| `input` | `ZodObject` (optional) | For TypeScript: Zod schema for input validation |
+
+The `handler` function is where you define the step's behavior. It receives two parameters:
+
+1. `input`: Contains the data relevant to the step's execution
+2. `context`: Provides utilities and services for the step, including:
+   - `emit`: Function for sending events
+   - `logger`: Logging utilities
+   - `state`: State management for persisting data
+   - `traceId`: Unique identifier for tracing the execution flow
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Step Creation
+
+### Step Composition
+
+For complex steps, you can use composition to break down functionality into smaller, more manageable pieces:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+import { validateInput } from './validators';
+import { processData } from './processors';
+import { formatResponse } from './formatters';
+
+const inputSchema = z.object({
+  // Input fields
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Complex Step',
+  subscribes: ['example.event'],
+  emits: ['example.processed'],
+  input: inputSchema,
+  flows: ['example-flow']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  logger.info('Processing complex step', { input });
+  
+  // Validate input
+  const validationResult = validateInput(input);
+  if (!validationResult.valid) {
+    logger.error('Validation failed', { errors: validationResult.errors });
+    throw new Error(`Validation failed: ${validationResult.errors.join(', ')}`);
+  }
+  
+  // Process data
+  const processedData = await processData(input);
+  logger.info('Data processed successfully');
+  
+  // Emit event with processed data
+  await emit({
+    topic: 'example.processed',
+    data: processedData
+  });
+  
+  // For API steps, you would return a response
+  // return formatResponse(processedData);
+};
+```
+
+### Step Factory Functions
+
+For steps with similar behavior but different configurations, you can create factory functions:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+// Factory function to create validation steps
+export function createValidationStep(entityType, validationRules) {
+  // Create a dynamic input schema based on the entity type
+  const inputSchema = z.object({}).passthrough(); // Accept any fields for flexibility
+  
+  // Step configuration
+  const config = {
+    type: 'event',
+    name: `Validate ${entityType}`,
+    subscribes: [`${entityType}.submitted`],
+    emits: [`${entityType}.validated`, `${entityType}.invalid`],
+    input: inputSchema,
+    flows: ['validation-flow']
+  };
+  
+  // Step handler
+  const handler = async (input, { emit, logger }) => {
+    logger.info(`Validating ${entityType}`, { input });
+    
+    // Apply validation rules
+    const errors = [];
+    for (const rule of validationRules) {
+      const result = rule(input);
+      if (!result.valid) {
+        errors.push(result.error);
+      }
+    }
+    
+    if (errors.length === 0) {
+      // Data is valid
+      logger.info(`${entityType} validation successful`);
+      await emit({
+        topic: `${entityType}.validated`,
+        data: input
+      });
+    } else {
+      // Data is invalid
+      logger.warn(`${entityType} validation failed`, { errors });
+      await emit({
+        topic: `${entityType}.invalid`,
+        data: { data: input, errors }
+      });
+    }
+  };
+  
+  return { config, handler };
+}
+
+// Usage
+const userValidationRules = [
+  data => data.email ? { valid: true } : { valid: false, error: 'Email is required' },
+  data => data.password ? { valid: true } : { valid: false, error: 'Password is required' }
+];
+
+const { config: validateUserConfig, handler: validateUserHandler } = 
+  createValidationStep('user', userValidationRules);
+
+// Export the generated step
+export { validateUserConfig as config, validateUserHandler as handler };
+```
+
+### Dynamic Event Emission
+
+For advanced workflows, you might need to emit events dynamically based on runtime conditions:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  price: z.number(),
+  type: z.string(),
+  name: z.string()
+}).passthrough();
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Dynamic Routing',
+  subscribes: ['item.received'],
+  // Note: We don't predefine all possible events in 'emits'
+  // since they're determined dynamically
+  input: inputSchema,
+  flows: ['item-processing']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  logger.info('Processing item for categorization', { 
+    name: input.name, 
+    price: input.price, 
+    type: input.type 
+  });
+  
+  // Determine the category dynamically
+  const category = determineCategory(input);
+  
+  logger.info('Item categorized', { category });
+  
+  // Emit an event with a dynamically determined topic
+  await emit({
+    topic: `item.categorized.${category}`,
+    data: input
+  });
+};
+
+function determineCategory(item) {
+  // Logic to determine the category based on the item
+  if (item.price > 1000) return 'premium';
+  if (item.type === 'service') return 'service';
+  return 'standard';
+}
+```
+
+This approach is particularly useful for agentic workflows where the path is determined at runtime.
+
+</div>
+
+## Step Creation Best Practices
+
+### Naming Conventions
+
+Follow these naming conventions for consistent and maintainable steps:
+
+- **Step IDs**: Use the format `namespace.stepName` (e.g., `users.create`, `orders.process`)
+- **Step Names**: Use clear, descriptive names (e.g., "Create User", "Process Order")
+- **Event Topics**: Use the format `namespace.entity.action` (e.g., `users.profile.updated`, `orders.payment.processed`)
+
+### Step Organization
+
+Organize your steps by domain or feature:
+
+```
+steps/
+├── users/
+│   ├── create.ts
+│   ├── update.ts
+│   └── delete.ts
+├── orders/
+│   ├── create.ts
+│   ├── process.ts
+│   └── fulfill.ts
+└── notifications/
+    ├── email.ts
+    └── push.ts
+```
+
+This structure makes it easier to find and maintain steps as your application grows.
+
+### Testing Steps
+
+Write tests for your steps to ensure they behave as expected:
+
+```typescript
+import { jest } from '@jest/globals';
+import * as myStep from './myStep';
+
+describe('My Step', () => {
+  it('should process input correctly', async () => {
+    // Arrange
+    const input = { key: 'value' };
+    const emit = jest.fn();
+    const logger = { info: jest.fn(), error: jest.fn() };
+    const context = { emit, logger };
+    
+    // Act
+    await myStep.handler(input, context);
+    
+    // Assert
+    expect(emit).toHaveBeenCalledWith({
+      topic: 'some.event',
+      data: expect.any(Object)
+    });
+    expect(logger.info).toHaveBeenCalled();
+  });
+  
+  it('should handle errors gracefully', async () => {
+    // Arrange
+    const input = { /* missing required fields */ };
+    const emit = jest.fn();
+    const logger = { info: jest.fn(), error: jest.fn() };
+    const context = { emit, logger };
+    
+    // Act & Assert
+    await expect(myStep.handler(input, context)).rejects.toThrow();
+    expect(emit).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
+  });
+});
+```
+
+## Common Questions
+
+### How do I choose the right step type?
+
+- Use **API Steps** when you need to expose an HTTP endpoint for external systems to trigger your workflow
+- Use **Event Steps** when you need to respond to events emitted by other steps
+- Use **Cron Steps** when you need to execute tasks on a schedule
+- Use **NOOP Steps** when you need to represent external processes or manual actions
+
+### Can a step emit multiple events?
+
+Yes, a step can emit multiple events. Just list all possible events in the `emits` array and use the `emit` function in the `run` method to emit them as needed.
+
+### How do I share code between steps?
+
+You can create utility functions or services that are imported by multiple steps. For example:
+
+```typescript
+// utils/validation.ts
+export function validateEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+}
+
+// steps/users/create.ts
+import { ApiRouteConfig, StepHandler } from '@motia/core';
+import { validateEmail } from '../../utils/validation';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  email: z.string(),
+  password: z.string()
+});
+
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: 'Create User',
+  path: '/api/users',
+  method: 'POST',
+  emits: ['user.created'],
+  flows: ['user-management']
+};
+
+export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
+  const { body } = req;
+  
+  if (!validateEmail(body.email)) {
+    logger.warn('Invalid email format', { email: body.email });
+    return { 
+      status: 400, 
+      body: { success: false, error: 'Invalid email' } 
+    };
+  }
+  
+  // Continue with user creation...
+};
+```
+
+### How do I handle errors in steps?
+
+For error handling, you can:
+
+1. Throw an error with a descriptive message
+2. Emit an error event that can be handled by another step
+3. Use try/catch blocks for async operations
+4. Log errors with the logger
+
+See the [Error Handling Patterns](/docs/guides/patterns/error-handling) guide for more details.
+
+## Next Steps
+
+After learning how to create different types of steps, you might want to:
+
+- Explore [Flow Patterns](/docs/concepts/core-components/flow-patterns) to design effective workflows
+- Learn about [State Management](/docs/concepts/core-components/state-management) for sharing data between steps
+- Try the [Workbench](/docs/guides/workbench) to visualize and debug your workflows

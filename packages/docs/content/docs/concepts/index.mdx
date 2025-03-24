@@ -1,0 +1,162 @@
+---
+title: "Motia Concepts"
+description: "Core conceptual understanding of Motia's architecture and components"
+---
+
+# Motia Concepts
+
+Welcome to the Motia concepts section! This area is designed to help you understand the fundamental ideas and architecture behind Motia, from beginner-friendly introductions to advanced technical details.
+
+## How This Section Is Organized
+
+The concepts section is organized into progressive levels of complexity, allowing you to start with the basics and gradually explore more advanced topics:
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/concepts/getting-started">Getting Started</a>
+    </h3>
+    <p className="mt-2">
+      Beginner-friendly explanations of the core concepts in Motia. Start here if you're new to Motia or event-driven architecture.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+        Beginner
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/concepts/core-components">Core Components</a>
+    </h3>
+    <p className="mt-2">
+      Detailed explanations of Motia's essential building blocks, including step types, flow patterns, and state management.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/concepts/deterministic-workflows">Deterministic Workflows</a>
+    </h3>
+    <p className="mt-2">
+      Learn how to build reliable, predictable workflows with defined control flow, error handling, and testing strategies.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        Intermediate
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/concepts/agentic-workflows">Agentic Workflows</a>
+    </h3>
+    <p className="mt-2">
+      Explore advanced AI-powered workflows with dynamic decision-making and adaptive behavior.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+        Advanced
+      </span>
+    </div>
+  </div>
+  
+  <div className="p-6 border rounded-lg hover:shadow-md transition-shadow">
+    <h3 className="text-xl font-bold">
+      <a href="/docs/concepts/advanced-patterns">Advanced Patterns</a>
+    </h3>
+    <p className="mt-2">
+      Expert-level concepts for complex systems, including agent orchestration, hybrid approaches, and scaling strategies.
+    </p>
+    <div className="mt-4">
+      <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+        Advanced
+      </span>
+    </div>
+  </div>
+</div>
+
+## Key Concepts Overview
+
+Here's a quick overview of the most important concepts in Motia:
+
+### Steps
+
+Steps are the fundamental building blocks in Motia. Each step performs a specific task and can communicate with other steps through events. Motia includes several types of steps:
+
+- **API Steps**: Create HTTP endpoints to receive external requests
+- **Event Steps**: Listen for and respond to events
+- **Cron Steps**: Execute on a scheduled basis
+- **NOOP Steps**: Represent external processes or manual actions
+
+[Learn more about steps →](/docs/concepts/getting-started/steps-intro)
+
+### Events
+
+Events are the communication mechanism between steps. When a step completes an action or reaches a certain state, it can emit an event. Other steps can listen for specific events and execute in response.
+
+[Learn more about events →](/docs/concepts/getting-started/event-driven-basics)
+
+### Flows
+
+Flows are sequences of connected steps that work together to accomplish specific tasks. In Motia, flows are created implicitly through the events that connect steps.
+
+[Learn more about flows →](/docs/concepts/getting-started/flows-intro)
+
+### State Management
+
+State management allows steps to share and persist data across a workflow. This is essential for building complex applications where information needs to be passed between different parts of the system.
+
+[Learn more about state management →](/docs/concepts/core-components/state-management)
+
+### Workbench
+
+The Workbench is Motia's visual development environment. It allows you to visualize, test, and debug your workflows, making it easier to understand how your application works.
+
+[Learn more about the Workbench →](/docs/concepts/core-components/workbench)
+
+## Learning Paths
+
+Depending on your experience level and goals, you might want to follow different paths through the concepts section:
+
+### For Beginners
+
+1. Start with [What is Motia?](/docs/concepts/getting-started/what-is-motia) to understand the big picture
+2. Learn about [Event-Driven Basics](/docs/concepts/getting-started/event-driven-basics) to understand the communication model
+3. Explore [Steps Introduction](/docs/concepts/getting-started/steps-intro) to learn about the building blocks
+4. Finish with [Flows Introduction](/docs/concepts/getting-started/flows-intro) to see how everything connects
+
+### For Intermediate Users
+
+1. Review the [Core Components](/docs/concepts/core-components) to deepen your understanding
+2. Explore [Flow Patterns](/docs/concepts/core-components/flow-patterns) to learn common workflow structures
+3. Learn about [State Management](/docs/concepts/core-components/state-management) for sharing data between steps
+4. Study [Deterministic Workflows](/docs/concepts/deterministic-workflows) for building reliable applications
+
+### For Advanced Users
+
+1. Explore [Agentic Workflows](/docs/concepts/agentic-workflows) to learn about AI-powered systems
+2. Study [Dynamic Emits](/docs/concepts/agentic-workflows/dynamic-emits) for flexible event routing
+3. Learn about [Agent Orchestration](/docs/concepts/advanced-patterns/agent-orchestration) for complex systems
+4. Explore [Hybrid Approaches](/docs/concepts/advanced-patterns/hybrid-approaches) for combining deterministic and agentic patterns
+
+## Related Sections
+
+- [Quickstart Guide](/docs/quickstart) - Get started with Motia in minutes
+- [Journeys](/docs/journeys) - Follow guided learning paths for specific goals
+- [Guides](/docs/guides) - Task-oriented instructions for common tasks
+- [Real-World Tutorials](/docs/real-world-tutorials) - End-to-end walkthroughs of complete applications
+
+<div className="mt-8 p-4 border-l-4 border-blue-500 bg-blue-50">
+  <h3 className="font-bold text-blue-800">Pro Tip</h3>
+  <p className="text-blue-800">
+    Use the skill level indicators (Beginner, Intermediate, Advanced) throughout the documentation to find content that matches your experience level. You can also filter content by skill level using the controls at the top of each page.
+  </p>
+</div>

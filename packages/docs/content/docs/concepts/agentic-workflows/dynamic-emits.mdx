@@ -1,0 +1,967 @@
+---
+title: Dynamic Event Emission in Agentic Workflows
+description: Patterns and strategies for implementing dynamic event emission in Motia agentic workflows
+---
+
+# Dynamic Event Emission in Agentic Workflows
+
+Dynamic event emission is a powerful pattern in Motia that allows steps to determine which events to emit based on runtime analysis and decision-making. This capability is particularly important for agentic workflows, where the flow of events isn't predetermined but depends on the content being processed, the context of the interaction, or the output of AI models.
+
+## Understanding Dynamic Event Emission
+
+In traditional deterministic workflows, the events emitted by each step are typically known in advance and follow predictable patterns. For example, a payment processing step might always emit either `payment.succeeded` or `payment.failed` events.
+
+In contrast, dynamic event emission allows steps to:
+
+- Determine which events to emit based on content analysis
+- Create event topics dynamically at runtime
+- Vary the payload structure based on the context
+- Emit different numbers of events depending on the situation
+- Route events to different parts of the workflow based on AI-driven decisions
+
+This flexibility is essential for building truly adaptive, intelligent workflows that can handle complex, unpredictable scenarios.
+
+## Basic Dynamic Emission Pattern
+
+The simplest form of dynamic event emission involves using conditional logic to determine which event to emit:
+
+```typescript
+export const handler = async (input, { emit, logger }) => {
+  // Analyze the input
+  const analysis = await analyzeContent(input.text);
+  
+  // Dynamically determine which event to emit based on the analysis
+  if (analysis.sentiment === 'positive') {
+    await emit({
+      topic: 'content.positive',
+      data: { text: input.text, analysis }
+    });
+  } else if (analysis.sentiment === 'negative') {
+    await emit({
+      topic: 'content.negative',
+      data: { text: input.text, analysis }
+    });
+  } else {
+    await emit({
+      topic: 'content.neutral',
+      data: { text: input.text, analysis }
+    });
+  }
+};
+```
+
+While this example uses simple conditional logic, the decision about which event to emit could be based on much more complex analysis, including the output of large language models or other AI systems.
+
+## LLM-Driven Event Emission
+
+Large language models (LLMs) can be used to analyze content and determine which events to emit:
+
+```typescript
+// llmDrivenEmission.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  email: z.object({
+    subject: z.string(),
+    body: z.string(),
+    sender: z.string(),
+    recipients: z.array(z.string()),
+  }),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Email Router',
+  subscribes: ['email.received'],
+  // We don't know all possible events this might emit
+  emits: ['email.route.*'], // Wildcard to indicate dynamic topics
+  input: inputSchema,
+  flows: ['email-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Use an LLM to analyze the email and determine routing
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an email routing assistant. Analyze the email and determine the appropriate department or action.
+          Return a JSON object with the following structure:
+          {
+            "routingDecision": "sales|support|billing|spam|personal|other",
+            "priority": "high|medium|low",
+            "requiredActions": ["action1", "action2"],
+            "reasoning": "Brief explanation of your decision"
+          }`,
+        },
+        {
+          role: 'user',
+          content: `
+          Subject: ${input.email.subject}
+          From: ${input.email.sender}
+          To: ${input.email.recipients.join(', ')}
+          
+          ${input.email.body}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const analysis = JSON.parse(content);
+    
+    // Construct the event topic dynamically based on the routing decision
+    const routingTopic = `email.route.${analysis.routingDecision.toLowerCase()}`;
+    
+    // Emit the routing event
+    await emit({
+      topic: routingTopic,
+      data: {
+        email: input.email,
+        analysis,
+      },
+    });
+    
+    // Emit additional events based on priority if it's high
+    if (analysis.priority === 'high') {
+      await emit({
+        topic: 'email.priority.high',
+        data: {
+          email: input.email,
+          analysis,
+        },
+      });
+    }
+    
+    // Emit events for each required action
+    for (const action of analysis.requiredActions) {
+      await emit({
+        topic: `email.action.${action}`,
+        data: {
+          email: input.email,
+          analysis,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in email router', { error });
+    
+    // Emit a fallback event
+    await emit({
+      topic: 'email.route.error',
+      data: {
+        email: input.email,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+In this example, the step:
+1. Uses an LLM to analyze an email and determine routing
+2. Constructs event topics dynamically based on the analysis
+3. Emits different events based on priority and required actions
+4. Falls back to an error event if the analysis fails
+
+## Dynamic Multi-Step Workflows
+
+Dynamic event emission enables the creation of workflows that adapt their structure at runtime. Here's an example of a step that dynamically creates a multi-step workflow based on a task analysis:
+
+```typescript
+// workflowGenerator.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  task: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Workflow Generator',
+  subscribes: ['task.submitted'],
+  emits: ['task.step.*'], // Wildcard for dynamic step events
+  input: inputSchema,
+  flows: ['dynamic-workflow'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Use an LLM to break down the task into steps
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a workflow planning assistant. Break down the given task into a sequence of steps.
+          Return a JSON object with the following structure:
+          {
+            "steps": [
+              {
+                "id": "unique_step_id",
+                "name": "Step name",
+                "description": "Step description",
+                "dependencies": ["id_of_step_this_depends_on"],
+                "estimatedTimeMinutes": 10
+              }
+            ]
+          }`,
+        },
+        {
+          role: 'user',
+          content: `Break down this task into steps: ${input.task}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const workflowPlan = JSON.parse(content);
+    
+    // Store the workflow plan in state
+    await state.set(traceId, 'workflowPlan', {
+      task: input.task,
+      steps: workflowPlan.steps,
+      status: 'planned',
+      currentStep: null,
+      completedSteps: [],
+    });
+    
+    // Find steps with no dependencies (can start immediately)
+    const initialSteps = workflowPlan.steps.filter(
+      step => !step.dependencies || step.dependencies.length === 0
+    );
+    
+    // Emit events for the initial steps
+    for (const step of initialSteps) {
+      await emit({
+        topic: `task.step.${step.id}`,
+        data: {
+          userId: input.userId,
+          taskId: traceId,
+          step,
+        },
+      });
+    }
+    
+    // Emit an event to track workflow progress
+    await emit({
+      topic: 'task.workflow.started',
+      data: {
+        userId: input.userId,
+        taskId: traceId,
+        task: input.task,
+        totalSteps: workflowPlan.steps.length,
+        initialSteps: initialSteps.map(step => step.id),
+      },
+    });
+  } catch (error) {
+    logger.error('Error generating workflow', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'task.workflow.failed',
+      data: {
+        userId: input.userId,
+        task: input.task,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// stepCompleter.step.ts - Handles step completion and triggers dependent steps
+export const stepCompleterConfig = {
+  type: 'event',
+  name: 'Step Completer',
+  subscribes: ['task.step.*.completed'], // Wildcard subscription
+  emits: ['task.step.*', 'task.workflow.completed'], // Dynamic emissions
+  flows: ['dynamic-workflow'],
+};
+
+export const stepCompleterHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Extract the completed step ID from the topic
+    const topic = input.__motia.topic;
+    const stepId = topic.replace('task.step.', '').replace('.completed', '');
+    
+    // Get the workflow plan
+    const workflowPlan = await state.get(traceId, 'workflowPlan');
+    if (!workflowPlan) {
+      logger.error('Workflow plan not found', { traceId, stepId });
+      return;
+    }
+    
+    // Update the workflow state
+    workflowPlan.completedSteps.push(stepId);
+    workflowPlan.currentStep = null;
+    
+    // Find steps that can now be started (all dependencies are completed)
+    const nextSteps = workflowPlan.steps.filter(step => {
+      // Skip already completed steps
+      if (workflowPlan.completedSteps.includes(step.id)) {
+        return false;
+      }
+      
+      // Check if all dependencies are completed
+      if (!step.dependencies || step.dependencies.length === 0) {
+        return false; // This would have been started already
+      }
+      
+      return step.dependencies.every(depId => 
+        workflowPlan.completedSteps.includes(depId)
+      );
+    });
+    
+    // Update and save the workflow state
+    await state.set(traceId, 'workflowPlan', workflowPlan);
+    
+    // Emit events for the next steps
+    for (const step of nextSteps) {
+      await emit({
+        topic: `task.step.${step.id}`,
+        data: {
+          userId: input.userId,
+          taskId: traceId,
+          step,
+        },
+      });
+    }
+    
+    // Check if the workflow is complete
+    if (workflowPlan.completedSteps.length === workflowPlan.steps.length) {
+      await emit({
+        topic: 'task.workflow.completed',
+        data: {
+          userId: input.userId,
+          taskId: traceId,
+          task: workflowPlan.task,
+          steps: workflowPlan.steps,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in step completer', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'task.step.error',
+      data: {
+        userId: input.userId,
+        taskId: traceId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example demonstrates a system that:
+1. Uses an LLM to break down a task into steps with dependencies
+2. Dynamically emits events for steps that can be started immediately
+3. Tracks step completion and emits events for dependent steps when their prerequisites are met
+4. Determines when the entire workflow is complete
+
+## Content-Based Routing
+
+Dynamic event emission is particularly useful for content-based routing, where the flow of events depends on the content being processed:
+
+```typescript
+// contentRouter.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  content: z.string(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Content Router',
+  subscribes: ['content.received'],
+  emits: ['content.type.*'], // Dynamic content type events
+  input: inputSchema,
+  flows: ['content-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Use an LLM to classify the content
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a content classification assistant. Analyze the content and determine its type and characteristics.
+          Return a JSON object with the following structure:
+          {
+            "contentType": "article|question|feedback|request|announcement|other",
+            "topics": ["topic1", "topic2"],
+            "sentiment": "positive|negative|neutral",
+            "urgency": "high|medium|low",
+            "languages": ["en", "es"]
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.content,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const classification = JSON.parse(content);
+    
+    // Emit an event based on the content type
+    await emit({
+      topic: `content.type.${classification.contentType}`,
+      data: {
+        content: input.content,
+        classification,
+        metadata: input.metadata,
+      },
+    });
+    
+    // Emit events for each topic
+    for (const topic of classification.topics) {
+      await emit({
+        topic: `content.topic.${topic.toLowerCase().replace(/\s+/g, '-')}`,
+        data: {
+          content: input.content,
+          classification,
+          metadata: input.metadata,
+        },
+      });
+    }
+    
+    // Emit an event based on sentiment
+    await emit({
+      topic: `content.sentiment.${classification.sentiment}`,
+      data: {
+        content: input.content,
+        classification,
+        metadata: input.metadata,
+      },
+    });
+    
+    // Emit an event for urgency if high
+    if (classification.urgency === 'high') {
+      await emit({
+        topic: 'content.urgent',
+        data: {
+          content: input.content,
+          classification,
+          metadata: input.metadata,
+        },
+      });
+    }
+    
+    // Emit events for each language
+    for (const language of classification.languages) {
+      await emit({
+        topic: `content.language.${language}`,
+        data: {
+          content: input.content,
+          classification,
+          metadata: input.metadata,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in content router', { error });
+    
+    // Emit a fallback event
+    await emit({
+      topic: 'content.unclassified',
+      data: {
+        content: input.content,
+        metadata: input.metadata,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Uses an LLM to classify content along multiple dimensions
+2. Emits different events based on content type, topics, sentiment, urgency, and languages
+3. Allows different steps to subscribe to specific content characteristics
+4. Falls back to an unclassified event if classification fails
+
+## Dynamic Event Payloads
+
+In addition to determining which events to emit, agentic workflows can also dynamically structure the event payloads:
+
+```typescript
+// dynamicPayload.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  document: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Document Extractor',
+  subscribes: ['document.process'],
+  emits: ['document.extracted'],
+  input: inputSchema,
+  flows: ['document-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Use an LLM to extract structured data from the document
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a document extraction assistant. Extract structured data from the document.
+          Identify the document type first, then extract fields relevant to that document type.
+          Return a JSON object with the following structure:
+          {
+            "documentType": "invoice|contract|resume|report|email|other",
+            "extractedData": {
+              // Fields will vary based on document type
+            }
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.document,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const extraction = JSON.parse(content);
+    
+    // Emit an event with a dynamically structured payload
+    await emit({
+      topic: 'document.extracted',
+      data: {
+        documentType: extraction.documentType,
+        // The structure of extractedData will vary based on document type
+        ...extraction.extractedData,
+        // Include metadata
+        _meta: {
+          processingTime: new Date().toISOString(),
+          documentLength: input.document.length,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Error in document extractor', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'document.extraction.failed',
+      data: {
+        document: input.document.substring(0, 100) + '...', // Include a preview
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Uses an LLM to extract structured data from a document
+2. Dynamically structures the event payload based on the document type
+3. Includes different fields in the payload depending on what was extracted
+
+## Best Practices for Dynamic Event Emission
+
+### 1. Define Event Patterns
+
+Even with dynamic events, it's helpful to define consistent patterns:
+
+```typescript
+// Event topic patterns
+const topicPatterns = {
+  contentType: 'content.type.{type}',
+  contentTopic: 'content.topic.{topic}',
+  contentSentiment: 'content.sentiment.{sentiment}',
+  contentLanguage: 'content.language.{language}',
+};
+
+// Function to generate event topics
+function generateTopic(pattern, params) {
+  return pattern.replace(/{(\w+)}/g, (match, key) => params[key]);
+}
+
+// Usage
+const topic = generateTopic(topicPatterns.contentType, { type: 'article' });
+// Returns: 'content.type.article'
+```
+
+### 2. Document Dynamic Events
+
+Since dynamic events can't be fully specified in the step configuration, document them clearly:
+
+```typescript
+export const config = {
+  type: 'event',
+  name: 'Content Router',
+  subscribes: ['content.received'],
+  // Document dynamic event patterns
+  emits: [
+    'content.type.{type}', // Where type can be: article, question, feedback, etc.
+    'content.topic.{topic}', // Where topic is a kebab-case version of the detected topic
+    'content.sentiment.{sentiment}', // Where sentiment can be: positive, negative, neutral
+    'content.language.{language}', // Where language is an ISO language code
+    'content.urgent', // Emitted only for high urgency content
+  ],
+  flows: ['content-processing'],
+};
+```
+
+### 3. Handle Subscription Wildcards
+
+When subscribing to dynamic events, use wildcards:
+
+```typescript
+export const config = {
+  type: 'event',
+  name: 'Article Processor',
+  // Subscribe to all article content
+  subscribes: ['content.type.article'],
+  emits: ['article.processed'],
+  flows: ['content-processing'],
+};
+
+export const config = {
+  type: 'event',
+  name: 'Urgent Content Handler',
+  // Subscribe to all urgent content regardless of type
+  subscribes: ['content.urgent'],
+  emits: ['urgent.handled'],
+  flows: ['content-processing'],
+};
+
+export const config = {
+  type: 'event',
+  name: 'Spanish Content Translator',
+  // Subscribe to all Spanish content
+  subscribes: ['content.language.es'],
+  emits: ['content.translated'],
+  flows: ['content-processing'],
+};
+```
+
+### 4. Validate Dynamic Event Topics
+
+Ensure that dynamically generated event topics follow your naming conventions:
+
+```typescript
+function validateTopic(topic) {
+  // Check if the topic follows the pattern: namespace.entity.action
+  const pattern = /^[a-z]+\.[a-z]+(\.[a-z0-9-]+)*$/;
+  
+  if (!pattern.test(topic)) {
+    throw new Error(`Invalid topic format: ${topic}`);
+  }
+  
+  return topic;
+}
+
+// Usage
+const topic = validateTopic(`content.type.${contentType.toLowerCase()}`);
+```
+
+### 5. Implement Fallbacks
+
+Always have fallback events for when dynamic routing fails:
+
+```typescript
+try {
+  // Dynamic event emission logic
+} catch (error) {
+  logger.error('Error in dynamic event emission', { error });
+  
+  // Emit a fallback event
+  await emit({
+    topic: 'content.unrouted',
+    data: {
+      content: input.content,
+      error: error.message,
+    },
+  });
+}
+```
+
+## Advanced Patterns
+
+### 1. Event Decision Trees
+
+Create complex decision trees for event routing:
+
+```typescript
+// decisionTree.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Query Router',
+  subscribes: ['query.received'],
+  emits: ['query.route.*'], // Dynamic routing events
+  input: inputSchema,
+  flows: ['query-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Use an LLM to analyze the query and determine routing
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a query routing assistant. Analyze the query and determine the appropriate routing path.
+          Return a JSON object with the following structure:
+          {
+            "domain": "product|billing|technical|account|other",
+            "intent": "question|request|complaint|feedback",
+            "complexity": "simple|medium|complex",
+            "priority": "low|medium|high",
+            "specialistRequired": true|false
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.query,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const analysis = JSON.parse(content);
+    
+    // Build the routing path based on the decision tree
+    let routingPath = `query.route.${analysis.domain}`;
+    
+    // Add intent to the path
+    routingPath += `.${analysis.intent}`;
+    
+    // Add complexity for complex queries
+    if (analysis.complexity === 'complex') {
+      routingPath += '.complex';
+    }
+    
+    // Add priority for high priority queries
+    if (analysis.priority === 'high') {
+      routingPath += '.priority';
+    }
+    
+    // Add specialist flag if needed
+    if (analysis.specialistRequired) {
+      routingPath += '.specialist';
+    }
+    
+    // Emit the routing event
+    await emit({
+      topic: routingPath,
+      data: {
+        query: input.query,
+        userId: input.userId,
+        analysis,
+      },
+    });
+    
+    // Also emit a simplified event for general handlers
+    await emit({
+      topic: `query.route.${analysis.domain}`,
+      data: {
+        query: input.query,
+        userId: input.userId,
+        analysis,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in query router', { error });
+    
+    // Emit a fallback event
+    await emit({
+      topic: 'query.route.unclassified',
+      data: {
+        query: input.query,
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Uses an LLM to analyze a query along multiple dimensions
+2. Builds a complex routing path based on the analysis
+3. Emits both specific and general routing events
+4. Falls back to an unclassified event if analysis fails
+
+### 2. Dynamic Event Chains
+
+Create chains of events that adapt based on previous results:
+
+```typescript
+// chainStep.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  data: z.any(),
+  chainState: z.object({
+    steps: z.array(z.string()),
+    currentStep: z.number(),
+    results: z.record(z.string(), z.any()),
+  }),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Chain Step',
+  subscribes: ['chain.step'],
+  emits: ['chain.step', 'chain.complete'], // Dynamic chain events
+  input: inputSchema,
+  flows: ['dynamic-chain'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    const { data, chainState } = input;
+    const { steps, currentStep, results } = chainState;
+    
+    // Process the current step
+    const stepName = steps[currentStep];
+    const stepResult = await processStep(stepName, data, results);
+    
+    // Update the chain state
+    const updatedResults = {
+      ...results,
+      [stepName]: stepResult,
+    };
+    
+    // Determine the next step
+    const nextStep = currentStep + 1;
+    
+    if (nextStep < steps.length) {
+      // Continue the chain
+      await emit({
+        topic: 'chain.step',
+        data: {
+          data: stepResult, // Pass the result to the next step
+          chainState: {
+            steps,
+            currentStep: nextStep,
+            results: updatedResults,
+          },
+        },
+      });
+    } else {
+      // Chain is complete
+      await emit({
+        topic: 'chain.complete',
+        data: {
+          finalResult: stepResult,
+          allResults: updatedResults,
+          steps,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in chain step', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'chain.error',
+      data: {
+        error: error.message,
+        chainState: input.chainState,
+      },
+    });
+  }
+};
+
+// Function to process a step
+async function processStep(stepName, data, previousResults) {
+  // Implementation would vary based on the step
+  switch (stepName) {
+    case 'extract':
+      return extractData(data);
+    case 'transform':
+      return transformData(data, previousResults);
+    case 'analyze':
+      return analyzeData(data, previousResults);
+    case 'summarize':
+      return summarizeData(data, previousResults);
+    default:
+      throw new Error(`Unknown step: ${stepName}`);
+  }
+}
+```
+
+This example:
+1. Implements a generic chain step that can process different types of steps
+2. Maintains chain state across steps
+3. Dynamically determines when to continue the chain or complete it
+4. Passes results from one step to the next
+
+## Conclusion
+
+Dynamic event emission is a powerful capability that enables truly adaptive, intelligent workflows in Motia. By leveraging this pattern, you can create systems that:
+
+- Adapt their behavior based on content and context
+- Make intelligent routing decisions using AI
+- Create workflows that evolve at runtime
+- Handle complex, unpredictable scenarios
+
+When combined with Motia's event-driven architecture and state management capabilities, dynamic event emission allows you to build sophisticated agentic workflows that can solve complex problems in flexible, intelligent ways.
+
+## Next Steps
+
+- [Dynamic Reasoning](./dynamic-reasoning) - Learn about implementing adaptive decision-making in your agentic workflows
+- [Agent Types](./agent-types) - Explore different types of agents and their use cases
+- [LLM Integration](./llm-integration) - Discover techniques for integrating large language models into your workflows

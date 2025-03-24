@@ -1,0 +1,610 @@
+---
+title: "Frequently Asked Questions"
+description: "Quick answers to common questions about Motia"
+---
+
+# Frequently Asked Questions
+
+This page provides quick answers to common questions about Motia. If you don't find your question here, check the [troubleshooting guides](./index) or [ask the community](https://discord.gg/motia).
+
+## General Questions
+
+### What is Motia?
+
+Motia is an event-driven workflow framework that helps you build reliable, scalable applications with minimal infrastructure. It uses a step-based architecture where each step is triggered by events, either from API calls, scheduled tasks, or other steps.
+
+### How is Motia different from other workflow frameworks?
+
+Motia focuses on:
+- **Event-driven architecture**: Everything is an event, making workflows naturally reactive
+- **Step-based design**: Small, focused steps that do one thing well
+- **Zero infrastructure setup**: Run locally without complex setup
+- **Visual development**: See and debug your workflows in the Workbench
+- **Multi-language support**: Write steps in JavaScript, TypeScript, Python, or Ruby
+
+### What types of applications can I build with Motia?
+
+Motia is well-suited for:
+- **API backends**: Build APIs with complex business logic
+- **Automation systems**: Create workflows that respond to events
+- **Integration platforms**: Connect different systems and services
+- **AI-powered applications**: Orchestrate LLM calls and processing
+- **Business process automation**: Implement complex business processes
+
+### What languages does Motia support?
+
+Motia currently supports:
+- JavaScript
+- TypeScript
+- Python
+- Ruby
+
+### Is Motia open source?
+
+Yes, Motia is open source under the MIT license. You can find the source code on [GitHub](https://github.com/motiajs/motia).
+
+## Getting Started
+
+### How do I install Motia?
+
+Install Motia using npm, yarn, or pnpm:
+
+```bash
+# Using npm
+npm install @motia/core @motia/snap
+
+# Using yarn
+yarn add @motia/core @motia/snap
+
+# Using pnpm
+pnpm add @motia/core @motia/snap
+```
+
+### How do I create a new Motia project?
+
+Create a new Motia project using the snap CLI:
+
+```bash
+npx @motia/snap create
+```
+
+This will create a basic project structure with example steps.
+
+### How do I run my Motia application?
+
+Run your Motia application in development mode:
+
+```bash
+npm run dev
+```
+
+This will start the development server and open the Workbench in your browser.
+
+### What are the system requirements for Motia?
+
+Motia requires:
+- Node.js 16 or later
+- npm, yarn, or pnpm
+
+## Architecture
+
+### What is a step in Motia?
+
+A step is the basic building block of a Motia workflow. Each step is a small, focused piece of code that does one thing well. Steps can be triggered by events, API calls, or scheduled tasks.
+
+### What types of steps are available?
+
+Motia supports four types of steps:
+- **Event steps**: Triggered by events from other steps
+- **API steps**: Triggered by HTTP requests
+- **Cron steps**: Triggered by a schedule
+- **NOOP steps**: Represent external processes or manual actions
+
+### What is an event in Motia?
+
+An event is a message that triggers a step. Events have a topic (like `user.created`) and a payload (the data associated with the event). Steps can subscribe to events and emit events.
+
+### How do steps communicate with each other?
+
+Steps communicate by emitting and subscribing to events. When a step emits an event, all steps that subscribe to that event topic will be triggered.
+
+### What is a flow in Motia?
+
+A flow is a collection of steps that work together to accomplish a task. Flows are defined by the connections between steps (via events). Flows can be visualized in the Workbench.
+
+## Development
+
+### How do I create a new step?
+
+Create a new step using the snap CLI:
+
+```bash
+npx @motia/snap create-step
+```
+
+This will guide you through creating a new step with the appropriate configuration.
+
+### How do I define an API endpoint?
+
+Create an API step with a path and method:
+
+```typescript
+export const config = {
+  type: 'api',
+  name: 'GetUser',
+  path: '/users/:id',
+  method: 'GET'
+};
+
+export const handler = async (request, context) => {
+  const userId = request.params.id;
+  
+  // Get the user from state or an external service
+  const user = await getUserById(userId);
+  
+  if (!user) {
+    return {
+      status: 404,
+      body: { error: 'User not found' }
+    };
+  }
+  
+  return {
+    status: 200,
+    body: { user }
+  };
+};
+```
+
+### How do I schedule a recurring task?
+
+Create a cron step with a schedule:
+
+```typescript
+export const config = {
+  type: 'cron',
+  name: 'DailyReport',
+  schedule: '0 0 * * *' // Runs at midnight every day
+};
+
+export const handler = async (input, context) => {
+  // Generate and send the daily report
+  // ...
+  
+  return { success: true };
+};
+```
+
+### How do I store and retrieve state?
+
+Use the state object provided to each step:
+
+```typescript
+export const handler = async (input, { state }) => {
+  // Store state
+  await state.set('user:123', { name: 'Alice', email: 'alice@example.com' });
+  
+  // Retrieve state
+  const user = await state.get('user:123');
+  
+  // Delete state
+  await state.delete('user:123');
+  
+  return { success: true };
+};
+```
+
+### How do I handle errors in steps?
+
+Use try/catch blocks and return appropriate responses:
+
+```typescript
+export const handler = async (input, { logger }) => {
+  try {
+    // Your step logic here
+    
+    return { success: true };
+  } catch (error) {
+    logger.error('Error in step', error);
+    
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+```
+
+### How do I debug my workflow?
+
+Use the Workbench to visualize your workflow and inspect events and state. Add logging to your steps to track execution:
+
+```typescript
+export const handler = async (input, { logger }) => {
+  logger.debug('Input received', input);
+  
+  // Your step logic here
+  
+  logger.info('Step completed successfully');
+  return { success: true };
+};
+```
+
+## Deployment
+
+### How do I deploy my Motia application?
+
+Motia applications can be deployed to any environment that supports Node.js. See the [deployment guides](/docs/guides/deployment) for detailed instructions.
+
+### How do I configure my application for different environments?
+
+Use environment variables to configure your application for different environments:
+
+```typescript
+// config.js
+export const config = {
+  apiKey: process.env.API_KEY,
+  databaseUrl: process.env.DATABASE_URL,
+  environment: process.env.NODE_ENV || 'development'
+};
+```
+
+### How do I monitor my Motia application in production?
+
+Motia provides built-in logging and metrics. You can also integrate with external monitoring tools:
+
+```typescript
+// Set up monitoring
+export const setupMonitoring = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Set up production monitoring
+    require('./monitoring').setup();
+  }
+};
+```
+
+### How do I scale my Motia application?
+
+Motia applications can be scaled horizontally by running multiple instances. The state backend should be configured to support distributed state:
+
+```typescript
+// server.js
+import { createServer } from '@motia/core';
+
+const server = createServer({
+  state: {
+    provider: 'redis',
+    options: {
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT,
+      password: process.env.REDIS_PASSWORD
+    }
+  }
+});
+
+server.start();
+```
+
+## Performance
+
+### How many steps can a Motia application handle?
+
+Motia can handle thousands of steps in a single application. The practical limit depends on your hardware and the complexity of your steps.
+
+### How do I optimize the performance of my Motia application?
+
+To optimize performance:
+- Keep steps small and focused
+- Use efficient state access patterns
+- Optimize external API calls
+- Use parallel processing where appropriate
+- Monitor and profile your application
+
+### How do I handle long-running tasks?
+
+For long-running tasks, break them into smaller steps and use events to coordinate:
+
+```typescript
+// Instead of one long-running step
+export const handler = async (input, { emit }) => {
+  const { datasetId } = input;
+  
+  // Break the task into chunks
+  const totalChunks = await calculateTotalChunks(datasetId);
+  
+  // Emit an event to process the first chunk
+  await emit('dataset.process.chunk', {
+    datasetId,
+    chunkIndex: 0,
+    totalChunks
+  });
+  
+  return { success: true };
+};
+
+// Then have another step process each chunk
+export const config = {
+  type: 'event',
+  name: 'ProcessDatasetChunk',
+  subscribes: ['dataset.process.chunk']
+};
+
+export const handler = async (input, { emit, state }) => {
+  const { datasetId, chunkIndex, totalChunks } = input;
+  
+  // Process this chunk
+  await processChunk(datasetId, chunkIndex);
+  
+  // If there are more chunks, emit an event to process the next one
+  if (chunkIndex < totalChunks - 1) {
+    await emit('dataset.process.chunk', {
+      datasetId,
+      chunkIndex: chunkIndex + 1,
+      totalChunks
+    });
+  } else {
+    // All chunks processed, emit completion event
+    await emit('dataset.process.completed', {
+      datasetId,
+      totalChunks
+    });
+  }
+  
+  return { success: true };
+};
+```
+
+## Integration
+
+### How do I integrate with external APIs?
+
+Use standard HTTP libraries to integrate with external APIs:
+
+```typescript
+import axios from 'axios';
+
+export const handler = async (input, { logger }) => {
+  try {
+    const response = await axios.get('https://api.example.com/data', {
+      headers: {
+        'Authorization': `Bearer ${process.env.API_KEY}`
+      }
+    });
+    
+    return { success: true, data: response.data };
+  } catch (error) {
+    logger.error('API request failed', error);
+    return { success: false, error: error.message };
+  }
+};
+```
+
+### How do I integrate with databases?
+
+Use database clients to integrate with databases:
+
+```typescript
+import { MongoClient } from 'mongodb';
+
+let client;
+
+const getClient = async () => {
+  if (!client) {
+    client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
+  }
+  return client;
+};
+
+export const handler = async (input, { logger }) => {
+  try {
+    const client = await getClient();
+    const db = client.db('mydb');
+    
+    const result = await db.collection('users').findOne({ _id: input.userId });
+    
+    return { success: true, user: result };
+  } catch (error) {
+    logger.error('Database query failed', error);
+    return { success: false, error: error.message };
+  }
+};
+```
+
+### How do I integrate with message queues?
+
+Use message queue clients to integrate with message queues:
+
+```typescript
+import { SQS } from 'aws-sdk';
+
+const sqs = new SQS({
+  region: process.env.AWS_REGION
+});
+
+export const handler = async (input, { logger }) => {
+  try {
+    await sqs.sendMessage({
+      QueueUrl: process.env.SQS_QUEUE_URL,
+      MessageBody: JSON.stringify(input)
+    }).promise();
+    
+    return { success: true };
+  } catch (error) {
+    logger.error('Failed to send message to SQS', error);
+    return { success: false, error: error.message };
+  }
+};
+```
+
+## Advanced Topics
+
+### How do I implement authentication and authorization?
+
+Use middleware steps to handle authentication and authorization:
+
+```typescript
+// Authentication middleware
+export const config = {
+  type: 'api',
+  name: 'AuthMiddleware',
+  path: '/api/*',
+  method: '*'
+};
+
+export const handler = async (request, { emit, logger }) => {
+  // Check for authentication token
+  const token = request.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return {
+      status: 401,
+      body: { error: 'Authentication required' }
+    };
+  }
+  
+  try {
+    // Verify the token
+    const user = await verifyToken(token);
+    
+    // Add the user to the request for downstream steps
+    request.user = user;
+    
+    // Continue processing the request
+    return { next: true };
+  } catch (error) {
+    logger.error('Authentication failed', error);
+    
+    return {
+      status: 401,
+      body: { error: 'Invalid authentication token' }
+    };
+  }
+};
+```
+
+### How do I implement transactions?
+
+Use a transaction manager to coordinate multiple operations:
+
+```typescript
+export const handler = async (input, { state, logger }) => {
+  // Start a transaction
+  const transaction = await startTransaction();
+  
+  try {
+    // Perform multiple operations
+    await updateUserBalance(transaction, input.userId, -input.amount);
+    await createPayment(transaction, input);
+    await updateMerchantBalance(transaction, input.merchantId, input.amount);
+    
+    // Commit the transaction
+    await commitTransaction(transaction);
+    
+    return { success: true };
+  } catch (error) {
+    // Rollback the transaction
+    await rollbackTransaction(transaction);
+    
+    logger.error('Transaction failed', error);
+    return { success: false, error: error.message };
+  }
+};
+```
+
+### How do I implement versioning for my workflows?
+
+Use version numbers in your event topics and step configurations:
+
+```typescript
+// Version 1
+export const configV1 = {
+  type: 'event',
+  name: 'ProcessOrderV1',
+  subscribes: ['order.created.v1']
+};
+
+// Version 2
+export const configV2 = {
+  type: 'event',
+  name: 'ProcessOrderV2',
+  subscribes: ['order.created.v2']
+};
+
+// Emit the appropriate version
+await emit(`order.created.v${order.version}`, order);
+```
+
+### How do I implement testing for my workflows?
+
+Use the Motia testing utilities to test your workflows:
+
+```typescript
+import { createTestFlow } from '@motia/testing';
+
+describe('Order Processing Flow', () => {
+  test('should process a valid order', async () => {
+    // Create a test flow
+    const flow = createTestFlow({
+      steps: {
+        'ValidateOrder': {
+          handler: validateOrderHandler,
+          subscribes: ['order.submitted'],
+          emits: ['order.validated', 'order.validation.failed']
+        },
+        'ProcessPayment': {
+          handler: processPaymentHandler,
+          subscribes: ['order.validated'],
+          emits: ['payment.succeeded', 'payment.failed']
+        },
+        'FulfillOrder': {
+          handler: fulfillOrderHandler,
+          subscribes: ['payment.succeeded'],
+          emits: ['order.fulfilled']
+        }
+      }
+    });
+    
+    // Initialize test state
+    await flow.state.set('inventory:product123', 10);
+    
+    // Trigger the flow
+    await flow.emit('order.submitted', {
+      orderId: 'order123',
+      productId: 'product123',
+      quantity: 1,
+      customer: {
+        id: 'customer123',
+        email: 'customer@example.com'
+      },
+      payment: {
+        method: 'credit_card',
+        amount: 99.99
+      }
+    });
+    
+    // Wait for all events to be processed
+    await flow.waitForIdle();
+    
+    // Verify the flow executed as expected
+    expect(flow.emittedEvents).toContainEqual(
+      expect.objectContaining({
+        topic: 'order.fulfilled'
+      })
+    );
+    
+    // Verify state was updated correctly
+    const inventory = await flow.state.get('inventory:product123');
+    expect(inventory).toBe(9);
+  });
+});
+```
+
+## Still Have Questions?
+
+If you still have questions:
+
+1. Check the [documentation](/docs) for more detailed information
+2. Join the [Discord community](https://discord.gg/motia) to ask questions
+3. Open an issue on [GitHub](https://github.com/motiajs/motia/issues) if you think you've found a bug
+4. Contact [support](mailto:support@motia.dev) for critical issues

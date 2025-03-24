@@ -1,0 +1,1125 @@
+---
+title: LLM Integration in Motia
+description: Techniques and best practices for integrating large language models into your Motia workflows
+---
+
+# LLM Integration in Motia
+
+Large Language Models (LLMs) are powerful AI systems that can understand and generate human-like text, enabling a wide range of capabilities in your Motia workflows. This guide explores how to effectively integrate LLMs into your applications, with practical examples and best practices.
+
+## Why Integrate LLMs into Motia Workflows?
+
+LLMs can enhance your Motia workflows in numerous ways:
+
+- **Natural language understanding**: Process and understand user inputs, emails, documents, and other text
+- **Content generation**: Create responses, summaries, translations, and other text-based content
+- **Classification and extraction**: Categorize content and extract structured data from unstructured text
+- **Decision-making**: Make complex decisions based on context and criteria
+- **Creative problem-solving**: Generate ideas, solutions, and approaches to problems
+
+By integrating LLMs into your event-driven workflows, you can build applications that combine the reliability of deterministic systems with the flexibility and intelligence of AI.
+
+## Available LLM Options
+
+When integrating LLMs into Motia, you have several options:
+
+### 1. Commercial API-based Models
+
+- **OpenAI (GPT-3.5, GPT-4)**: Powerful general-purpose models with strong capabilities across many tasks
+- **Anthropic (Claude)**: Models designed with a focus on helpfulness, harmlessness, and honesty
+- **Google (Gemini)**: Models with strong reasoning and instruction-following capabilities
+- **Cohere**: Models specialized for enterprise use cases and document understanding
+
+### 2. Open-Source Models
+
+- **Llama 2/3**: Meta's open-source models available for local deployment
+- **Mistral**: Efficient open-source models with strong performance
+- **Falcon**: Open-source models from the Technology Innovation Institute
+- **MPT**: MosaicML's open-source models
+
+### 3. Specialized Models
+
+- **Embedding models**: For semantic search and similarity comparisons
+- **Fine-tuned models**: Custom-trained for specific domains or tasks
+- **Multimodal models**: Capable of processing both text and images
+
+## Basic LLM Integration
+
+Let's start with a basic example of integrating an LLM into a Motia workflow:
+
+```typescript
+// textAnalysisStep.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+// Initialize the OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Define the input schema
+const inputSchema = z.object({
+  text: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Text Analysis',
+  subscribes: ['text.analyze'],
+  emits: ['text.analyzed'],
+  input: inputSchema,
+  flows: ['text-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  logger.info('Analyzing text with OpenAI', { textLength: input.text.length });
+  
+  try {
+    // Call the OpenAI API
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that analyzes text and provides insights.',
+        },
+        {
+          role: 'user',
+          content: `Analyze the following text and provide key insights: "${input.text}"`,
+        },
+      ],
+    });
+    
+    // Extract the response content
+    const analysis = response.choices[0]?.message?.content || '';
+    
+    // Emit the analysis result
+    await emit({
+      topic: 'text.analyzed',
+      data: {
+        originalText: input.text,
+        analysis,
+      },
+    });
+  } catch (error) {
+    logger.error('Error analyzing text with OpenAI', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'text.analysis.failed',
+      data: {
+        originalText: input.text,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example demonstrates a simple step that:
+1. Receives text to analyze
+2. Sends it to OpenAI's API with appropriate instructions
+3. Emits the analysis result or an error event
+
+## Structured Output from LLMs
+
+For more reliable integration, it's often helpful to request structured output from LLMs:
+
+```typescript
+// categorizeContentStep.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  content: z.string(),
+});
+
+// Define the expected output schema
+const outputSchema = z.object({
+  category: z.enum(['news', 'opinion', 'tutorial', 'review', 'other']),
+  topics: z.array(z.string()),
+  sentiment: z.enum(['positive', 'negative', 'neutral']),
+  summary: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Content Categorizer',
+  subscribes: ['content.categorize'],
+  emits: ['content.categorized', 'content.categorization.failed'],
+  input: inputSchema,
+  flows: ['content-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Request structured JSON output
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a content analysis assistant. Analyze the provided content and return a JSON object with the following structure:
+{
+  "category": "news|opinion|tutorial|review|other",
+  "topics": ["topic1", "topic2", ...],
+  "sentiment": "positive|negative|neutral",
+  "summary": "Brief summary of the content"
+}`,
+        },
+        {
+          role: 'user',
+          content: input.content,
+        },
+      ],
+      response_format: { type: 'json_object' }, // Request JSON format
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    
+    try {
+      // Parse and validate the JSON response
+      const parsedResult = JSON.parse(content);
+      const validatedResult = outputSchema.parse(parsedResult);
+      
+      // Emit the categorized content
+      await emit({
+        topic: 'content.categorized',
+        data: {
+          originalContent: input.content,
+          analysis: validatedResult,
+        },
+      });
+    } catch (parseError) {
+      logger.error('Error parsing LLM response', { error: parseError, content });
+      
+      // Emit a parsing error event
+      await emit({
+        topic: 'content.categorization.failed',
+        data: {
+          originalContent: input.content,
+          error: 'Failed to parse LLM response',
+          rawResponse: content,
+        },
+      });
+    }
+  } catch (apiError) {
+    logger.error('Error calling OpenAI API', { error: apiError });
+    
+    // Emit an API error event
+    await emit({
+      topic: 'content.categorization.failed',
+      data: {
+        originalContent: input.content,
+        error: `API error: ${apiError.message}`,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Defines a clear schema for the expected output
+2. Requests JSON output from the LLM
+3. Validates the response against the schema
+4. Handles parsing errors separately from API errors
+
+## Maintaining Context with State
+
+LLMs are more powerful when they have access to relevant context. You can use Motia's state management to maintain context across steps:
+
+```typescript
+// conversationStep.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  message: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Conversation Handler',
+  subscribes: ['conversation.message'],
+  emits: ['conversation.response'],
+  input: inputSchema,
+  flows: ['chat-assistant'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  // Define a key for storing this user's conversation history
+  const conversationKey = `user:${input.userId}:conversation`;
+  
+  // Retrieve the conversation history from state
+  const history = await state.get(traceId, conversationKey) || [];
+  
+  // Add the user's message to the history
+  history.push({
+    role: 'user',
+    content: input.message,
+  });
+  
+  try {
+    // Call OpenAI with the full conversation history
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that provides concise, accurate responses.',
+        },
+        ...history, // Include the full conversation history
+      ],
+    });
+    
+    // Extract the assistant's response
+    const assistantMessage = response.choices[0]?.message;
+    
+    if (assistantMessage) {
+      // Add the assistant's response to the history
+      history.push({
+        role: assistantMessage.role,
+        content: assistantMessage.content,
+      });
+      
+      // Update the conversation history in state
+      await state.set(traceId, conversationKey, history);
+      
+      // Emit the response
+      await emit({
+        topic: 'conversation.response',
+        data: {
+          userId: input.userId,
+          message: assistantMessage.content,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in conversation handler', { error, userId: input.userId });
+    
+    // Emit an error response
+    await emit({
+      topic: 'conversation.error',
+      data: {
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Retrieves the conversation history from state
+2. Adds the user's message to the history
+3. Sends the full history to the LLM for context
+4. Updates the history with the assistant's response
+5. Stores the updated history back in state
+
+## Function Calling with LLMs
+
+Modern LLMs support function calling, which allows them to determine when to call specific functions based on user input:
+
+```typescript
+// assistantStep.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Assistant with Function Calling',
+  subscribes: ['assistant.query'],
+  emits: [
+    'assistant.response',
+    'weather.get',
+    'calendar.create',
+    'search.perform',
+  ],
+  input: inputSchema,
+  flows: ['smart-assistant'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Define the functions the LLM can call
+    const functions = [
+      {
+        name: 'get_weather',
+        description: 'Get the current weather for a location',
+        parameters: {
+          type: 'object',
+          properties: {
+            location: {
+              type: 'string',
+              description: 'The city and state or country',
+            },
+            unit: {
+              type: 'string',
+              enum: ['celsius', 'fahrenheit'],
+              description: 'The unit of temperature',
+            },
+          },
+          required: ['location'],
+        },
+      },
+      {
+        name: 'create_calendar_event',
+        description: 'Create a calendar event',
+        parameters: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'The title of the event',
+            },
+            start_time: {
+              type: 'string',
+              description: 'The start time in ISO format',
+            },
+            end_time: {
+              type: 'string',
+              description: 'The end time in ISO format',
+            },
+            description: {
+              type: 'string',
+              description: 'The description of the event',
+            },
+          },
+          required: ['title', 'start_time', 'end_time'],
+        },
+      },
+      {
+        name: 'search_information',
+        description: 'Search for information on a topic',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'The search query',
+            },
+          },
+          required: ['query'],
+        },
+      },
+    ];
+
+    // Call the OpenAI API with function calling
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that can answer questions and perform actions.',
+        },
+        {
+          role: 'user',
+          content: input.query,
+        },
+      ],
+      tools: functions.map(func => ({
+        type: 'function',
+        function: func,
+      })),
+      tool_choice: 'auto',
+    });
+
+    const message = response.choices[0]?.message;
+
+    if (message?.tool_calls) {
+      // The LLM decided to call one or more functions
+      for (const toolCall of message.tool_calls) {
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments);
+
+        logger.info('Function call from LLM', { functionName, functionArgs });
+
+        // Emit events based on the function call
+        switch (functionName) {
+          case 'get_weather':
+            await emit({
+              topic: 'weather.get',
+              data: {
+                userId: input.userId,
+                location: functionArgs.location,
+                unit: functionArgs.unit || 'celsius',
+                originalQuery: input.query,
+              },
+            });
+            break;
+
+          case 'create_calendar_event':
+            await emit({
+              topic: 'calendar.create',
+              data: {
+                userId: input.userId,
+                title: functionArgs.title,
+                startTime: functionArgs.start_time,
+                endTime: functionArgs.end_time,
+                description: functionArgs.description || '',
+                originalQuery: input.query,
+              },
+            });
+            break;
+
+          case 'search_information':
+            await emit({
+              topic: 'search.perform',
+              data: {
+                userId: input.userId,
+                query: functionArgs.query,
+                originalQuery: input.query,
+              },
+            });
+            break;
+        }
+      }
+    } else {
+      // The LLM provided a direct response
+      await emit({
+        topic: 'assistant.response',
+        data: {
+          userId: input.userId,
+          response: message?.content || 'No response generated',
+          originalQuery: input.query,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in assistant step', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'assistant.error',
+      data: {
+        userId: input.userId,
+        error: error.message,
+        originalQuery: input.query,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Defines a set of functions the LLM can call
+2. Sends the user's query to the LLM with function definitions
+3. Processes the LLM's decision to either call a function or provide a direct response
+4. Emits appropriate events based on the LLM's decision
+
+## Implementing Retrieval-Augmented Generation (RAG)
+
+Retrieval-Augmented Generation (RAG) enhances LLM responses by providing relevant information from a knowledge base:
+
+```typescript
+// ragStep.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+import { searchDocuments } from '../services/documentSearch';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'RAG Query Handler',
+  subscribes: ['rag.query'],
+  emits: ['rag.response'],
+  input: inputSchema,
+  flows: ['knowledge-assistant'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Retrieve relevant documents based on the query
+    const relevantDocs = await searchDocuments(input.query, 5); // Get top 5 relevant documents
+    
+    // Step 2: Create a context string from the retrieved documents
+    const context = relevantDocs.map(doc => 
+      `Document: ${doc.title}\nContent: ${doc.content}\nSource: ${doc.source}\n---`
+    ).join('\n');
+    
+    logger.info('Retrieved context for RAG', { 
+      query: input.query, 
+      documentCount: relevantDocs.length 
+    });
+    
+    // Step 3: Call the LLM with the context and query
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a knowledgeable assistant that answers questions based on the provided context. 
+          If the context doesn't contain relevant information, acknowledge that you don't have enough information.
+          Always cite your sources when providing information.`,
+        },
+        {
+          role: 'user',
+          content: `Context information:
+          ${context}
+          
+          Based on the above context, please answer the following question:
+          ${input.query}`,
+        },
+      ],
+    });
+    
+    const answer = response.choices[0]?.message?.content || 'No answer generated';
+    
+    // Step 4: Emit the response with source information
+    await emit({
+      topic: 'rag.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        answer,
+        sources: relevantDocs.map(doc => ({
+          title: doc.title,
+          source: doc.source,
+          relevanceScore: doc.relevanceScore,
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error('Error in RAG query handler', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'rag.error',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Retrieves relevant documents based on the user's query
+2. Creates a context string from the retrieved documents
+3. Sends the context and query to the LLM
+4. Emits the response with source information
+
+## Optimizing LLM Usage
+
+### 1. Prompt Engineering
+
+Effective prompt engineering is crucial for getting the best results from LLMs:
+
+```typescript
+// promptEngineering.ts
+
+// Bad prompt - vague and unstructured
+const badPrompt = `
+Analyze this text: ${text}
+`;
+
+// Good prompt - clear, structured, and specific
+const goodPrompt = `
+You are an expert content analyzer with the following responsibilities:
+1. Identify the main topics in the text
+2. Determine the sentiment (positive, negative, or neutral)
+3. Extract key facts and claims
+4. Identify any potential biases
+
+Please analyze the following text and provide your analysis in JSON format with the following structure:
+{
+  "topics": ["topic1", "topic2", ...],
+  "sentiment": "positive|negative|neutral",
+  "keyFacts": ["fact1", "fact2", ...],
+  "potentialBiases": ["bias1", "bias2", ...] or []
+}
+
+Text to analyze:
+${text}
+`;
+```
+
+### 2. Caching Responses
+
+Implement caching to avoid redundant API calls:
+
+```typescript
+// cachingExample.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+import { createHash } from 'crypto';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  text: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Cached Text Analysis',
+  subscribes: ['text.analyze.cached'],
+  emits: ['text.analyzed'],
+  input: inputSchema,
+  flows: ['text-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  // Create a hash of the input text to use as a cache key
+  const textHash = createHash('md5').update(input.text).digest('hex');
+  const cacheKey = `cache:textAnalysis:${textHash}`;
+  
+  // Try to get the cached result
+  const cachedResult = await state.get(traceId, cacheKey);
+  
+  if (cachedResult) {
+    logger.info('Using cached analysis result', { textHash });
+    
+    // Emit the cached result
+    await emit({
+      topic: 'text.analyzed',
+      data: cachedResult,
+      metadata: { fromCache: true },
+    });
+    
+    return;
+  }
+  
+  // No cached result, call the API
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that analyzes text and provides insights.',
+        },
+        {
+          role: 'user',
+          content: `Analyze the following text and provide key insights: "${input.text}"`,
+        },
+      ],
+    });
+    
+    const analysis = response.choices[0]?.message?.content || '';
+    
+    // Create the result object
+    const result = {
+      originalText: input.text,
+      analysis,
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Cache the result (with a TTL of 24 hours if supported by the state adapter)
+    await state.set(traceId, cacheKey, result);
+    
+    // Emit the result
+    await emit({
+      topic: 'text.analyzed',
+      data: result,
+      metadata: { fromCache: false },
+    });
+  } catch (error) {
+    logger.error('Error analyzing text with OpenAI', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'text.analysis.failed',
+      data: {
+        originalText: input.text,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+### 3. Batching Requests
+
+Batch multiple operations into a single API call:
+
+```typescript
+// batchingExample.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  items: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+  })),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Batch Text Processor',
+  subscribes: ['text.process.batch'],
+  emits: ['text.processed.batch'],
+  input: inputSchema,
+  flows: ['text-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  if (input.items.length === 0) {
+    return;
+  }
+  
+  try {
+    // Combine all items into a single prompt
+    const combinedPrompt = input.items.map((item, index) => 
+      `Item ${index + 1} (ID: ${item.id}): ${item.text}`
+    ).join('\n\n');
+    
+    // Request batch processing with structured output
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a text processing assistant. Process each item and return a JSON array with the following structure for each item:
+[
+  {
+    "id": "item_id",
+    "summary": "brief summary",
+    "sentiment": "positive|negative|neutral",
+    "keyPoints": ["point1", "point2", ...]
+  },
+  ...
+]`,
+        },
+        {
+          role: 'user',
+          content: `Process the following items:\n\n${combinedPrompt}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    
+    try {
+      // Parse the JSON response
+      const results = JSON.parse(content);
+      
+      // Emit the batch results
+      await emit({
+        topic: 'text.processed.batch',
+        data: {
+          results,
+          originalCount: input.items.length,
+        },
+      });
+    } catch (parseError) {
+      logger.error('Error parsing batch processing response', { error: parseError });
+      
+      // Emit an error event
+      await emit({
+        topic: 'text.batch.failed',
+        data: {
+          error: 'Failed to parse batch processing response',
+          rawResponse: content,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in batch text processing', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'text.batch.failed',
+      data: {
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+## Error Handling and Fallbacks
+
+Robust error handling is essential for LLM integration:
+
+```typescript
+// robustLlmStep.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Fallback to a simpler model if the primary model fails
+const fallbackOpenAI = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  defaultQuery: {
+    model: 'gpt-3.5-turbo', // Fallback to a more reliable but less capable model
+  },
+});
+
+const inputSchema = z.object({
+  text: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Robust Text Analysis',
+  subscribes: ['text.analyze.robust'],
+  emits: ['text.analyzed', 'text.analysis.failed'],
+  input: inputSchema,
+  flows: ['text-processing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  // Define a timeout for the API call
+  const timeoutMs = 10000; // 10 seconds
+  
+  try {
+    // Create a promise that rejects after the timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('API call timed out')), timeoutMs);
+    });
+    
+    // Create the API call promise
+    const apiCallPromise = openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that analyzes text and provides insights.',
+        },
+        {
+          role: 'user',
+          content: `Analyze the following text and provide key insights: "${input.text}"`,
+        },
+      ],
+    });
+    
+    // Race the API call against the timeout
+    const response = await Promise.race([apiCallPromise, timeoutPromise]);
+    
+    // Extract the response content
+    const analysis = response.choices[0]?.message?.content || '';
+    
+    // Emit the analysis result
+    await emit({
+      topic: 'text.analyzed',
+      data: {
+        originalText: input.text,
+        analysis,
+        model: 'gpt-4',
+      },
+    });
+  } catch (primaryError) {
+    logger.warn('Primary model failed, trying fallback', { error: primaryError });
+    
+    try {
+      // Try with the fallback model
+      const fallbackResponse = await fallbackOpenAI.chat.completions.create({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that analyzes text and provides insights.',
+          },
+          {
+            role: 'user',
+            content: `Analyze the following text and provide key insights: "${input.text}"`,
+          },
+        ],
+      });
+      
+      // Extract the response content
+      const fallbackAnalysis = fallbackResponse.choices[0]?.message?.content || '';
+      
+      // Emit the fallback analysis result
+      await emit({
+        topic: 'text.analyzed',
+        data: {
+          originalText: input.text,
+          analysis: fallbackAnalysis,
+          model: 'gpt-3.5-turbo',
+          usedFallback: true,
+        },
+      });
+    } catch (fallbackError) {
+      logger.error('Both primary and fallback models failed', { 
+        primaryError, 
+        fallbackError 
+      });
+      
+      // Both models failed, use a deterministic fallback
+      const deterministicAnalysis = `Unable to provide AI analysis due to technical issues. 
+        Basic statistics: ${input.text.length} characters, ${input.text.split(' ').length} words.`;
+      
+      // Emit the deterministic fallback result
+      await emit({
+        topic: 'text.analyzed',
+        data: {
+          originalText: input.text,
+          analysis: deterministicAnalysis,
+          usedDeterministicFallback: true,
+        },
+      });
+    }
+  }
+};
+```
+
+This example:
+1. Sets a timeout for the primary API call
+2. Falls back to a simpler model if the primary model fails
+3. Falls back to a deterministic response if both models fail
+4. Includes metadata about which fallback was used
+
+## Security Considerations
+
+When integrating LLMs, it's important to consider security:
+
+### 1. Prompt Injection Prevention
+
+```typescript
+// securityExample.ts
+
+// Sanitize user input to prevent prompt injection
+function sanitizeInput(input: string): string {
+  // Remove control characters and other potentially harmful sequences
+  const sanitized = input
+    .replace(/[^\x20-\x7E]/g, '') // Remove non-printable characters
+    .replace(/[\\"`]/g, '\\$&'); // Escape potentially dangerous characters
+  
+  return sanitized;
+}
+
+// Use the sanitized input in your LLM calls
+const sanitizedQuery = sanitizeInput(userQuery);
+```
+
+### 2. Output Validation
+
+```typescript
+// Always validate LLM outputs before using them
+function validateAndSanitizeOutput(output: string): string {
+  // Remove any potentially harmful content
+  const sanitized = output
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/javascript:/gi, 'blocked:'); // Block javascript: URLs
+  
+  return sanitized;
+}
+```
+
+### 3. Rate Limiting and Monitoring
+
+```typescript
+// Implement rate limiting to prevent abuse
+class RateLimiter {
+  private requests: Map<string, number[]> = new Map();
+  private maxRequests: number;
+  private timeWindowMs: number;
+  
+  constructor(maxRequests: number = 10, timeWindowMs: number = 60000) {
+    this.maxRequests = maxRequests;
+    this.timeWindowMs = timeWindowMs;
+  }
+  
+  canMakeRequest(userId: string): boolean {
+    const now = Date.now();
+    const userRequests = this.requests.get(userId) || [];
+    
+    // Filter out requests outside the time window
+    const recentRequests = userRequests.filter(time => now - time < this.timeWindowMs);
+    
+    // Update the requests list
+    this.requests.set(userId, recentRequests);
+    
+    // Check if the user has exceeded the limit
+    if (recentRequests.length >= this.maxRequests) {
+      return false;
+    }
+    
+    // Add the current request
+    recentRequests.push(now);
+    this.requests.set(userId, recentRequests);
+    
+    return true;
+  }
+}
+```
+
+## Best Practices for LLM Integration
+
+### 1. Design for Robustness
+
+- **Validate inputs and outputs**: Always sanitize user inputs and validate LLM outputs
+- **Implement timeouts**: Set appropriate timeouts for API calls
+- **Use fallbacks**: Have backup strategies for when LLM calls fail
+- **Handle rate limits**: Implement retry logic with exponential backoff
+
+### 2. Optimize for Performance
+
+- **Use the right model**: Choose the smallest model that meets your needs
+- **Cache responses**: Store and reuse responses for similar inputs
+- **Batch requests**: Combine multiple operations when possible
+- **Minimize token usage**: Keep prompts concise and focused
+
+### 3. Ensure Privacy and Security
+
+- **Minimize data exposure**: Only send necessary information to LLMs
+- **Anonymize sensitive data**: Remove or mask personal information
+- **Implement access controls**: Restrict who can use LLM capabilities
+- **Monitor usage**: Keep logs of LLM interactions for security review
+
+### 4. Improve User Experience
+
+- **Set clear expectations**: Communicate the capabilities and limitations of LLM features
+- **Provide feedback**: Show when the system is processing or encountering issues
+- **Offer alternatives**: Provide non-LLM fallbacks for critical functionality
+- **Gather feedback**: Use user feedback to improve prompts and interactions
+
+## Conclusion
+
+Integrating LLMs into Motia workflows opens up powerful new capabilities for your applications. By following the patterns and best practices outlined in this guide, you can create robust, efficient, and secure LLM-powered features that enhance your event-driven systems.
+
+Remember that LLM integration is most effective when combined with Motia's core strengths: event-driven architecture, state management, and workflow orchestration. By leveraging these capabilities together, you can build intelligent applications that are both flexible and reliable.
+
+## Next Steps
+
+- [Agent Types](./agent-types) - Explore different types of agents and their use cases
+- [Dynamic Emits](./dynamic-emits) - Learn about patterns for dynamic event emission in agentic workflows
+- [Dynamic Reasoning](./dynamic-reasoning) - Discover techniques for implementing adaptive decision-making

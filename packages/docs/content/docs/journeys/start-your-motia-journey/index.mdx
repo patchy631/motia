@@ -1,0 +1,86 @@
+---
+title: Start Your Motia Journey
+description: Begin your journey with Motia by understanding the starter example and its components
+---
+
+# Start Your Motia Journey
+
+Welcome to Motia! This journey will guide you through your first steps with the platform, helping you understand the starter example and its components. By the end of this journey, you'll have a solid foundation for building your own workflows.
+
+## What You'll Learn
+
+In this journey, you'll:
+
+- Understand the structure and components of the starter example
+- Explore the different step types (NOOP, API, and Event)
+- Use Workbench to visualize and interact with your workflows
+- Make simple modifications to the example to see how changes affect behavior
+
+## Prerequisites
+
+Before starting this journey, make sure you have:
+
+- [Installed Motia](/docs/guides/setup/installation) on your system
+- Basic knowledge of JavaScript or TypeScript
+- A code editor of your choice
+
+## Journey Map
+
+Your journey begins with understanding the starter example and progresses through exploring its components, using Workbench, and making your first modifications:
+
+1. **Understanding the Starter Example** - Get familiar with the example project structure
+2. **Exploring Step Types** - Learn about NOOP, API, and Event steps
+3. **Using Workbench** - Visualize and interact with your workflows
+4. **Making Simple Modifications** - Change the example to see how it affects behavior
+
+## The Starter Example
+
+When you create a new Motia project, you get a starter example that demonstrates the core concepts of the platform. This example includes:
+
+- A simple workflow with multiple steps
+- Different step types (NOOP, API, and Event)
+- Basic event routing
+- A visualization in Workbench
+
+Let's examine this example to understand how Motia works.
+
+### Project Structure
+
+The starter example has the following structure:
+
+```
+my-motia-project/
+├── steps/
+│   ├── hello-api.step.ts     # API step that exposes an endpoint
+│   ├── hello-event.step.ts   # Event step that processes events
+│   └── hello-noop.step.ts    # NOOP step that represents an external process
+├── package.json
+└── motia.config.js           # Motia configuration
+```
+
+Each step file defines a specific component of the workflow:
+
+- `hello-api.step.ts` - Creates an HTTP endpoint that receives requests
+- `hello-event.step.ts` - Processes events emitted by other steps
+- `hello-noop.step.ts` - Represents an external process or manual action
+
+### Basic Workflow
+
+The starter example implements a simple workflow:
+
+1. The API step receives an HTTP request
+2. It emits an event with the request data
+3. The Event step processes this event and performs some action
+4. The NOOP step represents an external process that might be triggered
+
+This basic flow demonstrates the event-driven nature of Motia and how different step types work together to create a complete workflow.
+
+## Next Steps
+
+Now that you have an overview of the starter example, let's dive deeper into each component:
+
+1. [Exploring the Example](/docs/journeys/start-your-motia-journey/exploring-example) - Understand the NOOP, API, and Event steps in detail
+2. [Using Workbench](/docs/journeys/start-your-motia-journey/using-workbench) - Learn how to visualize and interact with your workflows
+3. [Simple Modifications](/docs/journeys/start-your-motia-journey/simple-modifications) - Make basic changes to the example
+
+By following these steps, you'll gain a solid understanding of Motia's fundamentals and be ready to build your own workflows.

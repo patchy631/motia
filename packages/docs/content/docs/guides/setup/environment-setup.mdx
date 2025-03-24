@@ -1,0 +1,709 @@
+---
+title: "Development Environment Setup"
+description: "Set up an optimal development environment for working with Motia"
+---
+
+# Development Environment Setup
+
+<div className="beginner-content">
+
+Setting up a proper development environment will make your experience with Motia more productive and enjoyable. This guide covers the essential tools and configurations for an optimal Motia development environment.
+
+## Essential Tools
+
+### Code Editor
+
+While you can use any text editor to work with Motia, we recommend using an editor with good JavaScript/TypeScript support:
+
+- **Visual Studio Code** (recommended): Free, open-source editor with excellent TypeScript support and a rich extension ecosystem
+- **WebStorm**: Full-featured IDE with advanced JavaScript/TypeScript support
+- **Atom**: Lightweight editor with good JavaScript support
+- **Sublime Text**: Fast, minimalist editor with JavaScript plugins
+
+#### Visual Studio Code Setup
+
+If you're using Visual Studio Code (VS Code), we recommend installing these extensions:
+
+1. **ESLint**: For JavaScript/TypeScript linting
+2. **Prettier**: For code formatting
+3. **YAML**: For editing YAML configuration files
+4. **Jest**: For running and debugging tests
+5. **GitLens**: For enhanced Git integration
+
+### Terminal
+
+You'll need a terminal to run Motia commands:
+
+- **Windows**: Windows Terminal, PowerShell, or Git Bash
+- **macOS**: Terminal.app or iTerm2
+- **Linux**: Your distribution's terminal (GNOME Terminal, Konsole, etc.)
+
+### Node.js and npm
+
+Motia requires Node.js version 16 or later. We recommend using a Node.js version manager to easily switch between versions:
+
+- **nvm** (Node Version Manager): For macOS and Linux
+- **nvm-windows**: For Windows
+- **volta**: Cross-platform Node.js version manager
+
+## Basic Setup
+
+### 1. Install Node.js and npm
+
+Using nvm (macOS/Linux):
+
+```bash
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+
+# Install Node.js
+nvm install 16
+nvm use 16
+```
+
+Using nvm-windows:
+
+```bash
+# Download and install nvm-windows from https://github.com/coreybutler/nvm-windows/releases
+nvm install 16
+nvm use 16
+```
+
+### 2. Set Up Your Code Editor
+
+For VS Code:
+
+1. Download and install VS Code from [code.visualstudio.com](https://code.visualstudio.com/)
+2. Install recommended extensions:
+   - Open VS Code
+   - Go to Extensions (Ctrl+Shift+X or Cmd+Shift+X)
+   - Search for and install: ESLint, Prettier, YAML, Jest, GitLens
+
+### 3. Create a Motia Project
+
+```bash
+# Create a new Motia project
+npx create-motia my-project
+
+# Navigate to the project directory
+cd my-project
+
+# Open in VS Code
+code .
+```
+
+### 4. Configure ESLint and Prettier
+
+Create a `.eslintrc.js` file in your project root:
+
+```javascript
+module.exports = {
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'prettier'
+  ],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
+  root: true,
+  env: {
+    node: true,
+    es6: true
+  }
+};
+```
+
+Create a `.prettierrc` file:
+
+```json
+{
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "printWidth": 80,
+  "tabWidth": 2,
+  "semi": true
+}
+```
+
+### 5. Start the Development Server
+
+```bash
+npm run dev
+```
+
+This will start the Motia development server and open the Workbench in your browser.
+
+</div>
+
+<div className="intermediate-content">
+
+## Enhanced Development Setup
+
+### Project Structure
+
+For larger projects, consider organizing your steps by domain or feature:
+
+```
+my-project/
+├── steps/
+│   ├── auth/
+│   │   ├── login.ts
+│   │   ├── register.ts
+│   │   └── verify.ts
+│   ├── users/
+│   │   ├── create.ts
+│   │   ├── update.ts
+│   │   └── delete.ts
+│   └── notifications/
+│       ├── email.ts
+│       └── push.ts
+├── config.yml
+├── package.json
+└── tsconfig.json
+```
+
+### TypeScript Configuration
+
+For TypeScript projects, create a more comprehensive `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@steps/*": ["steps/*"],
+      "@utils/*": ["utils/*"]
+    }
+  },
+  "include": ["steps/**/*", "utils/**/*"],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}
+```
+
+### Git Configuration
+
+Create a `.gitignore` file:
+
+```
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor directories and files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+```
+
+### VS Code Workspace Settings
+
+Create a `.vscode/settings.json` file:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/dist": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true
+  }
+}
+```
+
+### Testing Setup
+
+Install Jest for testing:
+
+```bash
+npm install --save-dev jest ts-jest @types/jest
+```
+
+Create a `jest.config.js` file:
+
+```javascript
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/steps'],
+  testMatch: ['**/*.test.ts'],
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest'
+  }
+};
+```
+
+Create a sample test file `steps/example.test.ts`:
+
+```typescript
+import { defineStep } from '@motia/core';
+
+describe('Example Step', () => {
+  it('should return success', async () => {
+    const step = defineStep({
+      id: 'test.example',
+      name: 'Test Example',
+      type: 'event',
+      on: ['test.event'],
+      run: async () => {
+        return { success: true };
+      }
+    });
+    
+    const result = await step.run({}, {});
+    expect(result).toEqual({ success: true });
+  });
+});
+```
+
+Add test scripts to `package.json`:
+
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  }
+}
+```
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Development Environment
+
+### Docker Development Environment
+
+For consistent development environments across your team, consider using Docker:
+
+Create a `Dockerfile.dev`:
+
+```dockerfile
+FROM node:16-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source files
+COPY . .
+
+# Expose ports
+EXPOSE 3000
+
+# Start development server
+CMD ["npm", "run", "dev"]
+```
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3'
+services:
+  motia:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./steps:/app/steps
+      - ./config.yml:/app/config.yml
+    environment:
+      - NODE_ENV=development
+    
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+```
+
+Run the development environment:
+
+```bash
+docker-compose up
+```
+
+### Multi-language Development
+
+For projects using multiple programming languages:
+
+#### Python Setup
+
+1. Install Python (3.8 or later)
+2. Create a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
+
+3. Install the Motia Python SDK:
+
+```bash
+pip install motia-sdk
+```
+
+4. Create a Python step in `steps/python/example.py`:
+
+```python
+from motia import define_step
+
+def run(input, context):
+    print(f"Event received: {input.get('event')}")
+    return {"success": True}
+
+step = define_step(
+    id="python.example",
+    name="Python Example",
+    type="event",
+    on=["python.event"],
+    run=run
+)
+```
+
+#### Ruby Setup
+
+1. Install Ruby (2.7 or later)
+2. Install the Motia Ruby gem:
+
+```bash
+gem install motia-sdk
+```
+
+3. Create a Ruby step in `steps/ruby/example.rb`:
+
+```ruby
+require 'motia'
+
+step = Motia.define_step(
+  id: 'ruby.example',
+  name: 'Ruby Example',
+  type: 'event',
+  on: ['ruby.event'],
+  run: lambda do |input, context|
+    puts "Event received: #{input[:event]}"
+    { success: true }
+  end
+)
+```
+
+### Continuous Integration
+
+Set up GitHub Actions for continuous integration:
+
+Create `.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x]
+        
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Lint
+      run: npm run lint
+      
+    - name: Test
+      run: npm test
+      
+    - name: Build
+      run: npm run build
+```
+
+### Advanced VS Code Configuration
+
+Create a `.vscode/launch.json` file for debugging:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Motia",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/node_modules/.bin/motia",
+      "args": ["start"],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Current File",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": ["${fileBasename}", "--config", "jest.config.js"],
+      "console": "integratedTerminal",
+      "disableOptimisticBPs": true
+    }
+  ]
+}
+```
+
+### Performance Monitoring
+
+Set up performance monitoring with Prometheus and Grafana:
+
+1. Add a Prometheus service to `docker-compose.yml`:
+
+```yaml
+prometheus:
+  image: prom/prometheus
+  ports:
+    - "9090:9090"
+  volumes:
+    - ./prometheus.yml:/etc/prometheus/prometheus.yml
+```
+
+2. Create a `prometheus.yml` configuration:
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'motia'
+    static_configs:
+      - targets: ['motia:3000']
+```
+
+3. Add a Grafana service:
+
+```yaml
+grafana:
+  image: grafana/grafana
+  ports:
+    - "3001:3000"
+  volumes:
+    - grafana-storage:/var/lib/grafana
+  depends_on:
+    - prometheus
+
+volumes:
+  grafana-storage:
+```
+
+</div>
+
+## Development Workflow
+
+Here's a recommended workflow for developing with Motia:
+
+### 1. Plan Your Steps
+
+Before writing code, plan the steps you'll need:
+- What API endpoints will you expose?
+- What events will trigger your workflows?
+- What scheduled tasks do you need?
+
+### 2. Create Step Files
+
+Create step files in the `steps` directory, organized by feature or domain:
+
+<div className="code-example">
+```typescript
+// steps/users/create.ts
+import { defineStep } from '@motia/core';
+
+export default defineStep({
+  id: 'users.create',
+  name: 'Create User',
+  type: 'api',
+  path: '/api/users',
+  method: 'POST',
+  emits: ['users.created'],
+  run: async (input, { emit }) => {
+    const { body } = input;
+    
+    // Validate user data
+    if (!body.email || !body.password) {
+      return {
+        status: 400,
+        body: { error: 'Email and password are required' }
+      };
+    }
+    
+    // Create user (in a real app, you'd save to a database)
+    const user = {
+      id: generateId(),
+      email: body.email,
+      name: body.name || '',
+      createdAt: new Date().toISOString()
+    };
+    
+    // Emit an event with the new user
+    await emit('users.created', { user });
+    
+    return {
+      status: 201,
+      body: { success: true, user }
+    };
+  }
+});
+
+function generateId() {
+  return Math.random().toString(36).substring(2, 15);
+}
+```
+</div>
+
+### 3. Test Your Steps
+
+Write tests for your steps:
+
+<div className="code-example">
+```typescript
+// steps/users/create.test.ts
+import createUserStep from './create';
+
+describe('Create User Step', () => {
+  it('should return 400 if email is missing', async () => {
+    const input = {
+      body: { password: 'password123' }
+    };
+    
+    const result = await createUserStep.run(input, {});
+    
+    expect(result.status).toBe(400);
+    expect(result.body.error).toBe('Email and password are required');
+  });
+  
+  it('should create a user and emit an event', async () => {
+    const input = {
+      body: {
+        email: 'test@example.com',
+        password: 'password123',
+        name: 'Test User'
+      }
+    };
+    
+    const emit = jest.fn();
+    const result = await createUserStep.run(input, { emit });
+    
+    expect(result.status).toBe(201);
+    expect(result.body.success).toBe(true);
+    expect(result.body.user.email).toBe('test@example.com');
+    expect(result.body.user.name).toBe('Test User');
+    
+    expect(emit).toHaveBeenCalledWith('users.created', {
+      user: expect.objectContaining({
+        email: 'test@example.com',
+        name: 'Test User'
+      })
+    });
+  });
+});
+```
+</div>
+
+### 4. Run and Debug
+
+Run your Motia application:
+
+```bash
+npm run dev
+```
+
+Use the Workbench to visualize and debug your workflows:
+- Open http://localhost:3000 in your browser
+- See your steps and their connections
+- Trigger steps manually to test them
+- View logs and event flow
+
+### 5. Iterate and Refine
+
+As you develop, iterate on your steps:
+- Add new steps as needed
+- Refine existing steps
+- Improve error handling
+- Optimize performance
+
+## Next Steps
+
+Now that your development environment is set up, you can:
+
+- Learn about [Step Creation](/docs/guides/step-creation) to build different types of steps
+- Explore [Flow Patterns](/docs/concepts/core-components/flow-patterns) to design effective workflows
+- Understand [State Management](/docs/concepts/core-components/state-management) for sharing data between steps

@@ -1,0 +1,104 @@
+{
+  "terms": [
+    {
+      "term": "Step",
+      "definition": "A discrete unit of functionality in Motia that performs a specific task, such as handling an API request, responding to an event, or executing on a schedule.",
+      "relatedTerms": ["API Step", "Event Step", "Cron Step", "NOOP Step"]
+    },
+    {
+      "term": "API Step",
+      "definition": "A step that creates an HTTP endpoint that can be called to trigger a workflow.",
+      "relatedTerms": ["Step", "Endpoint"]
+    },
+    {
+      "term": "Event Step",
+      "definition": "A step that listens for specific events and executes in response to those events.",
+      "relatedTerms": ["Step", "Event", "Topic"]
+    },
+    {
+      "term": "Cron Step",
+      "definition": "A step that executes on a scheduled basis using cron syntax.",
+      "relatedTerms": ["Step", "Schedule"]
+    },
+    {
+      "term": "NOOP Step",
+      "definition": "A 'No Operation' step that represents an external process or action, often used for testing or as a placeholder.",
+      "relatedTerms": ["Step"]
+    },
+    {
+      "term": "Flow",
+      "definition": "A sequence of steps connected by events that work together to accomplish a task.",
+      "relatedTerms": ["Step", "Event", "Workflow"]
+    },
+    {
+      "term": "Event",
+      "definition": "A message that indicates something has happened, which can trigger steps to execute.",
+      "relatedTerms": ["Topic", "Event Step", "Emit"]
+    },
+    {
+      "term": "Topic",
+      "definition": "A category or channel for events that helps organize and route them to the appropriate steps.",
+      "relatedTerms": ["Event"]
+    },
+    {
+      "term": "Emit",
+      "definition": "The action of sending an event to the Motia event system, which can then trigger steps that are listening for that event.",
+      "relatedTerms": ["Event", "Event Step"]
+    },
+    {
+      "term": "Workbench",
+      "definition": "Motia's visual development environment that allows you to visualize, test, and debug your workflows.",
+      "relatedTerms": ["Flow", "Visualization"]
+    },
+    {
+      "term": "State",
+      "definition": "Data that persists across steps in a workflow, allowing information to be shared and accumulated.",
+      "relatedTerms": ["Flow", "Step"]
+    },
+    {
+      "term": "Deterministic Workflow",
+      "definition": "A workflow with predictable behavior and defined control flow, where the same inputs always produce the same outputs.",
+      "relatedTerms": ["Flow", "Workflow"]
+    },
+    {
+      "term": "Agentic Workflow",
+      "definition": "A workflow that incorporates AI-powered decision making and can dynamically determine its own path based on context and goals.",
+      "relatedTerms": ["Flow", "Workflow", "LLM", "Dynamic Emit"]
+    },
+    {
+      "term": "LLM",
+      "definition": "Large Language Model, an AI system that can understand and generate human-like text, used in agentic workflows for reasoning and decision making.",
+      "relatedTerms": ["Agentic Workflow", "AI"]
+    },
+    {
+      "term": "Dynamic Emit",
+      "definition": "The ability for a step to emit events that weren't predefined, allowing for more flexible and adaptive workflows.",
+      "relatedTerms": ["Emit", "Agentic Workflow"]
+    },
+    {
+      "term": "Dynamic Reasoning",
+      "definition": "The capability of an agentic workflow to make decisions based on context and goals rather than predefined rules.",
+      "relatedTerms": ["Agentic Workflow", "LLM"]
+    },
+    {
+      "term": "Agent",
+      "definition": "An autonomous component in a workflow that can perceive its environment, make decisions, and take actions to achieve goals.",
+      "relatedTerms": ["Agentic Workflow", "LLM"]
+    },
+    {
+      "term": "Agent Orchestration",
+      "definition": "The coordination of multiple agents working together in a workflow, each with specific roles and responsibilities.",
+      "relatedTerms": ["Agent", "Agentic Workflow"]
+    },
+    {
+      "term": "Hybrid Approach",
+      "definition": "A workflow that combines deterministic and agentic elements, using each where most appropriate.",
+      "relatedTerms": ["Deterministic Workflow", "Agentic Workflow"]
+    },
+    {
+      "term": "Event-Driven Architecture",
+      "definition": "A software design pattern where the flow of the program is determined by events such as user actions, sensor outputs, or messages from other programs.",
+      "relatedTerms": ["Event", "Flow"]
+    }
+  ]
+}

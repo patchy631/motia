@@ -1,0 +1,1216 @@
+---
+title: Agent Types in Motia
+description: Understanding different types of agents and their use cases in Motia workflows
+---
+
+# Agent Types in Motia
+
+Agentic workflows in Motia can incorporate various types of agents, each with specific capabilities and use cases. This guide explores the different agent types you can implement in your Motia applications, with examples and best practices for each.
+
+## What are Agents in Motia?
+
+In Motia, an agent is a specialized step or collection of steps that can make decisions, process information, and take actions with some degree of autonomy. Agents typically leverage large language models (LLMs) or other AI technologies to provide intelligent capabilities within your event-driven workflows.
+
+Unlike traditional deterministic steps that follow fixed logic, agents can:
+
+- Interpret and understand natural language
+- Make decisions based on context and criteria
+- Generate content and responses
+- Adapt their behavior based on feedback
+- Solve problems creatively
+
+## Core Agent Types
+
+### 1. Reactive Agents
+
+Reactive agents respond to specific events or inputs with predefined patterns of behavior. They're the simplest type of agent and are useful for straightforward tasks that require minimal context.
+
+**Characteristics:**
+- Respond directly to events without maintaining complex state
+- Make decisions based on the current input only
+- Follow simple if-then-else logic, enhanced by LLM capabilities
+- Typically complete their work in a single step
+
+**Example Implementation:**
+
+```typescript
+// reactiveAgent.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  message: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Customer Support Reactive Agent',
+  subscribes: ['support.message'],
+  emits: ['support.response', 'support.escalate'],
+  input: inputSchema,
+  flows: ['customer-support'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Analyze the message to determine intent and sentiment
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a customer support assistant. Analyze the customer message and return a JSON object with:
+          {
+            "intent": "question|complaint|feedback|other",
+            "sentiment": "positive|negative|neutral",
+            "requiresHumanEscalation": true|false,
+            "suggestedResponse": "A helpful response to the customer"
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.message,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const analysis = JSON.parse(content);
+    
+    // Decide whether to respond or escalate
+    if (analysis.requiresHumanEscalation) {
+      await emit({
+        topic: 'support.escalate',
+        data: {
+          userId: input.userId,
+          message: input.message,
+          analysis,
+        },
+      });
+    } else {
+      await emit({
+        topic: 'support.response',
+        data: {
+          userId: input.userId,
+          response: analysis.suggestedResponse,
+          analysis,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in customer support agent', { error });
+    
+    // Always escalate on error
+    await emit({
+      topic: 'support.escalate',
+      data: {
+        userId: input.userId,
+        message: input.message,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+**Use Cases:**
+- Customer support triage
+- Content moderation
+- Simple classification tasks
+- Basic question answering
+- Notification filtering
+
+### 2. Stateful Agents
+
+Stateful agents maintain context across multiple interactions, allowing them to handle more complex tasks that require memory of past events or conversations.
+
+**Characteristics:**
+- Maintain state across multiple events or interactions
+- Make decisions based on current input and historical context
+- Can handle multi-turn conversations or multi-step processes
+- Use Motia's state management capabilities to store and retrieve context
+
+**Example Implementation:**
+
+```typescript
+// statefulAgent.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  message: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Conversational Agent',
+  subscribes: ['conversation.message'],
+  emits: ['conversation.response'],
+  input: inputSchema,
+  flows: ['virtual-assistant'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  // Define keys for storing conversation state
+  const conversationKey = `user:${input.userId}:conversation`;
+  const userProfileKey = `user:${input.userId}:profile`;
+  
+  try {
+    // Retrieve conversation history and user profile
+    const history = await state.get(traceId, conversationKey) || [];
+    const userProfile = await state.get(traceId, userProfileKey) || {
+      preferences: {},
+      pastQueries: [],
+    };
+    
+    // Add the new message to history
+    history.push({
+      role: 'user',
+      content: input.message,
+    });
+    
+    // Update user profile based on the message
+    userProfile.pastQueries.push({
+      message: input.message,
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Keep only the last 10 queries
+    if (userProfile.pastQueries.length > 10) {
+      userProfile.pastQueries = userProfile.pastQueries.slice(-10);
+    }
+    
+    // Create a system message with user context
+    const systemMessage = `You are a helpful assistant. 
+    User profile: ${JSON.stringify(userProfile.preferences)}
+    Recent conversation history: ${JSON.stringify(userProfile.pastQueries)}
+    
+    Provide a helpful, personalized response based on the user's history and preferences.`;
+    
+    // Generate a response using the full context
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: systemMessage,
+        },
+        ...history,
+      ],
+    });
+    
+    const assistantMessage = response.choices[0]?.message;
+    
+    if (assistantMessage) {
+      // Add the response to history
+      history.push({
+        role: assistantMessage.role,
+        content: assistantMessage.content,
+      });
+      
+      // Update state
+      await state.set(traceId, conversationKey, history);
+      await state.set(traceId, userProfileKey, userProfile);
+      
+      // Emit the response
+      await emit({
+        topic: 'conversation.response',
+        data: {
+          userId: input.userId,
+          message: assistantMessage.content,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in conversational agent', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'conversation.error',
+      data: {
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+**Use Cases:**
+- Virtual assistants
+- Customer support chatbots
+- Multi-step form filling
+- Guided tutorials
+- User onboarding flows
+
+### 3. Tool-Using Agents
+
+Tool-using agents can interact with external systems and APIs to retrieve information or perform actions, extending their capabilities beyond what's possible with the LLM alone.
+
+**Characteristics:**
+- Can call external APIs and services
+- Make decisions about which tools to use based on the task
+- Combine information from multiple sources
+- Execute actions in external systems
+
+**Example Implementation:**
+
+```typescript
+// toolUsingAgent.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+import { searchWeather, searchWikipedia, fetchNewsHeadlines } from '../services/externalApis';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Tool-Using Research Agent',
+  subscribes: ['research.query'],
+  emits: ['research.response'],
+  input: inputSchema,
+  flows: ['research-assistant'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Determine which tools to use based on the query
+    const planningResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a research planning assistant. Analyze the user's query and determine which tools would be most helpful to answer it.
+          Return a JSON object with the following structure:
+          {
+            "tools": [
+              {
+                "name": "weather|wikipedia|news",
+                "reason": "Why this tool is relevant",
+                "parameters": {
+                  "location": "For weather queries",
+                  "topic": "For wikipedia or news queries"
+                }
+              }
+            ]
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.query,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const planContent = planningResponse.choices[0]?.message?.content || '';
+    const plan = JSON.parse(planContent);
+    
+    // Step 2: Execute the tools
+    const toolResults = [];
+    
+    for (const tool of plan.tools) {
+      try {
+        let result;
+        
+        switch (tool.name) {
+          case 'weather':
+            result = await searchWeather(tool.parameters.location);
+            toolResults.push({
+              tool: 'weather',
+              data: result,
+            });
+            break;
+            
+          case 'wikipedia':
+            result = await searchWikipedia(tool.parameters.topic);
+            toolResults.push({
+              tool: 'wikipedia',
+              data: result,
+            });
+            break;
+            
+          case 'news':
+            result = await fetchNewsHeadlines(tool.parameters.topic);
+            toolResults.push({
+              tool: 'news',
+              data: result,
+            });
+            break;
+        }
+      } catch (toolError) {
+        logger.error(`Error using tool ${tool.name}`, { error: toolError });
+        toolResults.push({
+          tool: tool.name,
+          error: toolError.message,
+        });
+      }
+    }
+    
+    // Step 3: Synthesize the results
+    const synthesisResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a research assistant. Synthesize the information from the tools into a comprehensive answer.',
+        },
+        {
+          role: 'user',
+          content: `
+          Original query: ${input.query}
+          
+          Tool results:
+          ${JSON.stringify(toolResults, null, 2)}
+          
+          Please provide a comprehensive answer based on this information.`,
+        },
+      ],
+    });
+    
+    const answer = synthesisResponse.choices[0]?.message?.content || '';
+    
+    // Emit the final response
+    await emit({
+      topic: 'research.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        answer,
+        sources: toolResults,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in research agent', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'research.error',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+**Use Cases:**
+- Research assistants
+- Data aggregation and analysis
+- Travel planning
+- Product recommendations
+- Workflow automation
+
+### 4. Reasoning Agents
+
+Reasoning agents break down complex problems into steps and apply logical reasoning to solve them. They're particularly useful for tasks that require structured thinking or multi-step problem-solving.
+
+**Characteristics:**
+- Break down problems into smaller, manageable steps
+- Apply chain-of-thought reasoning
+- Show their work and explain their thinking
+- Can handle complex, multi-step problems
+
+**Example Implementation:**
+
+```typescript
+// reasoningAgent.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  problem: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Math Problem Solver',
+  subscribes: ['math.problem'],
+  emits: ['math.solution'],
+  input: inputSchema,
+  flows: ['math-tutor'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Use chain-of-thought prompting to solve the problem
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a math tutor that solves problems step by step. 
+          For each problem:
+          1. Break it down into smaller steps
+          2. Solve each step, showing your work
+          3. Explain your reasoning at each step
+          4. Provide the final answer
+          
+          Return your solution as a JSON object with this structure:
+          {
+            "steps": [
+              {
+                "description": "Step description",
+                "work": "Mathematical work for this step",
+                "explanation": "Explanation of the reasoning"
+              }
+            ],
+            "finalAnswer": "The final answer to the problem"
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.problem,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const solution = JSON.parse(content);
+    
+    // Emit the solution
+    await emit({
+      topic: 'math.solution',
+      data: {
+        userId: input.userId,
+        problem: input.problem,
+        solution,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in math problem solver', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'math.error',
+      data: {
+        userId: input.userId,
+        problem: input.problem,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+**Use Cases:**
+- Math problem solving
+- Logical reasoning tasks
+- Step-by-step tutorials
+- Debugging assistance
+- Decision support systems
+
+### 5. Creative Agents
+
+Creative agents generate original content, ideas, or solutions based on prompts or requirements. They excel at tasks that require imagination and creative thinking.
+
+**Characteristics:**
+- Generate original content or ideas
+- Adapt to style and tone requirements
+- Iterate and refine based on feedback
+- Balance creativity with constraints
+
+**Example Implementation:**
+
+```typescript
+// creativeAgent.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  topic: z.string(),
+  style: z.string().optional(),
+  length: z.number().optional(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Content Generator',
+  subscribes: ['content.generate'],
+  emits: ['content.generated', 'content.feedback.request'],
+  input: inputSchema,
+  flows: ['content-creation'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  // Get or initialize the generation state
+  const stateKey = `content:${traceId}`;
+  const contentState = await state.get(traceId, stateKey) || {
+    iterations: 0,
+    feedback: [],
+    currentContent: null,
+  };
+  
+  try {
+    // Prepare the prompt based on the input and previous feedback
+    let prompt = `Generate creative content about: ${input.topic}`;
+    
+    if (input.style) {
+      prompt += `\nStyle: ${input.style}`;
+    }
+    
+    if (input.length) {
+      prompt += `\nApproximate length: ${input.length} words`;
+    }
+    
+    if (contentState.feedback.length > 0) {
+      prompt += `\n\nPrevious feedback to incorporate:\n${contentState.feedback.join('\n')}`;
+    }
+    
+    // Generate the content
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a creative content generator. Create original, engaging content based on the provided topic and requirements.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+    
+    const generatedContent = response.choices[0]?.message?.content || '';
+    
+    // Update the state
+    contentState.iterations += 1;
+    contentState.currentContent = generatedContent;
+    await state.set(traceId, stateKey, contentState);
+    
+    // Emit the generated content
+    await emit({
+      topic: 'content.generated',
+      data: {
+        userId: input.userId,
+        topic: input.topic,
+        content: generatedContent,
+        iteration: contentState.iterations,
+      },
+    });
+    
+    // If this isn't the first iteration, also request feedback
+    if (contentState.iterations > 1) {
+      await emit({
+        topic: 'content.feedback.request',
+        data: {
+          userId: input.userId,
+          content: generatedContent,
+          iteration: contentState.iterations,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in content generator', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'content.generation.failed',
+      data: {
+        userId: input.userId,
+        topic: input.topic,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+**Use Cases:**
+- Content creation
+- Marketing copy generation
+- Creative writing assistance
+- Design ideation
+- Brainstorming sessions
+
+## Advanced Agent Types
+
+### 1. Multi-Agent Systems
+
+Multi-agent systems involve multiple specialized agents working together to solve complex problems. Each agent has a specific role and expertise, and they collaborate through events to achieve a common goal.
+
+**Characteristics:**
+- Multiple specialized agents with different roles
+- Coordination through events and shared state
+- Division of labor based on agent capabilities
+- Potential for parallel processing
+
+**Example Implementation:**
+
+```typescript
+// researchCoordinator.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Research Coordinator',
+  subscribes: ['research.request'],
+  emits: [
+    'research.task.search',
+    'research.task.analyze',
+    'research.task.summarize',
+  ],
+  input: inputSchema,
+  flows: ['multi-agent-research'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Step 1: Plan the research tasks
+    const planningResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a research planning assistant. Break down the research query into specific search tasks.
+          Return a JSON object with the following structure:
+          {
+            "searchTasks": [
+              {
+                "topic": "Specific topic to search",
+                "keywords": ["keyword1", "keyword2"],
+                "importance": 1-5
+              }
+            ]
+          }`,
+        },
+        {
+          role: 'user',
+          content: input.query,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const planContent = planningResponse.choices[0]?.message?.content || '';
+    const plan = JSON.parse(planContent);
+    
+    // Store the research plan in state
+    await state.set(traceId, 'researchPlan', {
+      query: input.query,
+      tasks: plan.searchTasks,
+      results: {},
+      status: 'in_progress',
+      startTime: new Date().toISOString(),
+    });
+    
+    // Step 2: Emit events for each search task
+    for (const task of plan.searchTasks) {
+      await emit({
+        topic: 'research.task.search',
+        data: {
+          userId: input.userId,
+          traceId,
+          topic: task.topic,
+          keywords: task.keywords,
+          importance: task.importance,
+        },
+      });
+    }
+    
+    // Also emit an event to start the analysis when search results come in
+    await emit({
+      topic: 'research.task.analyze',
+      data: {
+        userId: input.userId,
+        traceId,
+        query: input.query,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in research coordinator', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'research.failed',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// searchAgent.step.ts (one of the specialized agents)
+export const searchAgentConfig = {
+  type: 'event',
+  name: 'Search Agent',
+  subscribes: ['research.task.search'],
+  emits: ['research.result.search'],
+  flows: ['multi-agent-research'],
+};
+
+export const searchAgentHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Perform the search
+    const searchResults = await performSearch(input.topic, input.keywords);
+    
+    // Store the results
+    const researchPlan = await state.get(traceId, 'researchPlan');
+    researchPlan.results[input.topic] = searchResults;
+    await state.set(traceId, 'researchPlan', researchPlan);
+    
+    // Emit the search results
+    await emit({
+      topic: 'research.result.search',
+      data: {
+        userId: input.userId,
+        traceId,
+        topic: input.topic,
+        results: searchResults,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in search agent', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'research.result.search.failed',
+      data: {
+        userId: input.userId,
+        traceId,
+        topic: input.topic,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// analysisAgent.step.ts (another specialized agent)
+export const analysisAgentConfig = {
+  type: 'event',
+  name: 'Analysis Agent',
+  subscribes: ['research.task.analyze', 'research.result.search'],
+  emits: ['research.task.summarize'],
+  flows: ['multi-agent-research'],
+};
+
+export const analysisAgentHandler = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Check if this is a search result or an analysis task
+    if (input.__motia.topic === 'research.result.search') {
+      // Just update the state - we'll analyze when all results are in
+      return;
+    }
+    
+    // Get the research plan
+    const researchPlan = await state.get(traceId, 'researchPlan');
+    
+    // Check if all search tasks have results
+    const allTasksComplete = researchPlan.tasks.every(
+      task => researchPlan.results[task.topic]
+    );
+    
+    if (!allTasksComplete) {
+      // Not all search tasks are complete yet
+      return;
+    }
+    
+    // Analyze the combined results
+    const analysisResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a research analyst. Analyze the search results and identify key insights and patterns.',
+        },
+        {
+          role: 'user',
+          content: `
+          Research query: ${researchPlan.query}
+          
+          Search results:
+          ${JSON.stringify(researchPlan.results, null, 2)}
+          
+          Please analyze these results and identify key insights, patterns, and conclusions.`,
+        },
+      ],
+    });
+    
+    const analysis = analysisResponse.choices[0]?.message?.content || '';
+    
+    // Store the analysis
+    researchPlan.analysis = analysis;
+    await state.set(traceId, 'researchPlan', researchPlan);
+    
+    // Emit an event to summarize the research
+    await emit({
+      topic: 'research.task.summarize',
+      data: {
+        userId: input.userId,
+        traceId,
+        query: researchPlan.query,
+        analysis,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in analysis agent', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'research.analysis.failed',
+      data: {
+        userId: input.userId,
+        traceId,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+**Use Cases:**
+- Complex research tasks
+- Multi-step business processes
+- Customer journey orchestration
+- Project management
+- Collaborative problem-solving
+
+### 2. Self-Improving Agents
+
+Self-improving agents can learn from their interactions and improve their performance over time. They use feedback and outcomes to refine their behavior and become more effective.
+
+**Characteristics:**
+- Learn from past interactions and outcomes
+- Adjust behavior based on feedback
+- Maintain and update their own prompts or parameters
+- Track performance metrics to guide improvement
+
+**Example Implementation:**
+
+```typescript
+// selfImprovingAgent.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Self-Improving Assistant',
+  subscribes: ['assistant.query', 'assistant.feedback'],
+  emits: ['assistant.response'],
+  input: inputSchema,
+  flows: ['learning-assistant'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  // Define state keys
+  const promptKey = 'assistantPrompt';
+  const interactionsKey = 'assistantInteractions';
+  const metricsKey = 'assistantMetrics';
+  
+  try {
+    // Handle feedback if this is a feedback event
+    if (input.__motia.topic === 'assistant.feedback') {
+      await handleFeedback(input, { state, traceId, logger });
+      return;
+    }
+    
+    // Get or initialize the assistant state
+    const currentPrompt = await state.get(traceId, promptKey) || DEFAULT_PROMPT;
+    const interactions = await state.get(traceId, interactionsKey) || [];
+    const metrics = await state.get(traceId, metricsKey) || {
+      totalQueries: 0,
+      positiveRatings: 0,
+      negativeRatings: 0,
+      averageRating: 0,
+    };
+    
+    // Update metrics
+    metrics.totalQueries += 1;
+    await state.set(traceId, metricsKey, metrics);
+    
+    // Generate a response using the current prompt
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: currentPrompt,
+        },
+        {
+          role: 'user',
+          content: input.query,
+        },
+      ],
+    });
+    
+    const answer = response.choices[0]?.message?.content || '';
+    
+    // Store the interaction
+    interactions.push({
+      query: input.query,
+      response: answer,
+      timestamp: new Date().toISOString(),
+      feedback: null,
+    });
+    
+    // Keep only the last 50 interactions
+    if (interactions.length > 50) {
+      interactions.shift();
+    }
+    
+    await state.set(traceId, interactionsKey, interactions);
+    
+    // Check if it's time to improve the prompt
+    if (metrics.totalQueries % 10 === 0 && metrics.totalQueries > 0) {
+      await improvePrompt({ state, traceId, logger });
+    }
+    
+    // Emit the response
+    await emit({
+      topic: 'assistant.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        response: answer,
+        interactionId: interactions.length - 1,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in self-improving assistant', { error });
+    
+    // Emit an error response
+    await emit({
+      topic: 'assistant.error',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// Helper function to handle feedback
+async function handleFeedback(input, { state, traceId, logger }) {
+  const interactionsKey = 'assistantInteractions';
+  const metricsKey = 'assistantMetrics';
+  
+  try {
+    // Get the interactions and metrics
+    const interactions = await state.get(traceId, interactionsKey) || [];
+    const metrics = await state.get(traceId, metricsKey) || {
+      totalQueries: 0,
+      positiveRatings: 0,
+      negativeRatings: 0,
+      averageRating: 0,
+    };
+    
+    // Update the interaction with feedback
+    const interactionId = input.interactionId;
+    if (interactionId >= 0 && interactionId < interactions.length) {
+      interactions[interactionId].feedback = {
+        rating: input.rating,
+        comments: input.comments,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // Update metrics
+      if (input.rating > 3) {
+        metrics.positiveRatings += 1;
+      } else {
+        metrics.negativeRatings += 1;
+      }
+      
+      metrics.averageRating = (metrics.positiveRatings * 5 + metrics.negativeRatings * 1) / 
+        (metrics.positiveRatings + metrics.negativeRatings);
+      
+      // Save updated state
+      await state.set(traceId, interactionsKey, interactions);
+      await state.set(traceId, metricsKey, metrics);
+    }
+  } catch (error) {
+    logger.error('Error handling feedback', { error });
+  }
+}
+
+// Helper function to improve the prompt
+async function improvePrompt({ state, traceId, logger }) {
+  const promptKey = 'assistantPrompt';
+  const interactionsKey = 'assistantInteractions';
+  const metricsKey = 'assistantMetrics';
+  
+  try {
+    // Get the current state
+    const currentPrompt = await state.get(traceId, promptKey) || DEFAULT_PROMPT;
+    const interactions = await state.get(traceId, interactionsKey) || [];
+    const metrics = await state.get(traceId, metricsKey) || {};
+    
+    // Only improve if we have enough interactions with feedback
+    const interactionsWithFeedback = interactions.filter(i => i.feedback);
+    if (interactionsWithFeedback.length < 5) {
+      return;
+    }
+    
+    // Use the LLM to generate an improved prompt
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a prompt engineering expert. Your task is to improve a system prompt based on user interactions and feedback.
+          
+          Current system prompt:
+          "${currentPrompt}"
+          
+          Current performance metrics:
+          ${JSON.stringify(metrics, null, 2)}
+          
+          Recent interactions with feedback:
+          ${JSON.stringify(interactionsWithFeedback.slice(-5), null, 2)}
+          
+          Please analyze the interactions and feedback, then generate an improved system prompt that addresses any issues and builds on strengths.`,
+        },
+      ],
+    });
+    
+    const improvedPrompt = response.choices[0]?.message?.content || '';
+    
+    // Save the improved prompt
+    await state.set(traceId, promptKey, improvedPrompt);
+    
+    logger.info('Improved assistant prompt based on feedback', {
+      oldPrompt: currentPrompt,
+      newPrompt: improvedPrompt,
+    });
+  } catch (error) {
+    logger.error('Error improving prompt', { error });
+  }
+}
+```
+
+**Use Cases:**
+- Customer support systems
+- Personalized recommendation engines
+- Educational assistants
+- Content moderation systems
+- Adaptive user interfaces
+
+## Implementing Agents in Motia
+
+When implementing agents in your Motia workflows, consider these best practices:
+
+### 1. Choose the Right Agent Type
+
+Select the agent type that best matches your use case:
+
+- **Reactive Agents**: For simple, stateless tasks with clear inputs and outputs
+- **Stateful Agents**: For tasks requiring context and memory across interactions
+- **Tool-Using Agents**: For tasks requiring external data or actions
+- **Reasoning Agents**: For complex problem-solving tasks
+- **Creative Agents**: For content generation and creative tasks
+- **Multi-Agent Systems**: For complex workflows requiring specialized expertise
+- **Self-Improving Agents**: For systems that need to adapt and improve over time
+
+### 2. Design Effective Prompts
+
+The quality of your prompts significantly impacts agent performance:
+
+- Be specific about the agent's role and capabilities
+- Provide clear instructions and expected output formats
+- Include examples for complex tasks
+- Consider using few-shot learning for challenging tasks
+- Iterate and refine prompts based on performance
+
+### 3. Manage State Effectively
+
+For stateful agents, proper state management is crucial:
+
+- Use meaningful state keys with clear namespaces
+- Store only necessary information to avoid state bloat
+- Implement state cleanup to prevent memory leaks
+- Consider state partitioning for multi-user systems
+- Use state for context, history, and agent configuration
+
+### 4. Implement Error Handling
+
+Robust error handling ensures your agents can recover from failures:
+
+- Handle API errors gracefully
+- Implement timeouts for external calls
+- Provide fallback behaviors when agents fail
+- Log errors with sufficient context for debugging
+- Consider retry mechanisms for transient failures
+
+### 5. Monitor and Evaluate
+
+Continuously monitor and evaluate your agents' performance:
+
+- Track key metrics like success rate, response time, and user satisfaction
+- Collect and analyze user feedback
+- Implement A/B testing for prompt improvements
+- Review agent logs and outputs regularly
+- Use human oversight for critical decisions
+
+## Conclusion
+
+Agents in Motia provide powerful capabilities for building intelligent, adaptive applications. By understanding the different agent types and their use cases, you can select the right approach for your specific needs and implement effective agentic workflows.
+
+Remember that the most successful agentic systems often combine multiple agent types, leveraging the strengths of each to create comprehensive solutions. For example, you might use a reactive agent for initial triage, a tool-using agent for information gathering, and a reasoning agent for final decision-making.
+
+As you build more sophisticated agentic workflows, consider how you can leverage Motia's event-driven architecture to create systems that are not only intelligent but also scalable, maintainable, and reliable.
+
+## Next Steps
+
+- [LLM Integration](./llm-integration) - Learn more about integrating large language models into your workflows
+- [Dynamic Emits](./dynamic-emits) - Explore patterns for dynamic event emission in agentic workflows
+- [Dynamic Reasoning](./dynamic-reasoning) - Discover techniques for implementing adaptive decision-making in your agents

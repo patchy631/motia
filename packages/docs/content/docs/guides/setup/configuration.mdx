@@ -1,0 +1,500 @@
+---
+title: "Configuring Motia"
+description: "Learn how to configure your Motia application for different environments and use cases"
+---
+
+# Configuring Motia
+
+<div className="beginner-content">
+
+After installing Motia, you'll want to configure it to suit your specific needs. This guide covers the basic configuration options and how to customize them.
+
+## Basic Configuration
+
+Motia uses a `config.yml` file in the root of your project for configuration. When you create a new project using `create-motia` or `@motia/snap create`, a default configuration file is generated for you.
+
+Here's what a basic configuration file looks like:
+
+```yaml
+# config.yml
+server:
+  port: 3000
+  host: localhost
+
+steps:
+  directory: ./steps
+  autoRegister: true
+
+state:
+  provider: memory
+```
+
+### Essential Configuration Options
+
+#### Server Configuration
+
+The `server` section configures the HTTP server that Motia uses for API steps and the Workbench:
+
+```yaml
+server:
+  port: 3000        # The port to run the server on
+  host: localhost   # The host to bind to
+```
+
+#### Steps Configuration
+
+The `steps` section tells Motia where to find your step definitions and how to handle them:
+
+```yaml
+steps:
+  directory: ./steps   # The directory containing your step definitions
+  autoRegister: true   # Whether to automatically register steps from the directory
+```
+
+#### State Configuration
+
+The `state` section configures how Motia manages state:
+
+```yaml
+state:
+  provider: memory   # Use in-memory state storage (default)
+```
+
+## Modifying Configuration
+
+To modify the configuration, simply edit the `config.yml` file in your project root. Changes will take effect the next time you start the Motia server.
+
+For example, to change the port that Motia runs on:
+
+```yaml
+server:
+  port: 8080   # Changed from the default 3000
+  host: localhost
+```
+
+## Environment-Specific Configuration
+
+You can use environment variables to override configuration values, which is useful for different environments (development, staging, production).
+
+For example, to override the server port:
+
+```bash
+# In your terminal or .env file
+export MOTIA_SERVER_PORT=8080
+```
+
+Motia will use the environment variable value instead of the one in `config.yml`.
+
+</div>
+
+<div className="intermediate-content">
+
+## Advanced Configuration Options
+
+### Complete Configuration Reference
+
+Here's a more comprehensive configuration file with additional options:
+
+```yaml
+server:
+  port: 3000
+  host: localhost
+  cors:
+    enabled: true
+    origin: '*'
+  ssl:
+    enabled: false
+    # key: path/to/key.pem
+    # cert: path/to/cert.pem
+
+steps:
+  directory: ./steps
+  autoRegister: true
+  excludePatterns:
+    - '**/*.test.js'
+    - '**/*.spec.js'
+  languages:
+    - javascript
+    - typescript
+    - python
+    - ruby
+
+state:
+  provider: memory
+  # For Redis state provider:
+  # provider: redis
+  # url: redis://localhost:6379
+  # prefix: motia:
+  ttl: 86400  # 24 hours in seconds
+
+logging:
+  level: info  # debug, info, warn, error
+  format: json  # json, text
+  destination: console  # console, file
+  # file: path/to/logfile.log
+
+workbench:
+  enabled: true
+  path: /workbench
+  authentication:
+    enabled: false
+    # For basic auth:
+    # type: basic
+    # username: admin
+    # password: password
+```
+
+### CORS Configuration
+
+Cross-Origin Resource Sharing (CORS) is important if your API steps need to be accessed from different domains:
+
+```yaml
+server:
+  cors:
+    enabled: true
+    origin: '*'  # Allow all origins
+    # Or specify allowed origins:
+    # origin:
+    #   - https://example.com
+    #   - https://app.example.com
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true  # Allow cookies
+```
+
+### SSL Configuration
+
+For secure connections, you can enable SSL:
+
+```yaml
+server:
+  ssl:
+    enabled: true
+    key: path/to/key.pem
+    cert: path/to/cert.pem
+```
+
+### State Provider Configuration
+
+Motia supports different state providers:
+
+#### Memory (Default)
+
+```yaml
+state:
+  provider: memory
+  ttl: 86400  # Optional: Time-to-live in seconds
+```
+
+#### Redis
+
+```yaml
+state:
+  provider: redis
+  url: redis://localhost:6379
+  prefix: motia:  # Optional: Key prefix
+  ttl: 86400  # Optional: Time-to-live in seconds
+```
+
+#### File System
+
+```yaml
+state:
+  provider: file
+  directory: ./state
+  ttl: 86400  # Optional: Time-to-live in seconds
+```
+
+### Logging Configuration
+
+Configure logging to suit your needs:
+
+```yaml
+logging:
+  level: info  # debug, info, warn, error
+  format: json  # json, text
+  destination: console  # console, file
+  file: logs/motia.log  # Required if destination is 'file'
+  rotation:
+    enabled: true
+    maxSize: 10485760  # 10MB
+    maxFiles: 5
+```
+
+</div>
+
+<div className="advanced-content">
+
+## Production Configuration
+
+When deploying Motia to production, consider these configuration options:
+
+### Security
+
+```yaml
+server:
+  host: 0.0.0.0  # Bind to all interfaces
+  ssl:
+    enabled: true
+    key: /path/to/production/key.pem
+    cert: /path/to/production/cert.pem
+  cors:
+    enabled: true
+    origin:
+      - https://your-app-domain.com
+    credentials: true
+
+workbench:
+  enabled: true  # Consider disabling in production or securing it
+  authentication:
+    enabled: true
+    type: basic
+    username: ${WORKBENCH_USERNAME}
+    password: ${WORKBENCH_PASSWORD}
+```
+
+### Performance
+
+```yaml
+server:
+  maxRequestBodySize: 5242880  # 5MB
+  compression: true
+  
+steps:
+  cacheSize: 1000  # Number of steps to keep in memory
+
+state:
+  provider: redis
+  url: ${REDIS_URL}
+  prefix: motia:prod:
+  ttl: 604800  # 7 days
+  
+logging:
+  level: warn  # Less verbose in production
+  format: json
+  destination: file
+  file: /var/log/motia/app.log
+  rotation:
+    enabled: true
+    maxSize: 104857600  # 100MB
+    maxFiles: 10
+```
+
+### High Availability
+
+For high-availability setups, you might use multiple Motia instances behind a load balancer:
+
+```yaml
+server:
+  port: ${PORT}
+  host: 0.0.0.0
+  
+state:
+  provider: redis  # Shared state between instances
+  url: ${REDIS_URL}
+  
+clustering:
+  enabled: true
+  instanceId: ${INSTANCE_ID}  # Unique ID for this instance
+  redis:
+    url: ${REDIS_URL}  # Same Redis for coordination
+```
+
+### Environment Variables and Secrets
+
+Use environment variables for sensitive information:
+
+```yaml
+server:
+  ssl:
+    key: ${SSL_KEY_PATH}
+    cert: ${SSL_CERT_PATH}
+
+state:
+  provider: redis
+  url: ${REDIS_URL}
+  password: ${REDIS_PASSWORD}
+
+authentication:
+  jwt:
+    secret: ${JWT_SECRET}
+```
+
+### Custom Plugins
+
+For advanced use cases, you can register custom plugins:
+
+```yaml
+plugins:
+  - name: custom-auth
+    path: ./plugins/custom-auth.js
+    config:
+      authProvider: oauth2
+      clientId: ${OAUTH_CLIENT_ID}
+      clientSecret: ${OAUTH_CLIENT_SECRET}
+  
+  - name: metrics
+    path: ./plugins/metrics.js
+    config:
+      provider: prometheus
+      endpoint: /metrics
+```
+
+</div>
+
+## Configuration by Example
+
+Here are some common configuration scenarios:
+
+### Development Environment
+
+<div className="code-example">
+```yaml
+# config.development.yml
+server:
+  port: 3000
+  host: localhost
+  cors:
+    enabled: true
+    origin: '*'
+
+steps:
+  directory: ./steps
+  autoRegister: true
+  excludePatterns:
+    - '**/*.test.js'
+
+state:
+  provider: memory
+
+logging:
+  level: debug
+  format: text
+  destination: console
+
+workbench:
+  enabled: true
+  path: /workbench
+```
+</div>
+
+### Production Environment
+
+<div className="code-example">
+```yaml
+# config.production.yml
+server:
+  port: ${PORT}
+  host: 0.0.0.0
+  cors:
+    enabled: true
+    origin:
+      - https://app.example.com
+  ssl:
+    enabled: true
+    key: ${SSL_KEY_PATH}
+    cert: ${SSL_CERT_PATH}
+
+steps:
+  directory: ./steps
+  autoRegister: true
+  excludePatterns:
+    - '**/*.test.js'
+    - '**/*.spec.js'
+
+state:
+  provider: redis
+  url: ${REDIS_URL}
+  prefix: motia:prod:
+  ttl: 604800
+
+logging:
+  level: info
+  format: json
+  destination: file
+  file: /var/log/motia/app.log
+  rotation:
+    enabled: true
+    maxSize: 104857600
+    maxFiles: 10
+
+workbench:
+  enabled: true
+  path: /workbench
+  authentication:
+    enabled: true
+    type: basic
+    username: ${WORKBENCH_USERNAME}
+    password: ${WORKBENCH_PASSWORD}
+```
+</div>
+
+### Multi-language Support
+
+<div className="code-example">
+```yaml
+# config.multi-language.yml
+server:
+  port: 3000
+  host: localhost
+
+steps:
+  directory: ./steps
+  autoRegister: true
+  languages:
+    - javascript
+    - typescript
+    - python
+    - ruby
+  languageHandlers:
+    python:
+      command: python
+      args: ["-m", "motia.handler"]
+    ruby:
+      command: ruby
+      args: ["-r", "motia/handler", "-e", "Motia::Handler.start"]
+
+state:
+  provider: memory
+```
+</div>
+
+## Environment Variables
+
+Motia supports environment variables for all configuration options. The naming convention is:
+
+1. Convert the YAML path to uppercase
+2. Replace dots with underscores
+3. Prefix with `MOTIA_`
+
+For example:
+
+| YAML Path | Environment Variable |
+|-----------|----------------------|
+| `server.port` | `MOTIA_SERVER_PORT` |
+| `server.cors.enabled` | `MOTIA_SERVER_CORS_ENABLED` |
+| `state.provider` | `MOTIA_STATE_PROVIDER` |
+
+You can use these environment variables in your deployment scripts, Docker configurations, or CI/CD pipelines.
+
+## Configuration File Location
+
+By default, Motia looks for `config.yml` in the project root. You can specify a different location using the `--config` flag:
+
+```bash
+npx motia start --config ./config/production.yml
+```
+
+Or using an environment variable:
+
+```bash
+MOTIA_CONFIG_PATH=./config/production.yml npx motia start
+```
+
+## Next Steps
+
+Now that you've configured Motia, you might want to:
+
+- Set up your [Development Environment](/docs/guides/setup/environment-setup)
+- Learn about [Step Creation](/docs/guides/step-creation)
+- Explore the [Workbench](/docs/concepts/core-components/workbench)

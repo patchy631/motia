@@ -1,0 +1,869 @@
+---
+title: "Creating Event Steps"
+description: "Learn how to create event steps that listen for and respond to events in Motia"
+---
+
+# Creating Event Steps
+
+<div className="intermediate-content">
+
+Event steps are the core of your Motia workflows. They listen for specific events and execute in response, allowing you to build reactive, event-driven applications. This guide will show you how to create and customize event steps for your workflows.
+
+## What Are Event Steps?
+
+Event steps are steps that:
+
+1. Listen for specific events using the `on` property
+2. Execute their `run` function when those events occur
+3. Optionally emit new events to trigger other steps
+
+Event steps are the primary way to implement business logic in your Motia applications, processing data and coordinating between different parts of your workflow.
+
+</div>
+
+## Basic Event Step
+
+Here's a basic example of an event step:
+
+<div className="code-example">
+```typescript
+// steps/notifications/sendEmail.ts
+import { EventConfig, StepHandler } from '@motia/core';
+import { sendEmail } from '../../services/email';
+import { z } from 'zod';
+
+// Define the input schema for type safety
+const inputSchema = z.object({
+  email: z.string(),
+  name: z.string()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Send Email Notification',
+  subscribes: ['user.registered'],
+  input: inputSchema,
+  flows: ['user-onboarding']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { logger }) => {
+  const { email, name } = input;
+  
+  try {
+    logger.info('Sending welcome email', { email });
+    
+    await sendEmail({
+      to: email,
+      subject: 'Welcome to Our Service',
+      body: `Hello ${name}, thank you for registering!`
+    });
+    
+    logger.info('Welcome email sent successfully', { email });
+  } catch (error) {
+    logger.error('Failed to send welcome email', { 
+      email, 
+      error: error.message 
+    });
+    
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
+};
+```
+</div>
+
+This event step:
+1. Listens for the `user.registered` event
+2. Extracts the user's email and name from the event data
+3. Sends a welcome email using an email service
+4. Returns a success or error result
+
+## Event Step Properties
+
+Event steps have the following properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `id` | `string` | Yes | Unique identifier for the step |
+| `name` | `string` | Yes | Human-readable name for the step |
+| `type` | `string` | Yes | Must be `'event'` for event steps |
+| `on` | `string[]` | Yes | Array of event topics to listen for |
+| `description` | `string` | No | Description of what the step does |
+| `emits` | `string[]` | No | Array of event topics this step can emit |
+| `run` | `function` | Yes | Function that executes when the step is triggered |
+
+### The `subscribes` Property
+
+The `subscribes` property specifies which events the step listens for. It's an array of event topics:
+
+```typescript
+subscribes: ['user.registered', 'user.verified']
+```
+
+This step will execute when either a `user.registered` or `user.verified` event is emitted.
+
+### The `run` Function
+
+The `run` function is where you define the step's behavior. It receives two parameters:
+
+1. `input`: Contains the event data and metadata
+2. `context`: Provides utilities and services for the step
+
+For event steps, the `input` object has this structure:
+
+```typescript
+{
+  event: string;  // The event topic that triggered this step
+  data: any;      // The data payload of the event
+  meta?: {        // Optional metadata about the event
+    id: string;   // Unique identifier for the event
+    timestamp: string; // When the event was created
+    source: string;    // The step that emitted the event
+    context?: Record<string, any>; // Additional context information
+  };
+}
+```
+
+<div className="intermediate-content">
+
+## Event Step Patterns
+
+### Processing and Transforming Data
+
+One common pattern is to process or transform data and emit a new event with the result:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string(),
+  // other profile fields
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Enrich User Profile',
+  subscribes: ['user.profile.updated'],
+  emits: ['user.profile.enriched'],
+  input: inputSchema,
+  flows: ['user-management']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  logger.info('Enriching user profile', { email: input.email });
+  
+  // Enrich the profile with additional data
+  const enrichedProfile = {
+    ...input,
+    fullName: `${input.firstName} ${input.lastName}`,
+    initials: `${input.firstName[0]}${input.lastName[0]}`,
+    updatedAt: new Date().toISOString()
+  };
+  
+  // Emit an event with the enriched profile
+  await emit({
+    topic: 'user.profile.enriched',
+    data: enrichedProfile
+  });
+};
+```
+
+### Conditional Logic
+
+You can use conditional logic to determine which events to emit:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  orderId: z.string(),
+  amount: z.number(),
+  paymentMethod: z.string()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Validate Payment',
+  subscribes: ['order.payment.received'],
+  emits: ['order.payment.validated', 'order.payment.failed'],
+  input: inputSchema,
+  flows: ['order-processing']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  const { orderId, amount, paymentMethod } = input;
+  
+  logger.info('Validating payment', { orderId, amount, paymentMethod });
+  
+  // Validate the payment
+  const validationResult = validatePayment(amount, paymentMethod);
+  
+  if (validationResult.valid) {
+    // Payment is valid
+    logger.info('Payment validated successfully', { orderId });
+    
+    await emit({
+      topic: 'order.payment.validated',
+      data: {
+        orderId,
+        amount,
+        paymentMethod,
+        validatedAt: new Date().toISOString()
+      }
+    });
+  } else {
+    // Payment is invalid
+    logger.warn('Payment validation failed', { 
+      orderId, 
+      error: validationResult.error 
+    });
+    
+    await emit({
+      topic: 'order.payment.failed',
+      data: {
+        orderId,
+        amount,
+        paymentMethod,
+        error: validationResult.error,
+        failedAt: new Date().toISOString()
+      }
+    });
+  }
+};
+
+function validatePayment(amount, paymentMethod) {
+  // Validation logic here
+  if (amount <= 0) {
+    return { valid: false, error: 'Amount must be greater than zero' };
+  }
+  
+  if (!['credit_card', 'paypal', 'bank_transfer'].includes(paymentMethod)) {
+    return { valid: false, error: 'Invalid payment method' };
+  }
+  
+  return { valid: true };
+}
+```
+
+### Aggregating Events
+
+You can create steps that aggregate data from multiple events:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  page: z.string(),
+  userId: z.string()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Aggregate Page Views',
+  subscribes: ['page.viewed'],
+  emits: ['analytics.hourly.report'],
+  input: inputSchema,
+  flows: ['analytics']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, logger, traceId }) => {
+  const { page, userId } = input;
+  
+  // Get the current hour's data
+  const currentHour = new Date().toISOString().slice(0, 13);
+  const stateKey = `pageViews:${currentHour}`;
+  
+  const hourlyData = await state.get(traceId, stateKey) || {
+    hour: currentHour,
+    totalViews: 0,
+    uniqueUsers: new Set(),
+    pageViews: {}
+  };
+  
+  // Update the data
+  hourlyData.totalViews += 1;
+  hourlyData.uniqueUsers.add(userId);
+  hourlyData.pageViews[page] = (hourlyData.pageViews[page] || 0) + 1;
+  
+  // Store the updated data
+  await state.set(traceId, stateKey, hourlyData);
+  
+  logger.info('Page view recorded', { 
+    page, 
+    userId, 
+    totalViews: hourlyData.totalViews 
+  });
+  
+  // Check if it's time to emit the hourly report
+  const now = new Date();
+  if (now.getMinutes() === 59 && now.getSeconds() >= 50) {
+    logger.info('Generating hourly report', { hour: currentHour });
+    
+    // Convert Set to array for serialization
+    const reportData = {
+      ...hourlyData,
+      uniqueUsers: Array.from(hourlyData.uniqueUsers),
+      uniqueUserCount: hourlyData.uniqueUsers.size
+    };
+    
+    await emit({
+      topic: 'analytics.hourly.report',
+      data: reportData
+    });
+  }
+};
+```
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Event Step Techniques
+
+### Dynamic Event Listening
+
+In some advanced scenarios, you might need to dynamically determine which events to listen for. While the `on` property is static, you can create a "router" step that listens for a broad category of events and then delegates to specific handlers:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+// We can't strongly type this since it handles dynamic events
+const inputSchema = z.any();
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Entity Event Router',
+  subscribes: ['entity.*.*'], // Listen for all entity events
+  input: inputSchema,
+  flows: ['entity-management']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { event, logger }) => {
+  logger.info('Routing entity event', { event });
+  
+  // Parse the event topic to extract entity type and action
+  const [namespace, entityType, action] = event.split('.');
+  
+  // Delegate to the appropriate handler
+  const handler = getHandlerForEntity(entityType);
+  if (handler) {
+    await handler(action, input);
+  } else {
+    logger.warn('No handler found for entity type', { entityType });
+  }
+};
+
+// Handler registry
+const handlers = {
+  user: handleUserEvent,
+  order: handleOrderEvent,
+  product: handleProductEvent
+};
+
+function getHandlerForEntity(entityType) {
+  return handlers[entityType];
+}
+
+async function handleUserEvent(action, data) {
+  // Handle user events
+  switch (action) {
+    case 'created':
+      // Handle user created
+      break;
+    case 'updated':
+      // Handle user updated
+      break;
+    // ...
+  }
+  return { success: true };
+}
+
+// Similar handlers for other entity types
+```
+
+### Event Correlation
+
+For complex workflows, you might need to correlate related events:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  workflowId: z.string(),
+  taskId: z.string()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Correlate Related Events',
+  subscribes: ['task.completed'],
+  emits: ['workflow.completed'],
+  input: inputSchema,
+  flows: ['workflow-management']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, logger, traceId }) => {
+  const { workflowId, taskId } = input;
+  
+  logger.info('Task completed', { workflowId, taskId });
+  
+  // Get the workflow state
+  const stateKey = `workflow:${workflowId}`;
+  const workflow = await state.get(traceId, stateKey) || {
+    id: workflowId,
+    tasks: {},
+    totalTasks: 0,
+    completedTasks: 0
+  };
+  
+  // Mark this task as completed
+  workflow.tasks[taskId] = { ...workflow.tasks[taskId], completed: true };
+  workflow.completedTasks += 1;
+  
+  logger.info('Updated workflow state', { 
+    workflowId, 
+    completedTasks: workflow.completedTasks,
+    totalTasks: workflow.totalTasks
+  });
+  
+  // Update the workflow state
+  await state.set(traceId, stateKey, workflow);
+  
+  // Check if all tasks are completed
+  if (workflow.completedTasks === workflow.totalTasks) {
+    logger.info('All tasks completed, workflow finished', { workflowId });
+    
+    await emit({
+      topic: 'workflow.completed',
+      data: {
+        workflowId,
+        completedAt: new Date().toISOString(),
+        tasks: workflow.tasks
+      }
+    });
+  }
+};
+```
+
+### Event Sourcing
+
+You can implement event sourcing patterns where state is derived from a sequence of events:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+// We need a flexible schema since we handle different event types
+const inputSchema = z.object({
+  accountId: z.string(),
+  // Other fields will vary by event type
+}).passthrough();
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Build Account State from Events',
+  subscribes: [
+    'account.created',
+    'account.deposited',
+    'account.withdrawn',
+    'account.transferred'
+  ],
+  input: inputSchema,
+  flows: ['banking']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { event, state, logger, traceId }) => {
+  const accountId = input.accountId;
+  
+  logger.info('Processing account event', { accountId, event });
+  
+  // Get the current account state
+  const stateKey = `account:${accountId}`;
+  const account = await state.get(traceId, stateKey) || {
+    id: accountId,
+    balance: 0,
+    transactions: [],
+    version: 0
+  };
+  
+  // Apply the event to the account state
+  switch (event) {
+    case 'account.created':
+      account.name = input.name;
+      account.owner = input.owner;
+      account.createdAt = input.timestamp;
+      logger.info('Account created', { accountId, owner: input.owner });
+      break;
+      
+    case 'account.deposited':
+      account.balance += input.amount;
+      account.transactions.push({
+        type: 'deposit',
+        amount: input.amount,
+        timestamp: input.timestamp
+      });
+      logger.info('Deposit processed', { 
+        accountId, 
+        amount: input.amount, 
+        newBalance: account.balance 
+      });
+      break;
+      
+    case 'account.withdrawn':
+      account.balance -= input.amount;
+      account.transactions.push({
+        type: 'withdrawal',
+        amount: input.amount,
+        timestamp: input.timestamp
+      });
+      logger.info('Withdrawal processed', { 
+        accountId, 
+        amount: input.amount, 
+        newBalance: account.balance 
+      });
+      break;
+      
+    case 'account.transferred':
+      if (input.fromAccountId === accountId) {
+        account.balance -= input.amount;
+        account.transactions.push({
+          type: 'transfer_out',
+          amount: input.amount,
+          toAccountId: input.toAccountId,
+          timestamp: input.timestamp
+        });
+        logger.info('Transfer out processed', { 
+          fromAccountId: accountId, 
+          toAccountId: input.toAccountId,
+          amount: input.amount, 
+          newBalance: account.balance 
+        });
+      } else if (input.toAccountId === accountId) {
+        account.balance += input.amount;
+        account.transactions.push({
+          type: 'transfer_in',
+          amount: input.amount,
+          fromAccountId: input.fromAccountId,
+          timestamp: input.timestamp
+        });
+        logger.info('Transfer in processed', { 
+          fromAccountId: input.fromAccountId, 
+          toAccountId: accountId,
+          amount: input.amount, 
+          newBalance: account.balance 
+        });
+      }
+      break;
+  }
+  
+  // Increment the version and update the state
+  account.version += 1;
+  await state.set(traceId, stateKey, account);
+  
+  logger.info('Account state updated', { 
+    accountId, 
+    version: account.version,
+    balance: account.balance
+  });
+};
+```
+
+### Dynamic Event Emission
+
+For agentic workflows, you might need to emit events with dynamically determined topics:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  content: z.string(),
+  userId: z.string(),
+  timestamp: z.string()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Route Request to Appropriate Handler',
+  subscribes: ['request.received'],
+  // Note: We don't predefine all possible events in 'emits'
+  // since they're determined dynamically
+  input: inputSchema,
+  flows: ['customer-support']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  const { content, userId, timestamp } = input;
+  
+  logger.info('Analyzing customer request', { userId });
+  
+  // Analyze the request to determine the appropriate handler
+  const intent = await analyzeIntent(content);
+  
+  logger.info('Request intent determined', { 
+    userId, 
+    intent, 
+    confidence: 0.85 
+  });
+  
+  // Emit an event with a dynamically determined topic
+  await emit({
+    topic: `request.intent.${intent}`,
+    data: {
+      content,
+      userId,
+      timestamp,
+      analyzedIntent: intent,
+      confidence: 0.85,
+      analyzedAt: new Date().toISOString()
+    }
+  });
+};
+
+async function analyzeIntent(content) {
+  // In a real application, this might use an LLM or other AI service
+  // to analyze the content and determine the intent
+  
+  if (content.includes('password')) return 'reset_password';
+  if (content.includes('account')) return 'account_inquiry';
+  if (content.includes('billing')) return 'billing_question';
+  return 'general_inquiry';
+}
+```
+
+</div>
+
+## Best Practices for Event Steps
+
+### 1. Keep Steps Focused
+
+Each event step should have a single responsibility. If a step is doing too many things, consider breaking it into multiple steps.
+
+```typescript
+// Instead of one large step that does everything:
+export const config = {
+  type: 'event',
+  name: 'Process Order',
+  subscribes: ['order.created'],
+  flows: ['order-processing']
+};
+
+export const handler = async (input, { emit }) => {
+  // Validate order
+  // Check inventory
+  // Process payment
+  // Update inventory
+  // Send confirmation email
+  // ...
+};
+
+// Break it into multiple focused steps:
+
+// Step 1: Validate Order
+export const validateOrderConfig = {
+  type: 'event',
+  name: 'Validate Order',
+  subscribes: ['order.created'],
+  emits: ['order.validated'],
+  flows: ['order-processing']
+};
+
+export const validateOrderHandler = async (input, { emit, logger }) => {
+  logger.info('Validating order', { orderId: input.orderId });
+  
+  // Validate order logic
+  
+  await emit({
+    topic: 'order.validated',
+    data: { 
+      orderId: input.orderId,
+      // other validated order data
+    }
+  });
+};
+
+// Step 2: Check Inventory
+export const checkInventoryConfig = {
+  type: 'event',
+  name: 'Check Inventory',
+  subscribes: ['order.validated'],
+  emits: ['order.inventoryChecked'],
+  flows: ['order-processing']
+};
+
+export const checkInventoryHandler = async (input, { emit, logger }) => {
+  logger.info('Checking inventory', { orderId: input.orderId });
+  
+  // Check inventory logic
+  
+  await emit({
+    topic: 'order.inventoryChecked',
+    data: { 
+      orderId: input.orderId,
+      // inventory status
+    }
+  });
+};
+
+// And so on...
+```
+
+### 2. Use Clear Event Naming
+
+Use a consistent naming convention for events to make your workflows easier to understand:
+
+```
+namespace.entity.action
+```
+
+For example:
+- `users.profile.updated`
+- `orders.payment.processed`
+- `notifications.email.sent`
+
+### 3. Include Relevant Data in Events
+
+Include all the data that downstream steps might need in your event payloads:
+
+```typescript
+// Instead of:
+await emit({
+  topic: 'user.created',
+  data: { id: user.id }
+});
+
+// Include relevant data:
+await emit({
+  topic: 'user.created',
+  data: {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    createdAt: new Date().toISOString()
+  }
+});
+```
+
+### 4. Handle Errors Gracefully
+
+Always handle errors in your steps to prevent workflow failures:
+
+```typescript
+handler:
+
+### 4. Handle Errors Gracefully
+
+Always handle errors in your steps to prevent workflow failures:
+
+```typescript
+run: async (input, { emit }) => {
+  try {
+    // Step logic here
+    return { success: true };
+  } catch (error) {
+    console.error('Error in step:', error);
+    
+    // Optionally emit an error event
+    await emit('step.error', {
+      stepId: 'my.step',
+      error: error.message,
+      input: input
+    });
+    
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+}
+```
+
+### 5. Use State Management for Persistence
+
+Use the state management utilities for data that needs to persist across step invocations:
+
+```typescript
+run: async (input, { state }) => {
+  // Read from state
+  const counter = await state.get('counter') || 0;
+  
+  // Update state
+  await state.set('counter', counter + 1);
+  
+  return { success: true, counter: counter + 1 };
+}
+```
+
+## Common Questions
+
+### How do I listen for multiple events?
+
+To listen for multiple events, include them all in the `on` array:
+
+```typescript
+on: ['user.created', 'user.updated', 'user.deleted']
+```
+
+### How do I know which event triggered my step?
+
+The `input.event` property contains the topic of the event that triggered the step:
+
+```typescript
+run: async (input) => {
+  console.log(`Step triggered by event: ${input.event}`);
+  
+  if (input.event === 'user.created') {
+    // Handle user creation
+  } else if (input.event === 'user.updated') {
+    // Handle user update
+  }
+  
+  return { success: true };
+}
+```
+
+### Can I emit multiple events from a single step?
+
+Yes, you can emit as many events as needed:
+
+```typescript
+run: async (input, { emit }) => {
+  // Emit multiple events
+  await emit('event.one', { /* data */ });
+  await emit('event.two', { /* data */ });
+  await emit('event.three', { /* data */ });
+  
+  return { success: true };
+}
+```
+
+### How do I handle asynchronous operations?
+
+Use `async/await` for asynchronous operations:
+
+```typescript
+run: async (input, { emit }) => {
+  // Asynchronous operation
+  const result = await someAsyncFunction();
+  
+  // Emit an event with the result
+  await emit('operation.completed', result);
+  
+  return { success: true };
+}
+```
+
+## Next Steps
+
+Now that you know how to create event steps, you might want to:
+
+- Learn about [API Steps](/docs/guides/step-creation/api-steps) to create HTTP endpoints
+- Explore [Cron Steps](/docs/guides/step-creation/cron-steps) for scheduled tasks
+- Understand [NOOP Steps](/docs/guides/step-creation/noop-steps) for external processes
+- Dive into [Flow Patterns](/docs/concepts/core-components/flow-patterns) to design effective workflows

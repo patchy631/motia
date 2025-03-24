@@ -1,0 +1,206 @@
+---
+title: Flow Visualization
+description: Learn how to effectively visualize and interact with your workflows in the Motia Workbench
+---
+
+# Flow Visualization
+
+The flow visualization is the heart of the Motia Workbench, providing an interactive, real-time view of your workflows. This guide will help you understand how to effectively use and interact with the flow visualization to build, test, and debug your Motia applications.
+
+## Understanding the Flow Visualization
+
+The flow visualization represents your Motia workflows as an interactive diagram:
+
+- **Steps**: Represented as nodes in the diagram
+- **Events**: Shown as connections (edges) between steps
+- **Topics**: Labeled on the connections to show event routing
+- **Flow Direction**: Typically flows from top to bottom or left to right
+
+## Visualization Components
+
+### Step Nodes
+
+Each step in your workflow is represented as a node in the visualization:
+
+- **API Steps**: Endpoints that receive external requests
+- **Event Steps**: Steps that process events and emit new ones
+- **Cron Steps**: Scheduled tasks that run at specified intervals
+- **NOOP Steps**: Representations of external processes or manual actions
+
+Each node type has a distinct visual appearance to help you quickly identify different step types in your workflow.
+
+### Event Connections
+
+Connections between steps show how events flow through your workflow:
+
+- **Source**: The step that emits the event
+- **Target**: The step that subscribes to the event
+- **Topic**: The event topic that connects the steps
+- **Direction**: Indicated by arrows showing event flow
+
+### Status Indicators
+
+The visualization includes status indicators to show the current state of your workflow:
+
+- **Active**: Steps that are currently processing
+- **Completed**: Steps that have finished execution
+- **Error**: Steps that encountered errors
+- **Waiting**: Steps that are waiting for events
+
+These indicators help you track the execution of your workflow in real-time.
+
+## Interacting with the Visualization
+
+### Navigation
+
+You can navigate the flow visualization using these controls:
+
+- **Pan**: Click and drag to move around the diagram
+- **Zoom**: Use the mouse wheel or pinch gesture to zoom in and out
+- **Reset**: Click the reset button to return to the default view
+- **Fit View**: Click the fit view button to see the entire workflow
+
+### Selecting Steps
+
+Click on any step to select it and view its details:
+
+- **Step Configuration**: See the step's configuration
+- **Step Code**: View the step's implementation
+- **Recent Executions**: See the history of recent executions
+- **Input/Output Data**: Inspect the data flowing through the step
+
+### Rearranging Steps
+
+You can rearrange steps in the visualization to create a more logical layout:
+
+1. Click and hold on a step to select it
+2. Drag the step to a new position
+3. Release to place the step
+
+The connections between steps will automatically adjust to the new layout.
+
+### Filtering and Focusing
+
+You can filter and focus the visualization to concentrate on specific parts of your workflow:
+
+- **Flow Selection**: Choose which flow to visualize
+- **Step Filtering**: Filter steps by type, name, or other criteria
+- **Focus Mode**: Focus on a specific step and its immediate connections
+
+## Customizing the Visualization
+
+### Layout Options
+
+The Workbench offers several layout options to help you organize your workflow visualization:
+
+- **Automatic Layout**: Automatically arrange steps for optimal visualization
+- **Horizontal Layout**: Arrange steps from left to right
+- **Vertical Layout**: Arrange steps from top to bottom
+- **Custom Layout**: Manually position steps as desired
+
+### Visual Customization
+
+You can customize the appearance of steps in the visualization:
+
+- **Color Coding**: Assign colors to steps based on their purpose or status
+- **Icons**: Use custom icons to represent different step types
+- **Labels**: Customize the labels shown on steps and connections
+- **Grouping**: Group related steps together for better organization
+
+## Advanced Visualization Features
+
+### UI Steps
+
+UI Steps allow you to create custom visualizations for your steps:
+
+```typescript
+// customStep.step.tsx
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+import type { EventNodeProps } from 'motia/workbench'
+
+export default function CustomStep({ data }: EventNodeProps) {
+  return (
+    <EventNode
+      data={data}
+      variant="white"
+      shape="rounded"
+      className="py-2 px-4"
+    >
+      <div>Custom content</div>
+    </EventNode>
+  )
+}
+```
+
+UI Steps give you complete control over how your steps appear in the visualization, allowing you to create intuitive, context-aware visual components.
+
+### NOOP Steps
+
+NOOP Steps represent external processes or manual actions in your workflow:
+
+```typescript
+// externalProcess.step.ts
+export const config = {
+  type: 'noop',
+  name: 'External Process',
+  description: 'Represents an external system or manual process',
+  virtualEmits: ['process.completed'],
+  virtualSubscribes: ['process.started'],
+  flows: ['my-flow']
+}
+```
+
+NOOP Steps help you visualize the complete workflow, including parts that happen outside your Motia application.
+
+## Real-time Visualization
+
+The flow visualization updates in real-time as events flow through your system:
+
+- **Active Steps**: Highlighted as they process events
+- **Event Flow**: Animated to show events moving between steps
+- **State Changes**: Updated to reflect changes in step state
+- **Errors**: Highlighted when steps encounter errors
+
+This real-time visualization helps you understand how your workflow behaves during execution.
+
+## Best Practices
+
+### Organizing Flows
+
+- **Group Related Steps**: Keep related steps in the same flow
+- **Meaningful Flow Names**: Use descriptive names for flows
+- **Consistent Naming**: Use a consistent naming convention for steps and flows
+- **Limit Flow Size**: Keep flows to a manageable size (10-15 steps maximum)
+
+### Effective Visualization
+
+- **Logical Layout**: Arrange steps in a logical flow from left to right or top to bottom
+- **Color Coding**: Use colors consistently to indicate step types or purposes
+- **Custom Icons**: Use icons that represent the step's function
+- **Step Descriptions**: Add clear descriptions to steps
+
+### Sharing and Collaboration
+
+- **Export Layouts**: Save and share your visualization layouts
+- **Screenshots**: Capture visualizations for documentation
+- **Consistent Styling**: Use consistent styling across your team
+
+## Troubleshooting
+
+### Common Visualization Issues
+
+| Issue | Solution |
+|-------|----------|
+| Steps not appearing | Verify that steps have the correct flow name in their configuration |
+| Connections missing | Check that topic names match exactly between emitter and subscriber |
+| Layout issues | Try using the automatic layout or manually rearrange steps |
+| Performance problems | Reduce the number of steps visible at once or use filtering |
+
+## Next Steps
+
+Now that you understand how to visualize your workflows, you might want to explore:
+
+- [Debugging Techniques](./debugging): Learn how to debug your workflows
+- [Custom UI Components](./custom-ui): Create custom visualizations for your steps
+- [Performance Monitoring](./performance): Monitor and optimize your workflow performance

@@ -1,0 +1,1084 @@
+---
+title: "Performance Issues"
+description: "Solutions for workflows that are slow or consuming too many resources"
+---
+
+# Performance Issues
+
+This guide provides solutions for performance issues in Motia workflows. If your workflows are running slowly, consuming too much memory, or experiencing other performance problems, you'll find strategies here to optimize them.
+
+## Identifying Performance Issues
+
+Before you can fix performance issues, you need to identify them. Here are some common signs of performance problems in Motia workflows:
+
+### Slow Execution
+
+- Steps take longer than expected to complete
+- Workflows have high end-to-end latency
+- API responses are slow
+- Events are processed with significant delay
+
+### Resource Consumption
+
+- High CPU usage
+- High memory usage
+- Memory leaks (increasing memory usage over time)
+- Excessive disk I/O
+- Network bottlenecks
+
+### Scalability Issues
+
+- Performance degrades as load increases
+- Concurrent requests cause failures
+- State operations become slow with large datasets
+- Event processing backs up during peak loads
+
+## Performance Profiling
+
+To identify the specific causes of performance issues, you need to profile your workflows:
+
+### Step Execution Time
+
+Add timing to your steps to measure how long they take to execute:
+
+```typescript
+export const handler = async (input, { logger }) => {
+  const startTime = Date.now();
+  
+  // Your step logic here
+  
+  const endTime = Date.now();
+  logger.info(`Step execution time: ${endTime - startTime}ms`);
+  
+  return { success: true };
+};
+```
+
+For more detailed profiling, measure individual operations within a step:
+
+```typescript
+export const handler = async (input, { logger, state }) => {
+  const startTime = Date.now();
+  
+  // Operation 1
+  const op1Start = Date.now();
+  const data = await fetchData(input.id);
+  logger.debug(`Operation 1 (fetchData): ${Date.now() - op1Start}ms`);
+  
+  // Operation 2
+  const op2Start = Date.now();
+  const processedData = processData(data);
+  logger.debug(`Operation 2 (processData): ${Date.now() - op2Start}ms`);
+  
+  // Operation 3
+  const op3Start = Date.now();
+  await state.set(`data:${input.id}`, processedData);
+  logger.debug(`Operation 3 (state.set): ${Date.now() - op3Start}ms`);
+  
+  logger.info(`Total step execution time: ${Date.now() - startTime}ms`);
+  
+  return { success: true, data: processedData };
+};
+```
+
+### Memory Profiling
+
+To identify memory issues, log memory usage at key points:
+
+```typescript
+export const handler = async (input, { logger }) => {
+  // Log memory usage at the start
+  const memUsageStart = process.memoryUsage();
+  logger.debug('Memory usage at start:', {
+    rss: `${Math.round(memUsageStart.rss / 1024 / 1024)} MB`,
+    heapTotal: `${Math.round(memUsageStart.heapTotal / 1024 / 1024)} MB`,
+    heapUsed: `${Math.round(memUsageStart.heapUsed / 1024 / 1024)} MB`
+  });
+  
+  // Your step logic here
+  
+  // Log memory usage at the end
+  const memUsageEnd = process.memoryUsage();
+  logger.debug('Memory usage at end:', {
+    rss: `${Math.round(memUsageEnd.rss / 1024 / 1024)} MB`,
+    heapTotal: `${Math.round(memUsageEnd.heapTotal / 1024 / 1024)} MB`,
+    heapUsed: `${Math.round(memUsageEnd.heapUsed / 1024 / 1024)} MB`
+  });
+  
+  return { success: true };
+};
+```
+
+### Workflow Profiling
+
+To understand the performance of an entire workflow, add tracing:
+
+```typescript
+// First step in the workflow
+export const handler = async (input, { emit, logger }) => {
+  // Generate a trace ID for this workflow instance
+  const traceId = `trace-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  
+  // Log the start of the workflow
+  logger.info(`[${traceId}] Workflow started`);
+  
+  // Include the trace ID in the emitted event
+  await emit('data.received', {
+    ...input,
+    _traceId: traceId,
+    _timestamp: Date.now()
+  });
+  
+  return { success: true };
+};
+
+// Subsequent steps in the workflow
+export const handler = async (input, { emit, logger }) => {
+  // Extract the trace ID and timestamp
+  const { _traceId, _timestamp, ...data } = input;
+  
+  // Log the time since the previous step
+  const elapsed = Date.now() - _timestamp;
+  logger.info(`[${_traceId}] Step received event after ${elapsed}ms`);
+  
+  // Your step logic here
+  
+  // Include the trace ID and a new timestamp in the emitted event
+  await emit('data.processed', {
+    ...data,
+    _traceId,
+    _timestamp: Date.now()
+  });
+  
+  return { success: true };
+};
+```
+
+## Common Performance Issues and Solutions
+
+### 1. Slow External API Calls
+
+**Issue**: External API calls are often the biggest source of latency in workflows.
+
+**Solutions**:
+
+#### Implement Caching
+
+```typescript
+import NodeCache from 'node-cache';
+
+// Create a cache with TTL of 5 minutes
+const cache = new NodeCache({ stdTTL: 300 });
+
+export const handler = async (input, { logger }) => {
+  const cacheKey = `data:${input.id}`;
+  
+  // Try to get data from cache
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) {
+    logger.debug('Cache hit for', cacheKey);
+    return { success: true, data: cachedData };
+  }
+  
+  // Cache miss, fetch from API
+  logger.debug('Cache miss for', cacheKey);
+  const data = await fetchFromExternalAPI(input.id);
+  
+  // Store in cache
+  cache.set(cacheKey, data);
+  
+  return { success: true, data };
+};
+```
+
+#### Use Parallel Requests
+
+```typescript
+export const handler = async (input, { logger }) => {
+  // Fetch multiple resources in parallel
+  const [userData, orderData, productData] = await Promise.all([
+    fetchUserData(input.userId),
+    fetchOrderData(input.orderId),
+    fetchProductData(input.productId)
+  ]);
+  
+  // Process the combined data
+  const result = processData(userData, orderData, productData);
+  
+  return { success: true, result };
+};
+```
+
+#### Implement Timeouts
+
+```typescript
+import axios from 'axios';
+
+export const handler = async (input, { logger }) => {
+  try {
+    // Set a timeout for the API call
+    const response = await axios.get(`https://api.example.com/data/${input.id}`, {
+      timeout: 5000 // 5 seconds
+    });
+    
+    return { success: true, data: response.data };
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      logger.warn('API call timed out');
+      // Implement fallback strategy
+      return { success: false, error: 'API timeout' };
+    }
+    
+    throw error;
+  }
+};
+```
+
+#### Use Connection Pooling
+
+```typescript
+import axios from 'axios';
+import http from 'http';
+import https from 'https';
+
+// Create HTTP agents with connection pooling
+const httpAgent = new http.Agent({ keepAlive: true });
+const httpsAgent = new https.Agent({ keepAlive: true });
+
+// Create an axios instance with the agents
+const api = axios.create({
+  httpAgent,
+  httpsAgent,
+  timeout: 5000
+});
+
+export const handler = async (input, { logger }) => {
+  try {
+    const response = await api.get(`https://api.example.com/data/${input.id}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    logger.error('API call failed', error);
+    return { success: false, error: error.message };
+  }
+};
+```
+
+### 2. Inefficient State Operations
+
+**Issue**: Inefficient state operations can cause performance bottlenecks, especially with large datasets.
+
+**Solutions**:
+
+#### Minimize State Size
+
+```typescript
+export const handler = async (input, { state, logger }) => {
+  // Instead of storing the entire large object
+  const largeObject = await fetchLargeObject(input.id);
+  
+  // Store only the essential data
+  const essentialData = {
+    id: largeObject.id,
+    name: largeObject.name,
+    status: largeObject.status,
+    // Omit large fields like 'history', 'rawData', etc.
+  };
+  
+  await state.set(`object:${input.id}`, essentialData);
+  
+  return { success: true };
+};
+```
+
+#### Use Batched Operations
+
+```typescript
+export const handler = async (input, { state, logger }) => {
+  const { items } = input;
+  
+  // Instead of updating items one by one
+  // for (const item of items) {
+  //   await state.set(`item:${item.id}`, item);
+  // }
+  
+  // Update the index in a single operation
+  const itemsIndex = {};
+  for (const item of items) {
+    itemsIndex[item.id] = {
+      name: item.name,
+      updatedAt: new Date().toISOString()
+    };
+  }
+  
+  await state.set('items:index', itemsIndex);
+  
+  return { success: true };
+};
+```
+
+#### Implement Pagination for Large Datasets
+
+```typescript
+export const handler = async (input, { state, emit, logger }) => {
+  const { query, page = 0, pageSize = 100 } = input;
+  
+  // Get the total count (if first page)
+  let totalCount;
+  if (page === 0) {
+    totalCount = await countItems(query);
+    await state.set(`query:${query}:totalCount`, totalCount);
+  } else {
+    totalCount = await state.get(`query:${query}:totalCount`);
+  }
+  
+  // Fetch just this page of data
+  const items = await fetchItems(query, page, pageSize);
+  
+  // Store this page
+  await state.set(`query:${query}:page:${page}`, items);
+  
+  // Emit an event with the results
+  await emit('query.page.completed', {
+    query,
+    page,
+    pageSize,
+    totalCount,
+    totalPages: Math.ceil(totalCount / pageSize),
+    items
+  });
+  
+  // If there are more pages, emit an event to process the next page
+  if ((page + 1) * pageSize < totalCount) {
+    await emit('query.next.page', {
+      query,
+      page: page + 1,
+      pageSize
+    });
+  } else {
+    await emit('query.completed', {
+      query,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize)
+    });
+  }
+  
+  return { success: true };
+};
+```
+
+### 3. Memory Leaks
+
+**Issue**: Memory leaks can cause your application to slow down over time and eventually crash.
+
+**Solutions**:
+
+#### Avoid Closure References
+
+```typescript
+// Potential memory leak
+let accumulator = [];
+
+export const handler = async (input, { logger }) => {
+  // This accumulates data but never releases it
+  accumulator.push(input);
+  
+  return { success: true, count: accumulator.length };
+};
+
+// Fixed version
+export const handler = async (input, { state, logger }) => {
+  // Get the current accumulator from state
+  const accumulator = await state.get('accumulator') || [];
+  
+  // Update it
+  accumulator.push(input);
+  
+  // Store it back in state
+  await state.set('accumulator', accumulator);
+  
+  return { success: true, count: accumulator.length };
+};
+```
+
+#### Clean Up Resources
+
+```typescript
+import fs from 'fs';
+import { promisify } from 'util';
+
+const writeFile = promisify(fs.writeFile);
+const unlink = promisify(fs.unlink);
+
+export const handler = async (input, { logger }) => {
+  // Create a temporary file
+  const tempFilePath = `/tmp/data-${Date.now()}.json`;
+  
+  try {
+    // Write data to the file
+    await writeFile(tempFilePath, JSON.stringify(input));
+    
+    // Process the file
+    const result = await processFile(tempFilePath);
+    
+    return { success: true, result };
+  } finally {
+    // Clean up the temporary file
+    try {
+      await unlink(tempFilePath);
+    } catch (error) {
+      logger.warn(`Failed to delete temporary file: ${tempFilePath}`, error);
+    }
+  }
+};
+```
+
+#### Use WeakMap for Caching
+
+```typescript
+// Use WeakMap to allow garbage collection
+const cache = new WeakMap();
+
+export const handler = async (input, { logger }) => {
+  // Only works if input is an object
+  if (typeof input !== 'object' || input === null) {
+    return { success: false, error: 'Input must be an object' };
+  }
+  
+  // Check if we have a cached result
+  if (cache.has(input)) {
+    return { success: true, result: cache.get(input) };
+  }
+  
+  // Process the input
+  const result = processInput(input);
+  
+  // Cache the result
+  cache.set(input, result);
+  
+  return { success: true, result };
+};
+```
+
+### 4. CPU-Intensive Operations
+
+**Issue**: CPU-intensive operations can block the event loop and slow down your entire application.
+
+**Solutions**:
+
+#### Break Down Complex Operations
+
+```typescript
+export const handler = async (input, { emit, logger }) => {
+  const { data } = input;
+  
+  // Instead of processing everything in one step
+  // const result = processLargeDataset(data);
+  
+  // Break it down into smaller chunks
+  const chunks = splitIntoChunks(data, 1000);
+  
+  // Emit events to process each chunk
+  for (let i = 0; i < chunks.length; i++) {
+    await emit('data.chunk.process', {
+      chunkIndex: i,
+      totalChunks: chunks.length,
+      chunk: chunks[i]
+    });
+  }
+  
+  return { success: true };
+};
+
+// Then have another step process each chunk
+export const config = {
+  type: 'event',
+  name: 'ProcessDataChunk',
+  subscribes: ['data.chunk.process']
+};
+
+export const handler = async (input, { emit, state, logger }) => {
+  const { chunkIndex, totalChunks, chunk } = input;
+  
+  // Process just this chunk
+  const result = processChunk(chunk);
+  
+  // Store the result
+  await state.set(`result:chunk:${chunkIndex}`, result);
+  
+  // Emit an event when all chunks are processed
+  const processedChunks = await state.get('processedChunks') || 0;
+  await state.set('processedChunks', processedChunks + 1);
+  
+  if (processedChunks + 1 === totalChunks) {
+    await emit('data.processing.completed', { totalChunks });
+  }
+  
+  return { success: true };
+};
+```
+
+#### Use Worker Threads for CPU-Intensive Tasks
+
+```typescript
+import { Worker } from 'worker_threads';
+import { promisify } from 'util';
+
+export const handler = async (input, { logger }) => {
+  // Run CPU-intensive task in a worker thread
+  const result = await runWorker('./workers/process-data.js', input);
+  
+  return { success: true, result };
+};
+
+// Helper function to run a worker
+function runWorker(workerPath, workerData) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(workerPath, { workerData });
+    
+    worker.on('message', resolve);
+    worker.on('error', reject);
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Worker stopped with exit code ${code}`));
+      }
+    });
+  });
+}
+
+// In workers/process-data.js
+import { parentPort, workerData } from 'worker_threads';
+
+// Perform CPU-intensive operation
+const result = processData(workerData);
+
+// Send the result back to the main thread
+parentPort.postMessage(result);
+```
+
+#### Implement Caching for Expensive Computations
+
+```typescript
+import NodeCache from 'node-cache';
+
+// Create a cache with TTL of 1 hour
+const computationCache = new NodeCache({ stdTTL: 3600 });
+
+export const handler = async (input, { logger }) => {
+  const cacheKey = `computation:${JSON.stringify(input)}`;
+  
+  // Check if result is cached
+  const cachedResult = computationCache.get(cacheKey);
+  if (cachedResult) {
+    logger.debug('Using cached computation result');
+    return { success: true, result: cachedResult };
+  }
+  
+  // Perform expensive computation
+  const result = performExpensiveComputation(input);
+  
+  // Cache the result
+  computationCache.set(cacheKey, result);
+  
+  return { success: true, result };
+};
+```
+
+### 5. Network Bottlenecks
+
+**Issue**: Network operations can be a major bottleneck, especially with many small requests.
+
+**Solutions**:
+
+#### Implement Request Batching
+
+```typescript
+export const handler = async (input, { state, logger }) => {
+  const { items } = input;
+  
+  // Instead of making one request per item
+  // const results = [];
+  // for (const item of items) {
+  //   const result = await api.updateItem(item);
+  //   results.push(result);
+  // }
+  
+  // Make a single batch request
+  const results = await api.updateItems(items);
+  
+  return { success: true, results };
+};
+```
+
+#### Use Connection Pooling
+
+```typescript
+import { Pool } from 'pg';
+
+// Create a connection pool
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20, // Maximum number of clients
+  idleTimeoutMillis: 30000 // How long a client is allowed to remain idle
+});
+
+export const handler = async (input, { logger }) => {
+  // Get a client from the pool
+  const client = await pool.connect();
+  
+  try {
+    // Use the client
+    const result = await client.query('SELECT * FROM items WHERE id = $1', [input.id]);
+    
+    return { success: true, item: result.rows[0] };
+  } finally {
+    // Release the client back to the pool
+    client.release();
+  }
+};
+```
+
+#### Implement Circuit Breakers
+
+```typescript
+import CircuitBreaker from 'opossum';
+
+// Configure the circuit breaker
+const breaker = new CircuitBreaker(callExternalAPI, {
+  timeout: 3000, // If our function takes longer than 3 seconds, trigger a failure
+  errorThresholdPercentage: 50, // When 50% of requests fail, open the circuit
+  resetTimeout: 30000 // After 30 seconds, try again
+});
+
+breaker.on('open', () => {
+  console.log('Circuit breaker opened - external API is unreliable');
+});
+
+breaker.on('close', () => {
+  console.log('Circuit breaker closed - external API is working again');
+});
+
+export const handler = async (input, { logger }) => {
+  try {
+    // Call the external API through the circuit breaker
+    const result = await breaker.fire(input);
+    
+    return { success: true, result };
+  } catch (error) {
+    logger.error('External API call failed', error);
+    
+    // Implement fallback strategy
+    const fallbackResult = getFallbackResult(input);
+    
+    return { 
+      success: true, 
+      result: fallbackResult,
+      fallback: true
+    };
+  }
+};
+
+async function callExternalAPI(input) {
+  // Make the actual API call
+  const response = await fetch(`https://api.example.com/data/${input.id}`);
+  
+  if (!response.ok) {
+    throw new Error(`API returned ${response.status}`);
+  }
+  
+  return response.json();
+}
+
+function getFallbackResult(input) {
+  // Return a cached or default result
+  return { id: input.id, status: 'unknown' };
+}
+```
+
+## Performance Optimization Strategies
+
+### 1. Optimize Event Flow
+
+Review your event flow to identify inefficiencies:
+
+- **Reduce Event Chaining**: Long chains of events can increase latency
+- **Combine Related Events**: Emit fewer, more comprehensive events
+- **Use Direct Connections**: For tightly coupled steps, consider direct function calls
+
+```typescript
+// Before: Long chain of events
+// Step 1 emits event A -> Step 2 receives A, emits B -> Step 3 receives B, emits C -> ...
+
+// After: More direct flow
+export const handler = async (input, { emit, logger }) => {
+  // Process input
+  const result1 = processStep1(input);
+  
+  // Process result from step 1
+  const result2 = processStep2(result1);
+  
+  // Process result from step 2
+  const result3 = processStep3(result2);
+  
+  // Emit a single event with the final result
+  await emit('processing.completed', {
+    input,
+    result: result3
+  });
+  
+  return { success: true };
+};
+```
+
+### 2. Implement Caching Strategies
+
+Use caching at multiple levels:
+
+- **In-Memory Caching**: For frequently accessed data
+- **Distributed Caching**: For data that needs to be shared across instances
+- **Result Caching**: For expensive computations
+- **HTTP Caching**: For external API responses
+
+```typescript
+import NodeCache from 'node-cache';
+import Redis from 'ioredis';
+
+// In-memory cache for single-instance data
+const localCache = new NodeCache({ stdTTL: 300 });
+
+// Distributed cache for multi-instance data
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+  password: process.env.REDIS_PASSWORD
+});
+
+export const handler = async (input, { logger }) => {
+  const { id, refresh = false } = input;
+  
+  // Check local cache first (fastest)
+  if (!refresh) {
+    const localData = localCache.get(`data:${id}`);
+    if (localData) {
+      logger.debug('Local cache hit');
+      return { success: true, data: localData, source: 'local-cache' };
+    }
+  }
+  
+  // Check distributed cache next
+  if (!refresh) {
+    const redisData = await redisClient.get(`data:${id}`);
+    if (redisData) {
+      const parsedData = JSON.parse(redisData);
+      
+      // Update local cache
+      localCache.set(`data:${id}`, parsedData);
+      
+      logger.debug('Redis cache hit');
+      return { success: true, data: parsedData, source: 'redis-cache' };
+    }
+  }
+  
+  // Cache miss or refresh requested, fetch from source
+  logger.debug('Cache miss or refresh requested');
+  const data = await fetchDataFromSource(id);
+  
+  // Update both caches
+  localCache.set(`data:${id}`, data);
+  await redisClient.set(`data:${id}`, JSON.stringify(data), 'EX', 300);
+  
+  return { success: true, data, source: 'origin' };
+};
+```
+
+### 3. Optimize Database Queries
+
+If your workflow uses databases, optimize your queries:
+
+- **Use Indexes**: Ensure frequently queried fields are indexed
+- **Limit Result Sets**: Only fetch the data you need
+- **Use Efficient Joins**: Avoid N+1 query problems
+- **Implement Query Caching**: Cache query results when possible
+
+```typescript
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
+export const handler = async (input, { logger }) => {
+  const { userId } = input;
+  
+  // Inefficient query
+  // const user = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+  // const orders = await pool.query('SELECT * FROM orders WHERE user_id = $1', [userId]);
+  
+  // Efficient query: only select needed fields and use a join
+  const result = await pool.query(`
+    SELECT 
+      u.id, u.name, u.email,
+      o.id as order_id, o.amount, o.status, o.created_at
+    FROM 
+      users u
+    LEFT JOIN 
+      orders o ON u.id = o.user_id
+    WHERE 
+      u.id = $1
+    ORDER BY 
+      o.created_at DESC
+    LIMIT 10
+  `, [userId]);
+  
+  // Process the results
+  const user = {
+    id: result.rows[0]?.id,
+    name: result.rows[0]?.name,
+    email: result.rows[0]?.email,
+    orders: result.rows
+      .filter(row => row.order_id)
+      .map(row => ({
+        id: row.order_id,
+        amount: row.amount,
+        status: row.status,
+        createdAt: row.created_at
+      }))
+  };
+  
+  return { success: true, user };
+};
+```
+
+### 4. Implement Horizontal Scaling
+
+Design your workflows to scale horizontally:
+
+- **Stateless Steps**: Make steps stateless where possible
+- **Distributed State**: Use Redis or other distributed state backends
+- **Load Balancing**: Distribute requests across multiple instances
+- **Sharding**: Partition data and processing by key
+
+```typescript
+// server.js
+import { createServer } from '@motia/core';
+
+const server = createServer({
+  // Use Redis for distributed state
+  state: {
+    provider: 'redis',
+    options: {
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT,
+      password: process.env.REDIS_PASSWORD
+    }
+  },
+  
+  // Use Redis for distributed event bus
+  eventBus: {
+    provider: 'redis',
+    options: {
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT,
+      password: process.env.REDIS_PASSWORD
+    }
+  }
+});
+
+server.start();
+```
+
+### 5. Implement Asynchronous Processing
+
+For non-time-sensitive operations, use asynchronous processing:
+
+- **Background Processing**: Move non-critical operations to background steps
+- **Scheduled Processing**: Use cron steps for periodic tasks
+- **Batch Processing**: Collect and process data in batches
+
+```typescript
+// API step that responds quickly
+export const config = {
+  type: 'api',
+  name: 'SubmitOrder',
+  path: '/orders',
+  method: 'POST'
+};
+
+export const handler = async (request, { emit, logger }) => {
+  const order = request.body;
+  
+  // Generate an order ID
+  const orderId = `order-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  
+  // Store the initial order
+  await state.set(`order:${orderId}`, {
+    ...order,
+    id: orderId,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  });
+  
+  // Emit an event for background processing
+  await emit('order.submitted', {
+    orderId,
+    order
+  });
+  
+  // Respond immediately
+  return {
+    status: 202,
+    body: {
+      orderId,
+      message: 'Order received and is being processed'
+    }
+  };
+};
+
+// Background step that processes the order
+export const config = {
+  type: 'event',
+  name: 'ProcessOrder',
+  subscribes: ['order.submitted']
+};
+
+export const handler = async (input, { emit, state, logger }) => {
+  const { orderId, order } = input;
+  
+  // Update order status
+  await state.set(`order:${orderId}:status`, 'processing');
+  
+  // Perform time-consuming operations
+  await validateInventory(order);
+  await processPayment(order);
+  await createShipment(order);
+  
+  // Update order status
+  await state.set(`order:${orderId}:status`, 'completed');
+  
+  // Emit completion event
+  await emit('order.completed', { orderId });
+  
+  return { success: true };
+};
+```
+
+## Performance Testing
+
+To ensure your optimizations are effective, implement performance testing:
+
+### Load Testing
+
+Test how your workflows perform under load:
+
+```typescript
+import { performance } from 'perf_hooks';
+import axios from 'axios';
+
+async function runLoadTest() {
+  const concurrentRequests = 100;
+  const requests = [];
+  
+  console.log(`Starting load test with ${concurrentRequests} concurrent requests`);
+  
+  const startTime = performance.now();
+  
+  // Create concurrent requests
+  for (let i = 0; i < concurrentRequests; i++) {
+    requests.push(
+      axios.post('http://localhost:3000/api/process', {
+        id: `item-${i}`,
+        data: { /* test data */ }
+      })
+    );
+  }
+  
+  // Wait for all requests to complete
+  const responses = await Promise.allSettled(requests);
+  
+  const endTime = performance.now();
+  const totalTime = endTime - startTime;
+  
+  // Calculate statistics
+  const successful = responses.filter(r => r.status === 'fulfilled').length;
+  const failed = responses.filter(r => r.status === 'rejected').length;
+  
+  console.log(`Load test completed in ${totalTime.toFixed(2)}ms`);
+  console.log(`Successful requests: ${successful}`);
+  console.log(`Failed requests: ${failed}`);
+  console.log(`Average response time: ${(totalTime / concurrentRequests).toFixed(2)}ms`);
+}
+
+runLoadTest();
+```
+
+### Benchmarking
+
+Benchmark different implementations to compare performance:
+
+```typescript
+import { performance } from 'perf_hooks';
+
+async function benchmark(name, fn, iterations = 100) {
+  console.log(`Running benchmark: ${name}`);
+  
+  const startTime = performance.now();
+  
+  for (let i = 0; i < iterations; i++) {
+    await fn(i);
+  }
+  
+  const endTime = performance.now();
+  const totalTime = endTime - startTime;
+  const averageTime = totalTime / iterations;
+  
+  console.log(`Benchmark ${name} completed:`);
+  console.log(`  Total time: ${totalTime.toFixed(2)}ms`);
+  console.log(`  Iterations: ${iterations}`);
+  console.log(`  Average time per iteration: ${averageTime.toFixed(2)}ms`);
+  
+  return { name, totalTime, iterations, averageTime };
+}
+
+// Example usage
+async function runBenchmarks() {
+  // Implementation A
+  const resultA = await benchmark('Implementation A', async (i) => {
+    // Implementation A code
+    await implementationA(i);
+  });
+  
+  // Implementation B
+  const resultB = await benchmark('Implementation B', async (i) => {
+    // Implementation B code
+    await implementationB(i);
+  });
+  
+  // Compare results
+  const difference = resultA.averageTime - resultB.averageTime;
+  const percentageDifference = (difference / resultA.averageTime) * 100;
+  
+  console.log(`Comparison:`);
+  console.log(`  Difference: ${Math.abs(difference).toFixed(2)}ms`);
+  console.log(`  Percentage difference: ${Math.abs(percentageDifference).toFixed(2)}%`);
+  console.log(`  ${resultA.averageTime < resultB.averageTime ? 'Implementation A' : 'Implementation B'} is faster`);
+}
+
+runBenchmarks();
+```
+
+## Conclusion
+
+Performance optimization is an ongoing process. As your workflows evolve and your user base grows, you'll need to continuously monitor and optimize performance. By following the strategies in this guide, you can identify and resolve performance issues in your Motia workflows, ensuring they remain fast and efficient even as they scale.
+
+Remember these key principles:
+
+1. **Measure first**: Always profile and measure before optimizing
+2. **Focus on bottlenecks**: Optimize the slowest parts of your workflow first
+3. **Test your optimizations**: Verify that your changes actually improve performance
+4. **Balance complexity and performance**: Sometimes simpler code is better, even if it's slightly slower
+5. **Consider scalability**: Design your workflows to scale horizontally from the beginning
+
+If you're still experiencing performance issues after applying these strategies, check the [community forum](https://discord.gg/motia) for additional help or consider consulting with a performance optimization expert.

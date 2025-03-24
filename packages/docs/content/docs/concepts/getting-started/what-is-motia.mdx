@@ -1,0 +1,233 @@
+---
+title: "What is Motia?"
+description: "A simple explanation of Motia and its core concepts"
+---
+
+# What is Motia?
+
+<div className="beginner-content">
+
+## Simple Definition
+
+Motia is an event-driven workflow framework that helps you build intelligent applications by connecting different steps through events.
+
+## Why It Matters
+
+Building modern applications often requires connecting many different services, APIs, and processes. Motia makes this easier by:
+
+- **Simplifying connections** between different parts of your application
+- **Visualizing workflows** so you can understand how everything fits together
+- **Reducing boilerplate code** so you can focus on your business logic
+- **Supporting multiple languages** including JavaScript, TypeScript, Python, and Ruby
+- **Enabling AI integration** for building intelligent, adaptive applications
+
+## How It Works
+
+At its core, Motia is built around three simple concepts:
+
+1. **Steps**: Individual units of functionality that do specific tasks
+2. **Events**: Messages that steps send to communicate with each other
+3. **Flows**: Connected steps that work together to accomplish goals
+
+<div className="flex justify-center my-8">
+  <img 
+    src="/docs/img/basic-flow-diagram.png" 
+    alt="Basic Motia Flow" 
+    className="rounded-lg border shadow-md"
+    width="600"
+  />
+</div>
+
+### A Simple Example
+
+Here's a basic example of how Motia works:
+
+1. An **API Step** receives an HTTP request
+2. It processes the request and emits an **Event**
+3. An **Event Step** listens for that event and performs an action
+4. The Event Step might emit another event, continuing the flow
+
+This simple pattern can be expanded to build complex applications while keeping each component focused and maintainable.
+
+## Motia vs. Other Frameworks
+
+| Feature                       | Motia                             | No-code/Low-code Tools     | Fully-agentic Frameworks      | ML-focused Frameworks          | Custom Code                           |
+| ----------------------------- | --------------------------------- | -------------------------- | ----------------------------- | ------------------------------ | ------------------------------------- |
+| **Code-First Approach**       | ✅ Full flexibility with code     | ❌ Limited by visual tools | ✅ Usually code-based         | ✅ Code-based but ML-focused   | ✅ Complete control                   |
+| **Multi-language Support**    | ✅ JS, TS, Python, Ruby           | ❌ Usually proprietary     | ❌ Often single language      | ❌ Often Python-only           | ✅ Your choice                        |
+| **Visual Interface**          | ✅ Built-in workbench             | ✅ Visual interfaces       | ❌ Limited visualization      | ❌ ML-focused tools            | ❌ Requires separate tools            |
+| **Infrastructure Management** | ✅ Handled automatically          | ✅ Managed for you         | ❌ Often requires setup       | ❌ Requires ML infrastructure  | ❌ Build your own                     |
+| **Production Scalability**    | ✅ Enterprise-ready               | ❌ Often limited           | ⚠️ Varies widely              | ⚠️ ML-specific scaling         | ✅ Custom scaling                     |
+| **Learning Curve**            | 📊 Moderate                       | 📊 Low                     | 📊 High                       | 📊 Very high                   | 📊 Very high                          |
+| **Deterministic Execution**   | ✅ Guaranteed deterministic paths | ⚠️ Limited control         | ❌ Often unpredictable        | ❌ Probabilistic models        | ✅ As designed                        |
+| **Agentic Support**           | ✅ Agentic flexibility per step   | ❌ Minimal or none         | ✅ Core functionality         | ⚠️ Through additional layers   | ⚠️ Custom implementation              |
+| **Long-term Maintainability** | ✅ Standard patterns & versioning | ❌ Vendor lock-in risks    | ⚠️ Rapidly evolving ecosystem | ⚠️ Dependent on model versions | ✅ Complete control but higher burden |
+
+</div>
+
+<div className="intermediate-content">
+
+## Architectural Overview
+
+Motia follows an event-driven architecture pattern, where components communicate through events rather than direct method calls. This provides several advantages:
+
+- **Loose coupling**: Steps don't need to know about each other directly
+- **Scalability**: Components can be scaled independently
+- **Resilience**: Failures in one step don't necessarily break the entire system
+- **Extensibility**: New functionality can be added by creating new steps that listen for existing events
+
+### Core Components
+
+Motia consists of several key components:
+
+- **Step System**: A pluggable architecture for defining different types of steps
+- **Event Bus**: Routes events between steps based on topics
+- **State Management**: Maintains workflow state across steps
+- **Workbench**: Visualizes and helps debug workflows
+
+### Step Types
+
+Motia includes several built-in step types:
+
+- **API Steps**: Create HTTP endpoints to receive external requests
+- **Event Steps**: Listen for and respond to events
+- **Cron Steps**: Execute on a scheduled basis
+- **NOOP Steps**: Represent external processes or manual actions
+
+Each step type serves a specific purpose in building workflows, and they can be combined to create complex applications.
+
+</div>
+
+<div className="advanced-content">
+
+## Technical Architecture
+
+Motia's architecture is designed for flexibility, extensibility, and performance:
+
+### Event Processing Model
+
+Events in Motia are processed asynchronously, allowing for high throughput and resilience. The event processing pipeline includes:
+
+1. **Event Emission**: Steps emit events with a topic and payload
+2. **Topic Routing**: Events are routed to steps that have registered interest
+3. **Handler Invocation**: Matching steps' handlers are invoked with the event data
+4. **State Management**: Optional state updates are processed
+5. **Cascading Events**: Steps may emit additional events, continuing the flow
+
+### Extensibility Points
+
+Motia is designed to be extended in several ways:
+
+- **Custom Step Types**: Create new step types for specific use cases
+- **Middleware**: Add cross-cutting concerns like logging, metrics, or authentication
+- **Plugins**: Extend core functionality with plugins for specific integrations
+- **Language Support**: Add support for additional programming languages
+
+### Performance Considerations
+
+Motia is optimized for:
+
+- **Low Latency**: Event processing is designed to minimize overhead
+- **High Throughput**: Parallel processing of events when possible
+- **Resource Efficiency**: Minimal memory footprint for event processing
+- **Scalability**: Horizontal scaling through stateless design
+
+</div>
+
+## Code Example
+
+Here's a simple example of defining a Motia workflow with three steps:
+
+<div className="code-example">
+```typescript
+// API Step: Receives HTTP requests
+import { defineStep } from '@motia/core';
+
+export const apiStep = defineStep({
+  id: 'example.api',
+  name: 'Example API',
+  type: 'api',
+  path: '/api/example',
+  method: 'POST',
+  emits: ['example.request.received'],
+  run: async (input, { emit }) => {
+    // Process the incoming request
+    const { body } = input;
+    
+    // Emit an event with the processed data
+    await emit('example.request.received', { 
+      data: body,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return a response to the HTTP client
+    return {
+      status: 200,
+      body: { success: true }
+    };
+  }
+});
+
+// Event Step: Processes the request
+export const processStep = defineStep({
+  id: 'example.process',
+  name: 'Process Example',
+  type: 'event',
+  on: ['example.request.received'],
+  emits: ['example.processing.completed'],
+  run: async (input, { emit }) => {
+    // Get the data from the event
+    const { data, timestamp } = input.data;
+    
+    // Process the data
+    const result = {
+      ...data,
+      processed: true,
+      processingTime: new Date().getTime() - new Date(timestamp).getTime()
+    };
+    
+    // Emit an event with the result
+    await emit('example.processing.completed', { result });
+    
+    return { success: true };
+  }
+});
+
+// Event Step: Handles the result
+export const resultStep = defineStep({
+  id: 'example.result',
+  name: 'Handle Result',
+  type: 'event',
+  on: ['example.processing.completed'],
+  run: async (input) => {
+    // Get the result from the event
+    const { result } = input.data;
+    
+    // Do something with the result
+    console.log('Processing completed:', result);
+    
+    // In a real application, you might:
+    // - Save to a database
+    // - Send a notification
+    // - Trigger another workflow
+    
+    return { success: true };
+  }
+});
+```
+</div>
+
+## Related Concepts
+
+- [Event-Driven Basics](/docs/concepts/getting-started/event-driven-basics)
+- [Steps Introduction](/docs/concepts/getting-started/steps-intro)
+- [Flows Introduction](/docs/concepts/getting-started/flows-intro)
+- [Workbench](/docs/concepts/core-components/workbench)
+
+## Next Steps
+
+Now that you understand what Motia is, you can:
+
+- [Follow the Quickstart Guide](/docs/quickstart) to build your first Motia application
+- [Begin your Motia Journey](/docs/journeys/start-your-motia-journey) for a guided learning experience
+- [Explore the Core Concepts](/docs/concepts) to deepen your understanding

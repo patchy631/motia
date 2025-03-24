@@ -1,0 +1,775 @@
+---
+title: "Creating Cron Steps"
+description: "Learn how to create cron steps that execute on a scheduled basis in Motia"
+---
+
+# Creating Cron Steps
+
+<div className="intermediate-content">
+
+Cron steps allow you to execute tasks on a scheduled basis, making them perfect for periodic operations like data cleanup, report generation, or scheduled notifications. This guide will show you how to create and customize cron steps for your Motia workflows.
+
+## What Are Cron Steps?
+
+Cron steps are steps that:
+
+1. Execute on a scheduled basis using cron expressions
+2. Run their handler function at the specified times
+3. Optionally emit events to trigger other steps
+
+Cron steps are essential for automating time-based tasks in your Motia applications, allowing you to perform operations at specific intervals without manual intervention.
+
+</div>
+
+## Basic Cron Step
+
+Here's a basic example of a cron step:
+
+<div className="code-example">
+```typescript
+// steps/cleanup/dailyCleanup.ts
+import { CronConfig, StepHandler } from '@motia/core';
+
+export const config: CronConfig = {
+  type: 'cron',
+  name: 'Daily Cleanup',
+  cron: '0 0 * * *', // Run at midnight every day
+  emits: ['cleanup.completed'],
+  flows: ['maintenance']
+};
+
+export const handler: StepHandler<typeof config> = async (_, { emit, logger }) => {
+  logger.info('Starting daily cleanup process');
+  
+  try {
+    // Perform cleanup operations
+    const result = await performCleanup();
+    
+    logger.info('Cleanup completed successfully', { itemsCleaned: result.count });
+    
+    // Emit an event with the cleanup results
+    await emit({
+      topic: 'cleanup.completed',
+      data: {
+        timestamp: new Date().toISOString(),
+        itemsCleaned: result.count,
+        status: 'success'
+      }
+    });
+  } catch (error) {
+    logger.error('Cleanup failed', { error: error.message });
+    
+    // Optionally emit an error event
+    await emit({
+      topic: 'cleanup.failed',
+      data: {
+        timestamp: new Date().toISOString(),
+        error: error.message
+      }
+    });
+  }
+};
+
+async function performCleanup() {
+  // Cleanup logic here
+  // This could be database cleanup, file system operations, etc.
+  return { count: 42 }; // Number of items cleaned
+}
+```
+</div>
+
+This cron step:
+1. Runs at midnight every day
+2. Performs a cleanup operation
+3. Emits a `cleanup.completed` event with the results
+4. Handles errors and emits a `cleanup.failed` event if necessary
+
+## Cron Step Properties
+
+Cron steps have the following properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `string` | Yes | Must be `'cron'` for cron steps |
+| `name` | `string` | Yes | Human-readable name for the step |
+| `cron` | `string` | Yes | Cron expression that defines the schedule |
+| `description` | `string` | No | Description of what the step does |
+| `emits` | `string[]` | No | Array of event topics this step can emit |
+| `flows` | `string[]` | No | Array of flow identifiers this step belongs to |
+
+### The `cron` Property
+
+The `cron` property uses standard cron syntax to define when the step should execute:
+
+```
+┌───────────── minute (0 - 59)
+│ ┌───────────── hour (0 - 23)
+│ │ ┌───────────── day of the month (1 - 31)
+│ │ │ ┌───────────── month (1 - 12)
+│ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
+│ │ │ │ │
+│ │ │ │ │
+* * * * *
+```
+
+Common cron expressions:
+
+- `* * * * *`: Every minute
+- `0 * * * *`: Every hour at minute 0
+- `0 0 * * *`: Every day at midnight
+- `0 0 * * 0`: Every Sunday at midnight
+- `0 0 1 * *`: First day of every month at midnight
+- `0 12 * * 1-5`: Every weekday at noon
+
+<div className="intermediate-content">
+
+## Cron Step Patterns
+
+### Scheduled Reports
+
+One common use case for cron steps is generating scheduled reports:
+
+```typescript
+import { CronConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+import { generateReport } from '../../services/reports';
+
+export const config: CronConfig = {
+  type: 'cron',
+  name: 'Weekly Sales Report',
+  cron: '0 9 * * 1', // Run at 9 AM every Monday
+  emits: ['report.sales.weekly.generated'],
+  flows: ['reporting']
+};
+
+export const handler: StepHandler<typeof config> = async (_, { emit, logger }) => {
+  logger.info('Generating weekly sales report');
+  
+  try {
+    // Get the date range for the previous week
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() - 1); // Yesterday
+    
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 6); // 7 days ago
+    
+    // Generate the report
+    const report = await generateReport('sales', {
+      startDate,
+      endDate,
+      format: 'pdf'
+    });
+    
+    logger.info('Weekly sales report generated', { 
+      reportId: report.id,
+      totalSales: report.summary.totalSales
+    });
+    
+    // Emit an event with the report data
+    await emit({
+      topic: 'report.sales.weekly.generated',
+      data: {
+        reportId: report.id,
+        url: report.url,
+        summary: report.summary,
+        generatedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to generate weekly sales report', { error: error.message });
+  }
+};
+```
+
+### Data Synchronization
+
+Cron steps are perfect for synchronizing data with external systems:
+
+```typescript
+import { CronConfig, StepHandler } from '@motia/core';
+import { syncInventory } from '../../services/inventory';
+
+export const config: CronConfig = {
+  type: 'cron',
+  name: 'Inventory Sync',
+  cron: '*/30 * * * *', // Run every 30 minutes
+  emits: ['inventory.synced'],
+  flows: ['inventory-management']
+};
+
+export const handler: StepHandler<typeof config> = async (_, { emit, logger }) => {
+  logger.info('Starting inventory synchronization');
+  
+  try {
+    // Sync inventory with external system
+    const result = await syncInventory();
+    
+    logger.info('Inventory sync completed', { 
+      itemsUpdated: result.updated,
+      itemsAdded: result.added,
+      itemsRemoved: result.removed
+    });
+    
+    // Emit an event with the sync results
+    await emit({
+      topic: 'inventory.synced',
+      data: {
+        timestamp: new Date().toISOString(),
+        updated: result.updated,
+        added: result.added,
+        removed: result.removed,
+        status: 'success'
+      }
+    });
+  } catch (error) {
+    logger.error('Inventory sync failed', { error: error.message });
+    
+    // Emit an error event
+    await emit({
+      topic: 'inventory.sync.failed',
+      data: {
+        timestamp: new Date().toISOString(),
+        error: error.message
+      }
+    });
+  }
+};
+```
+
+### Scheduled Notifications
+
+Cron steps can be used to send scheduled notifications:
+
+```typescript
+import { CronConfig, StepHandler } from '@motia/core';
+import { getUpcomingEvents, sendNotifications } from '../../services/notifications';
+
+export const config: CronConfig = {
+  type: 'cron',
+  name: 'Event Reminders',
+  cron: '0 9 * * *', // Run at 9 AM every day
+  emits: ['notifications.reminders.sent'],
+  flows: ['notifications']
+};
+
+export const handler: StepHandler<typeof config> = async (_, { emit, logger }) => {
+  logger.info('Sending event reminders');
+  
+  try {
+    // Get events happening in the next 24 hours
+    const events = await getUpcomingEvents({
+      hoursAhead: 24,
+      requireReminder: true
+    });
+    
+    if (events.length === 0) {
+      logger.info('No upcoming events requiring reminders');
+      return;
+    }
+    
+    // Send notifications for each event
+    const results = await sendNotifications(events, {
+      template: 'event-reminder',
+      channel: 'email'
+    });
+    
+    logger.info('Event reminders sent', { 
+      eventCount: events.length,
+      notificationsSent: results.sent,
+      notificationsFailed: results.failed
+    });
+    
+    // Emit an event with the notification results
+    await emit({
+      topic: 'notifications.reminders.sent',
+      data: {
+        timestamp: new Date().toISOString(),
+        eventCount: events.length,
+        sent: results.sent,
+        failed: results.failed
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to send event reminders', { error: error.message });
+  }
+};
+```
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Cron Step Techniques
+
+### Dynamic Scheduling
+
+For more complex scheduling needs, you can create a step that dynamically updates the schedule of a cron step:
+
+```typescript
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+import { updateCronSchedule } from '../../services/scheduler';
+
+const inputSchema = z.object({
+  stepId: z.string(),
+  cronExpression: z.string(),
+  reason: z.string().optional()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Update Cron Schedule',
+  subscribes: ['schedule.update'],
+  input: inputSchema,
+  flows: ['system-management']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { logger }) => {
+  const { stepId, cronExpression, reason } = input;
+  
+  logger.info('Updating cron schedule', { 
+    stepId, 
+    cronExpression,
+    reason: reason || 'No reason provided'
+  });
+  
+  try {
+    // Validate the cron expression
+    if (!isValidCronExpression(cronExpression)) {
+      throw new Error(`Invalid cron expression: ${cronExpression}`);
+    }
+    
+    // Update the schedule in the database or configuration
+    await updateCronSchedule(stepId, cronExpression);
+    
+    logger.info('Cron schedule updated successfully', { stepId, cronExpression });
+  } catch (error) {
+    logger.error('Failed to update cron schedule', { 
+      stepId, 
+      cronExpression, 
+      error: error.message 
+    });
+    
+    throw error;
+  }
+};
+
+function isValidCronExpression(cron) {
+  // Simple validation - in a real implementation, you would use a proper cron validation library
+  const parts = cron.split(' ');
+  return parts.length === 5;
+}
+```
+
+This step allows you to dynamically update the schedule of cron steps at runtime, which can be useful for implementing user-configurable schedules or adapting to changing business requirements.
+
+### Timezone-Aware Scheduling
+
+For applications that need to handle different timezones, you can implement timezone-aware scheduling:
+
+```typescript
+import { CronConfig, StepHandler } from '@motia/core';
+import { DateTime } from 'luxon';
+
+export const config: CronConfig = {
+  type: 'cron',
+  name: 'Regional Daily Reports',
+  cron: '0 9 * * *', // 9 AM in the server's timezone
+  emits: ['report.regional.generated'],
+  flows: ['reporting']
+};
+
+export const handler: StepHandler<typeof config> = async (_, { emit, logger, state, traceId }) => {
+  logger.info('Checking regions for daily reports');
+  
+  // Get all regions and their timezones
+  const regions = await getRegions();
+  
+  for (const region of regions) {
+    // Convert the current time to the region's timezone
+    const regionTime = DateTime.now().setZone(region.timezone);
+    
+    // Check if it's 9 AM in the region's timezone
+    if (regionTime.hour === 9 && regionTime.minute === 0) {
+      logger.info('Generating daily report for region', { 
+        region: region.name,
+        timezone: region.timezone
+      });
+      
+      try {
+        // Generate the report for this region
+        const report = await generateRegionalReport(region.id);
+        
+        // Store the report in state
+        await state.set(traceId, `reports:${region.id}:latest`, report);
+        
+        // Emit an event with the report data
+        await emit({
+          topic: 'report.regional.generated',
+          data: {
+            regionId: region.id,
+            regionName: region.name,
+            reportId: report.id,
+            url: report.url,
+            generatedAt: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        logger.error('Failed to generate regional report', { 
+          region: region.name, 
+          error: error.message 
+        });
+      }
+    }
+  }
+};
+
+async function getRegions() {
+  // In a real implementation, this would fetch regions from a database
+  return [
+    { id: 'us-east', name: 'US East', timezone: 'America/New_York' },
+    { id: 'us-west', name: 'US West', timezone: 'America/Los_Angeles' },
+    { id: 'eu', name: 'Europe', timezone: 'Europe/London' },
+    { id: 'asia', name: 'Asia', timezone: 'Asia/Tokyo' }
+  ];
+}
+
+async function generateRegionalReport(regionId) {
+  // Generate a report for the specified region
+  return {
+    id: `report-${regionId}-${Date.now()}`,
+    url: `https://example.com/reports/${regionId}/${Date.now()}`,
+    // Other report data
+  };
+}
+```
+
+This approach allows you to run tasks at specific times in different timezones, which is essential for global applications.
+
+### Batch Processing
+
+For resource-intensive tasks, you can implement batch processing to spread the load over time:
+
+```typescript
+import { CronConfig, StepHandler } from '@motia/core';
+
+export const config: CronConfig = {
+  type: 'cron',
+  name: 'User Data Export',
+  cron: '0 2 * * *', // Run at 2 AM every day
+  emits: ['export.batch.completed', 'export.all.completed'],
+  flows: ['data-management']
+};
+
+export const handler: StepHandler<typeof config> = async (_, { emit, logger }) => {
+  logger.info('Starting user data export');
+  
+  try {
+    // Get the total number of users
+    const totalUsers = await getUserCount();
+    
+    // Define batch size
+    const batchSize = 1000;
+    const totalBatches = Math.ceil(totalUsers / batchSize);
+    
+    logger.info('Processing user export in batches', { 
+      totalUsers, 
+      batchSize, 
+      totalBatches 
+    });
+    
+    // Process each batch
+    for (let batch = 0; batch < totalBatches; batch++) {
+      const offset = batch * batchSize;
+      
+      logger.info('Processing export batch', { batch: batch + 1, offset });
+      
+      // Export this batch of users
+      const result = await exportUserBatch(offset, batchSize);
+      
+      // Emit an event for this batch
+      await emit({
+        topic: 'export.batch.completed',
+        data: {
+          batch: batch + 1,
+          totalBatches,
+          usersExported: result.count,
+          offset,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
+      // Add a small delay between batches to reduce system load
+      if (batch < totalBatches - 1) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
+    
+    // Emit an event for the completed export
+    await emit({
+      topic: 'export.all.completed',
+      data: {
+        totalUsers,
+        totalBatches,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+    logger.info('User data export completed', { totalUsers });
+  } catch (error) {
+    logger.error('User data export failed', { error: error.message });
+  }
+};
+
+async function getUserCount() {
+  // In a real implementation, this would query a database
+  return 10000;
+}
+
+async function exportUserBatch(offset, limit) {
+  // Export a batch of users
+  // This could write to files, send to an external system, etc.
+  return { count: Math.min(limit, 10000 - offset) };
+}
+```
+
+This approach allows you to process large datasets in manageable chunks, reducing the risk of timeouts or resource exhaustion.
+
+</div>
+
+## Best Practices for Cron Steps
+
+### 1. Choose Appropriate Schedules
+
+Select cron schedules that make sense for your application's needs:
+
+- Consider the frequency of execution and its impact on system resources
+- Avoid scheduling too many resource-intensive tasks at the same time
+- For global applications, be mindful of timezone differences
+
+### 2. Handle Execution Overlap
+
+For long-running tasks, implement mechanisms to prevent execution overlap:
+
+```typescript
+export const handler: StepHandler<typeof config> = async (_, { state, logger, traceId }) => {
+  const lockKey = 'longRunningTask:lock';
+  
+  // Check if the task is already running
+  const lock = await state.get(traceId, lockKey);
+  if (lock) {
+    const lockTime = new Date(lock.timestamp);
+    const now = new Date();
+    const minutesElapsed = (now.getTime() - lockTime.getTime()) / (1000 * 60);
+    
+    // If the lock is less than 30 minutes old, assume the task is still running
+    if (minutesElapsed < 30) {
+      logger.info('Task is already running, skipping this execution', { 
+        lockedSince: lock.timestamp,
+        minutesElapsed
+      });
+      return;
+    }
+    
+    // If the lock is older than 30 minutes, assume it's stale
+    logger.warn('Found stale lock, proceeding with execution', { 
+      lockedSince: lock.timestamp,
+      minutesElapsed
+    });
+  }
+  
+  // Set the lock
+  await state.set(traceId, lockKey, { 
+    timestamp: new Date().toISOString(),
+    instance: process.env.INSTANCE_ID || 'unknown'
+  });
+  
+  try {
+    // Perform the task
+    await performLongRunningTask();
+  } finally {
+    // Release the lock
+    await state.delete(traceId, lockKey);
+  }
+};
+```
+
+### 3. Implement Idempotency
+
+Design your cron steps to be idempotent, meaning they can be executed multiple times without causing unintended side effects:
+
+```typescript
+export const handler: StepHandler<typeof config> = async (_, { state, logger, traceId }) => {
+  // Generate a unique ID for today's execution
+  const today = new Date().toISOString().split('T')[0];
+  const executionId = `dailyReport:${today}`;
+  
+  // Check if today's report has already been generated
+  const existing = await state.get(traceId, executionId);
+  if (existing) {
+    logger.info('Daily report already generated today, skipping', { 
+      date: today,
+      reportId: existing.reportId
+    });
+    return;
+  }
+  
+  // Generate the report
+  const report = await generateDailyReport();
+  
+  // Store the execution record
+  await state.set(traceId, executionId, {
+    reportId: report.id,
+    generatedAt: new Date().toISOString()
+  });
+  
+  logger.info('Daily report generated', { reportId: report.id });
+};
+```
+
+### 4. Log Execution Details
+
+Include detailed logging in your cron steps to make troubleshooting easier:
+
+```typescript
+export const handler: StepHandler<typeof config> = async (_, { logger }) => {
+  const startTime = Date.now();
+  logger.info('Starting scheduled task', { 
+    scheduledTime: new Date().toISOString()
+  });
+  
+  try {
+    // Perform the task
+    const result = await performTask();
+    
+    const duration = Date.now() - startTime;
+    logger.info('Scheduled task completed', { 
+      duration: `${duration}ms`,
+      result
+    });
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logger.error('Scheduled task failed', { 
+      duration: `${duration}ms`,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+};
+```
+
+### 5. Implement Error Handling and Retries
+
+Add robust error handling and retry mechanisms for tasks that might fail:
+
+```typescript
+export const handler: StepHandler<typeof config> = async (_, { logger, emit }) => {
+  const MAX_RETRIES = 3;
+  
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      logger.info('Attempting scheduled task', { attempt });
+      
+      // Perform the task
+      const result = await performTask();
+      
+      logger.info('Scheduled task succeeded', { attempt, result });
+      
+      // Emit success event
+      await emit({
+        topic: 'task.succeeded',
+        data: { result, attempt }
+      });
+      
+      return;
+    } catch (error) {
+      logger.warn('Scheduled task attempt failed', { 
+        attempt, 
+        error: error.message 
+      });
+      
+      if (attempt < MAX_RETRIES) {
+        // Wait before retrying (exponential backoff)
+        const delay = Math.pow(2, attempt) * 1000;
+        logger.info('Retrying after delay', { delay: `${delay}ms` });
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        logger.error('Scheduled task failed after maximum retries', {
+          maxRetries: MAX_RETRIES,
+          error: error.message
+        });
+        
+        // Emit failure event
+        await emit({
+          topic: 'task.failed',
+          data: { error: error.message, attempts: MAX_RETRIES }
+        });
+      }
+    }
+  }
+};
+```
+
+## Common Questions
+
+### How do I test cron steps?
+
+You can test cron steps by directly invoking their handler functions in your tests:
+
+```typescript
+import { jest } from '@jest/globals';
+import * as cronStep from './myCronStep';
+
+describe('My Cron Step', () => {
+  it('should perform the scheduled task correctly', async () => {
+    // Mock dependencies
+    const emit = jest.fn();
+    const logger = { info: jest.fn(), error: jest.fn() };
+    const context = { emit, logger };
+    
+    // Call the handler directly
+    await cronStep.handler(null, context);
+    
+    // Assert expected behavior
+    expect(emit).toHaveBeenCalledWith({
+      topic: 'task.completed',
+      data: expect.any(Object)
+    });
+    expect(logger.info).toHaveBeenCalled();
+  });
+});
+```
+
+### How do I handle long-running tasks?
+
+For tasks that might take a long time to complete, consider:
+
+1. Breaking the task into smaller batches
+2. Implementing a locking mechanism to prevent overlap
+3. Using a separate worker process for very long-running tasks
+4. Implementing timeouts and graceful cancellation
+
+### Can I dynamically change the schedule?
+
+The cron expression itself is static in the step definition, but you can:
+
+1. Use environment variables or configuration to set the cron expression
+2. Implement a separate step that updates the schedule in your configuration
+3. Use conditional logic in your handler to determine whether to execute the task
+
+### How do I handle timezone differences?
+
+For timezone-aware scheduling:
+
+1. Use a library like `luxon` or `moment-timezone` to handle timezone conversions
+2. Store user preferences for timezones in your database
+3. Implement logic in your handler to check if the current time matches the desired time in each timezone
+
+## Next Steps
+
+Now that you know how to create cron steps, you might want to:
+
+- Learn about [Event Steps](/docs/guides/step-creation/event-steps) to process events
+- Explore [API Steps](/docs/guides/step-creation/api-steps) to create HTTP endpoints
+- Understand [NOOP Steps](/docs/guides/step-creation/noop-steps) for external processes
+- Dive into [Flow Patterns](/docs/concepts/core-components/flow-patterns) to design effective workflows

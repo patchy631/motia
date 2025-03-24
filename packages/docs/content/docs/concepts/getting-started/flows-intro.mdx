@@ -1,0 +1,430 @@
+---
+title: "Introduction to Flows"
+description: "Understand how steps connect through events to create flows"
+---
+
+# Introduction to Flows
+
+<div className="beginner-content">
+
+## Simple Definition
+
+In Motia, a flow is a sequence of connected steps that work together to accomplish a specific task or workflow.
+
+## Why Flows Matter
+
+Flows are the heart of Motia applications because they:
+
+- **Connect individual steps** into meaningful workflows
+- **Visualize the relationships** between different parts of your application
+- **Make complex processes understandable** by breaking them down into clear steps
+- **Enable modular design** where components can be reused and recombined
+- **Simplify debugging** by showing exactly how data and events move through your system
+
+## How Flows Work
+
+Flows in Motia are created implicitly through the events that connect steps:
+
+1. **Steps emit events** when they complete actions or reach certain states
+2. **Other steps listen for these events** and execute in response
+3. **This chain of events and responses** creates a flow of execution
+4. **The Workbench visualizes these connections**, making the flow explicit
+
+<div className="flex justify-center my-8">
+  <img 
+    src="/docs/img/basic-flow-diagram.png" 
+    alt="Basic Motia Flow" 
+    className="rounded-lg border shadow-md"
+    width="600"
+  />
+</div>
+
+### A Simple Example
+
+Let's look at a basic flow:
+
+1. A user submits a form on your website
+2. An **API Step** receives this submission and emits a `form.submitted` event
+3. A **Validation Step** listens for `form.submitted` events, validates the data, and emits a `form.validated` event
+4. A **Processing Step** listens for `form.validated` events, processes the data, and emits a `form.processed` event
+5. A **Notification Step** listens for `form.processed` events and sends a confirmation email
+
+This chain of steps and events creates a complete workflow for handling form submissions.
+
+</div>
+
+<div className="intermediate-content">
+
+## Flow Patterns
+
+Motia flows can be organized in various patterns to handle different types of workflows:
+
+### Sequential Flows
+
+The simplest flow pattern is a linear sequence of steps:
+
+```
+Step A → Step B → Step C → Step D
+```
+
+Each step completes its work and triggers the next step in the sequence.
+
+### Branching Flows
+
+Flows can branch based on conditions or decisions:
+
+```
+          → Step B (if condition X)
+Step A →
+          → Step C (if condition Y)
+```
+
+This pattern is useful for implementing different paths based on data or business rules.
+
+### Parallel Flows
+
+Multiple steps can be triggered by the same event to run in parallel:
+
+```
+          → Step B
+Step A →  → Step C
+          → Step D
+```
+
+This pattern is useful for tasks that can be performed independently.
+
+### Converging Flows
+
+Multiple paths can converge at a single step:
+
+```
+Step A →
+         → Step D
+Step B →
+         
+Step C →
+```
+
+This pattern is useful for aggregating results from different processes.
+
+### Error Handling Flows
+
+Specialized steps can handle errors from other steps:
+
+```
+Step A → Step B → Step C
+   ↓
+Error Handler
+```
+
+This pattern ensures that errors are properly managed and don't disrupt the entire workflow.
+
+## Flow Visualization
+
+The Motia Workbench provides a visual representation of your flows, showing:
+
+- **Steps** as nodes in the graph
+- **Events** as connections between steps
+- **Data flow** through the system
+- **Execution status** of each step
+- **Error states** and recovery paths
+
+This visualization makes it easier to understand, debug, and optimize your workflows.
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced Flow Concepts
+
+### Flow Composition
+
+Complex flows can be composed from simpler flows:
+
+#### Subflows
+
+A set of steps can form a logical subflow that handles a specific aspect of a larger workflow:
+
+```
+                    → Subflow A (Steps A1 → A2 → A3)
+Main Flow (Step M) →
+                    → Subflow B (Steps B1 → B2 → B3)
+```
+
+This approach helps manage complexity by organizing related steps.
+
+#### Flow Boundaries
+
+Flows can have well-defined boundaries with specific entry and exit points:
+
+```
+                                                → External System
+External System → Entry Point → Internal Flow → Exit Point
+```
+
+This pattern is useful for creating modular, reusable flows.
+
+### Dynamic Flows
+
+Flows can be dynamic, with the path determined at runtime:
+
+#### Conditional Routing
+
+Steps can emit different events based on runtime conditions:
+
+```typescript
+run: async (input, { emit }) => {
+  if (input.data.amount > 1000) {
+    await emit('transaction.requires.approval', input.data);
+  } else {
+    await emit('transaction.auto.approved', input.data);
+  }
+  return { success: true };
+}
+```
+
+#### Dynamic Event Topics
+
+In advanced scenarios, steps can emit events with dynamically determined topics:
+
+```typescript
+run: async (input, { emit }) => {
+  const category = determineCategory(input.data);
+  await emit(`item.categorized.${category}`, input.data);
+  return { success: true };
+}
+```
+
+This enables more flexible routing based on data characteristics.
+
+### Flow Orchestration
+
+Complex applications may require orchestration of multiple flows:
+
+#### Flow Coordination
+
+A coordinator flow can manage the execution of other flows:
+
+```
+                      → Flow A
+Coordinator Flow →    → Flow B
+                      → Flow C
+```
+
+This pattern is useful for managing complex processes with multiple stages.
+
+#### Flow Versioning
+
+Multiple versions of a flow can coexist, with routing rules determining which version to use:
+
+```
+                    → Flow v1 (legacy)
+Request Router →
+                    → Flow v2 (current)
+```
+
+This pattern enables gradual migration and A/B testing.
+
+### Performance Optimization
+
+Advanced flow design considers performance characteristics:
+
+- **Parallelism**: Identify steps that can run concurrently
+- **Batching**: Group similar operations for efficiency
+- **Caching**: Cache results to avoid redundant processing
+- **Backpressure**: Implement throttling for high-volume events
+- **Resource Management**: Balance load across system resources
+
+</div>
+
+## Flow Examples
+
+### Basic Data Processing Flow
+
+This example shows a simple flow for processing user data:
+
+<div className="code-example">
+```typescript
+// API Step: Receives user data
+import { defineStep } from '@motia/core';
+
+export const receiveUserDataStep = defineStep({
+  id: 'users.receive',
+  name: 'Receive User Data',
+  type: 'api',
+  path: '/api/users',
+  method: 'POST',
+  emits: ['user.data.received'],
+  run: async (input, { emit }) => {
+    const { body } = input;
+    
+    // Emit an event with the user data
+    await emit('user.data.received', body);
+    
+    return {
+      status: 200,
+      body: { success: true, message: 'User data received' }
+    };
+  }
+});
+
+// Event Step: Validates user data
+export const validateUserDataStep = defineStep({
+  id: 'users.validate',
+  name: 'Validate User Data',
+  type: 'event',
+  on: ['user.data.received'],
+  emits: ['user.data.valid', 'user.data.invalid'],
+  run: async (input, { emit }) => {
+    const userData = input.data;
+    
+    // Validate the user data
+    const errors = validateUserData(userData);
+    
+    if (errors.length === 0) {
+      // Data is valid
+      await emit('user.data.valid', userData);
+    } else {
+      // Data is invalid
+      await emit('user.data.invalid', { userData, errors });
+    }
+    
+    return { success: true };
+  }
+});
+
+// Event Step: Processes valid user data
+export const processUserDataStep = defineStep({
+  id: 'users.process',
+  name: 'Process User Data',
+  type: 'event',
+  on: ['user.data.valid'],
+  emits: ['user.data.processed'],
+  run: async (input, { emit }) => {
+    const userData = input.data;
+    
+    // Process the user data (e.g., save to database)
+    const processedUser = await processUser(userData);
+    
+    // Emit an event with the processed user data
+    await emit('user.data.processed', processedUser);
+    
+    return { success: true };
+  }
+});
+
+// Event Step: Handles invalid user data
+export const handleInvalidUserDataStep = defineStep({
+  id: 'users.invalid',
+  name: 'Handle Invalid User Data',
+  type: 'event',
+  on: ['user.data.invalid'],
+  run: async (input) => {
+    const { userData, errors } = input.data;
+    
+    // Log the validation errors
+    console.error('Invalid user data:', userData, errors);
+    
+    // In a real application, you might:
+    // - Send an error notification
+    // - Store the invalid data for review
+    // - Attempt to correct common errors
+    
+    return { success: true };
+  }
+});
+
+// Event Step: Sends notification after processing
+export const notifyUserStep = defineStep({
+  id: 'users.notify',
+  name: 'Notify User',
+  type: 'event',
+  on: ['user.data.processed'],
+  run: async (input) => {
+    const processedUser = input.data;
+    
+    // Send a notification to the user
+    await sendEmail(processedUser.email, {
+      subject: 'Your information has been processed',
+      body: `Hello ${processedUser.name}, your information has been successfully processed.`
+    });
+    
+    return { success: true };
+  }
+});
+
+// Helper functions (implementation details omitted for brevity)
+function validateUserData(userData) {
+  const errors = [];
+  // Validation logic here
+  return errors;
+}
+
+async function processUser(userData) {
+  // Processing logic here
+  return { ...userData, processed: true };
+}
+
+async function sendEmail(email, message) {
+  // Email sending logic here
+}
+```
+</div>
+
+In this example:
+
+1. The `receiveUserDataStep` creates an API endpoint that receives user data
+2. When data is received, it emits a `user.data.received` event
+3. The `validateUserDataStep` listens for this event and validates the data
+4. Depending on validation results, it emits either `user.data.valid` or `user.data.invalid`
+5. The `processUserDataStep` listens for valid data and processes it
+6. The `handleInvalidUserDataStep` listens for invalid data and handles errors
+7. The `notifyUserStep` listens for processed data and sends a notification
+
+This creates a complete flow for receiving, validating, processing, and responding to user data.
+
+## Flow Design Principles
+
+When designing flows in Motia, consider these principles:
+
+### 1. Single Responsibility
+
+Each step in your flow should have a single, well-defined responsibility. This makes steps easier to understand, test, and reuse.
+
+### 2. Clear Event Naming
+
+Use a consistent naming convention for events to make the flow easier to understand:
+
+```
+namespace.entity.action
+```
+
+For example: `user.profile.updated`, `order.payment.processed`
+
+### 3. Appropriate Granularity
+
+Balance between too many small steps (which can be hard to manage) and too few large steps (which can be hard to understand and reuse).
+
+### 4. Error Handling
+
+Design your flows with error handling in mind. Consider what happens when steps fail and how errors should be handled.
+
+### 5. Observability
+
+Make your flows observable by including appropriate logging, monitoring, and visualization.
+
+## Related Concepts
+
+- [Event-Driven Basics](/docs/concepts/getting-started/event-driven-basics)
+- [Steps Introduction](/docs/concepts/getting-started/steps-intro)
+- [Flow Patterns](/docs/concepts/core-components/flow-patterns)
+- [Workbench](/docs/concepts/core-components/workbench)
+
+## Next Steps
+
+Now that you understand the basics of flows in Motia, you can:
+
+- Explore [Flow Patterns](/docs/concepts/core-components/flow-patterns) in more detail
+- Learn about [State Management](/docs/concepts/core-components/state-management) for sharing data between steps
+- Try the [Workbench](/docs/concepts/core-components/workbench) to visualize and debug your flows
+- Build your first flow with the [Quickstart Guide](/docs/quickstart)

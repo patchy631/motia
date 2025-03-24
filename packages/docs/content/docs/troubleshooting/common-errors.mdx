@@ -1,0 +1,675 @@
+---
+title: "Common Errors"
+description: "Solutions for frequently encountered errors in Motia workflows"
+---
+
+# Common Errors
+
+This page catalogs common errors you might encounter when working with Motia, along with explanations and solutions. Use the table of contents to quickly find the error you're experiencing.
+
+## Event-Related Errors
+
+### Event Topic Not Found
+
+**Error Message:**
+```
+Error: No subscribers found for event topic 'user.created'
+```
+
+**Cause:**
+This error occurs when an event is emitted but no steps are subscribed to that event topic. This can happen if:
+- There's a typo in the event topic name
+- The subscribing step hasn't been registered
+- The subscribing step is configured with a different topic name
+
+**Solution:**
+1. Check for typos in the event topic name in both the emitting and subscribing steps
+2. Verify that the subscribing step is correctly registered and deployed
+3. Ensure the `subscribes` array in the subscribing step includes the exact topic name
+
+```typescript
+// Emitting step
+export const config = {
+  // ...
+  emits: ['user.created'] // Make sure this matches exactly
+};
+
+export const handler = async (input, { emit }) => {
+  // ...
+  await emit('user.created', userData); // Make sure this matches exactly
+  // ...
+};
+
+// Subscribing step
+export const config = {
+  // ...
+  subscribes: ['user.created'] // Make sure this matches exactly
+};
+```
+
+### Event Payload Validation Error
+
+**Error Message:**
+```
+Error: Event payload validation failed: Expected property 'email' to be of type string
+```
+
+**Cause:**
+This error occurs when the data structure of an emitted event doesn't match what the receiving step expects. This is often due to:
+- Missing required fields
+- Fields with incorrect data types
+- Nested objects with unexpected structure
+
+**Solution:**
+1. Check the payload structure being emitted
+2. Compare it with what the receiving step expects
+3. Ensure all required fields are present and have the correct data types
+
+```typescript
+// Correct way to emit an event with the expected payload structure
+await emit('user.created', {
+  id: '123',
+  email: 'user@example.com', // Make sure this is a string
+  createdAt: new Date().toISOString()
+});
+```
+
+## State Management Errors
+
+### State Key Not Found
+
+**Error Message:**
+```
+Error: State key 'user:123' not found
+```
+
+**Cause:**
+This error occurs when trying to access a state key that doesn't exist. This can happen if:
+- The key was never set
+- The key was deleted
+- There's a typo in the key name
+- You're trying to access state before it's been initialized
+
+**Solution:**
+1. Check for typos in the state key
+2. Verify that the state is being set before it's accessed
+3. Add defensive code to handle cases where the state might not exist
+
+```typescript
+// Defensive approach to handling potentially missing state
+const userData = await state.get(`user:${userId}`);
+if (!userData) {
+  // Handle the case where the user data doesn't exist
+  logger.warn(`User data not found for ID: ${userId}`);
+  return { success: false, error: 'User not found' };
+}
+
+// Now you can safely use userData
+```
+
+### State Value Too Large
+
+**Error Message:**
+```
+Error: State value exceeds maximum allowed size (1MB)
+```
+
+**Cause:**
+This error occurs when trying to store a value in state that exceeds the maximum allowed size. This can happen if:
+- You're storing large objects or arrays
+- You're storing binary data like images or files
+- You're accumulating data in an array without bounds
+
+**Solution:**
+1. Reduce the size of the data being stored
+2. Split large data into smaller chunks
+3. Store references to data instead of the data itself
+4. Use external storage for large data
+
+```typescript
+// Instead of storing the entire large object
+const largeObject = { /* ... large data ... */ };
+await state.set('largeData', largeObject); // This might fail
+
+// Store only the essential data or a reference
+const essentialData = {
+  id: largeObject.id,
+  summary: largeObject.summary,
+  // Store a reference to where the full data can be found
+  fullDataUrl: `https://storage.example.com/${largeObject.id}`
+};
+await state.set('largeData:summary', essentialData); // This will succeed
+```
+
+### Concurrent State Modification
+
+**Error Message:**
+```
+Error: Concurrent modification detected for state key 'counter'
+```
+
+**Cause:**
+This error occurs when multiple steps try to modify the same state key simultaneously. This can happen in high-concurrency scenarios or when steps run in parallel.
+
+**Solution:**
+1. Implement optimistic concurrency control
+2. Use atomic operations when available
+3. Implement retry logic for state operations
+
+```typescript
+// Implementing optimistic concurrency control
+const updateWithRetry = async (key, updateFn, maxRetries = 3) => {
+  let retries = 0;
+  
+  while (retries < maxRetries) {
+    const currentValue = await state.get(key);
+    const currentVersion = currentValue?.version || 0;
+    
+    const newValue = updateFn(currentValue?.data);
+    const success = await state.compareAndSet(key, currentVersion, {
+      version: currentVersion + 1,
+      data: newValue
+    });
+    
+    if (success) {
+      return newValue;
+    }
+    
+    retries++;
+    // Optional: Add a small delay before retrying
+    await new Promise(resolve => setTimeout(resolve, 50 * retries));
+  }
+  
+  throw new Error(`Failed to update state key '${key}' after ${maxRetries} attempts`);
+};
+
+// Usage
+await updateWithRetry('counter', (currentValue = 0) => currentValue + 1);
+```
+
+## API Step Errors
+
+### Invalid API Path
+
+**Error Message:**
+```
+Error: API path must start with '/'
+```
+
+**Cause:**
+This error occurs when configuring an API step with an invalid path. API paths must:
+- Start with a forward slash (`/`)
+- Contain only valid URL characters
+- Not conflict with other API paths
+
+**Solution:**
+Ensure your API path follows the correct format:
+
+```typescript
+export const config = {
+  type: 'api',
+  name: 'GetUser',
+  path: '/users/:id', // Correct: starts with a slash
+  method: 'GET'
+};
+
+// Incorrect:
+// path: 'users/:id' // Missing leading slash
+// path: '/users/:id/' // Trailing slash is unnecessary
+```
+
+### Method Not Allowed
+
+**Error Message:**
+```
+Error: Method 'PUT' not allowed for API step 'UpdateUser'
+```
+
+**Cause:**
+This error occurs when a request is made to an API step using a method that doesn't match the configured method.
+
+**Solution:**
+1. Ensure the client is using the correct HTTP method
+2. Check that the API step is configured with the intended method
+3. Consider adding support for additional methods if needed
+
+```typescript
+export const config = {
+  type: 'api',
+  name: 'UpdateUser',
+  path: '/users/:id',
+  method: 'PUT' // Make sure this matches the method used by clients
+};
+```
+
+### Request Validation Failed
+
+**Error Message:**
+```
+Error: Request validation failed: Expected property 'name' to be of type string
+```
+
+**Cause:**
+This error occurs when the request body, query parameters, or path parameters don't match the expected format.
+
+**Solution:**
+1. Check the request payload against the expected schema
+2. Add validation to your API step to provide clearer error messages
+3. Document the expected request format for clients
+
+```typescript
+export const handler = async (request, context) => {
+  // Validate request body
+  const { name, email, age } = request.body;
+  
+  const errors = [];
+  if (typeof name !== 'string' || name.length < 2) {
+    errors.push('Name must be a string with at least 2 characters');
+  }
+  
+  if (typeof email !== 'string' || !email.includes('@')) {
+    errors.push('Email must be a valid email address');
+  }
+  
+  if (typeof age !== 'number' || age < 18) {
+    errors.push('Age must be a number and at least 18');
+  }
+  
+  if (errors.length > 0) {
+    return {
+      status: 400,
+      body: { errors }
+    };
+  }
+  
+  // Proceed with valid request...
+};
+```
+
+## Step Configuration Errors
+
+### Missing Required Configuration
+
+**Error Message:**
+```
+Error: Step 'ProcessPayment' is missing required configuration: 'subscribes'
+```
+
+**Cause:**
+This error occurs when a step is missing required configuration properties. Different step types have different required properties.
+
+**Solution:**
+Ensure your step configuration includes all required properties for the step type:
+
+- **Event steps** require `subscribes`
+- **API steps** require `path` and `method`
+- **Cron steps** require `schedule`
+- All steps require `name`
+
+```typescript
+// Complete event step configuration
+export const config = {
+  type: 'event',
+  name: 'ProcessPayment', // Required for all steps
+  subscribes: ['payment.initiated'], // Required for event steps
+  emits: ['payment.processed', 'payment.failed'] // Optional but recommended
+};
+```
+
+### Invalid Step Type
+
+**Error Message:**
+```
+Error: Invalid step type 'timer'. Valid types are: 'event', 'api', 'cron', 'noop'
+```
+
+**Cause:**
+This error occurs when a step is configured with an unrecognized step type.
+
+**Solution:**
+Use one of the supported step types:
+- `event` for event-driven steps
+- `api` for HTTP endpoint steps
+- `cron` for scheduled steps
+- `noop` for external process representation
+
+```typescript
+// Correct step type
+export const config = {
+  type: 'cron', // Valid step type
+  name: 'DailyReport',
+  schedule: '0 0 * * *' // Runs at midnight every day
+};
+```
+
+### Invalid Cron Schedule
+
+**Error Message:**
+```
+Error: Invalid cron schedule: '0 0 0 * * *'. Expected format: '* * * * *'
+```
+
+**Cause:**
+This error occurs when a cron step is configured with an invalid schedule expression.
+
+**Solution:**
+Use a valid cron expression format. The standard format has 5 fields:
+- Minute (0-59)
+- Hour (0-23)
+- Day of month (1-31)
+- Month (1-12)
+- Day of week (0-6, where 0 is Sunday)
+
+```typescript
+export const config = {
+  type: 'cron',
+  name: 'WeeklyReport',
+  schedule: '0 9 * * 1' // Runs at 9:00 AM every Monday
+};
+
+// Common cron expressions:
+// '0 * * * *' - Every hour at minute 0
+// '*/15 * * * *' - Every 15 minutes
+// '0 0 * * *' - Daily at midnight
+// '0 0 * * 0' - Weekly on Sunday at midnight
+```
+
+## Runtime Errors
+
+### Unhandled Exception
+
+**Error Message:**
+```
+Error: Unhandled exception in step 'ProcessData': Cannot read property 'length' of undefined
+```
+
+**Cause:**
+This error occurs when a step throws an exception that isn't caught. Common causes include:
+- Accessing properties of undefined or null objects
+- Type errors
+- Network failures
+- Timeouts
+
+**Solution:**
+1. Add proper error handling with try/catch blocks
+2. Add defensive coding to check for undefined or null values
+3. Add validation for inputs and external data
+
+```typescript
+export const handler = async (input, context) => {
+  try {
+    // Defensive coding: check if input.data exists before accessing properties
+    if (!input.data) {
+      throw new Error('Input data is required');
+    }
+    
+    // Process the data
+    const result = processData(input.data);
+    
+    return { success: true, result };
+  } catch (error) {
+    // Log the error
+    context.logger.error('Error processing data', error);
+    
+    // Emit an error event if appropriate
+    await context.emit('data.processing.error', {
+      error: error.message,
+      input
+    });
+    
+    // Return a failure response
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+```
+
+### Step Timeout
+
+**Error Message:**
+```
+Error: Step 'FetchExternalData' timed out after 30 seconds
+```
+
+**Cause:**
+This error occurs when a step takes longer to execute than the configured timeout. This can happen due to:
+- Slow external API calls
+- Complex processing
+- Infinite loops
+- Resource constraints
+
+**Solution:**
+1. Optimize the step to complete faster
+2. Increase the timeout if the operation legitimately needs more time
+3. Break long-running operations into smaller steps
+4. Implement a continuation pattern for long-running processes
+
+```typescript
+// Increasing the timeout for a step that needs more time
+export const config = {
+  type: 'event',
+  name: 'ProcessLargeDataset',
+  subscribes: ['dataset.ready'],
+  timeout: 120000 // 2 minutes instead of the default 30 seconds
+};
+
+// Or break the operation into smaller steps
+export const handler = async (input, { emit, state }) => {
+  const { datasetId, page = 0, pageSize = 100 } = input;
+  
+  // Get the dataset
+  const dataset = await fetchDatasetPage(datasetId, page, pageSize);
+  
+  // Process this page
+  const results = processDatasetPage(dataset.items);
+  
+  // Store the results for this page
+  await state.set(`dataset:${datasetId}:results:${page}`, results);
+  
+  // If there are more pages, emit an event to process the next page
+  if (page < dataset.totalPages - 1) {
+    await emit('dataset.page.processed', {
+      datasetId,
+      page: page + 1,
+      pageSize
+    });
+  } else {
+    // All pages processed, emit completion event
+    await emit('dataset.processing.completed', {
+      datasetId,
+      totalPages: dataset.totalPages
+    });
+  }
+  
+  return { success: true };
+};
+```
+
+### Memory Limit Exceeded
+
+**Error Message:**
+```
+Error: Step 'GenerateReport' exceeded memory limit of 256MB
+```
+
+**Cause:**
+This error occurs when a step uses more memory than allowed. This can happen due to:
+- Processing large datasets in memory
+- Memory leaks
+- Inefficient algorithms
+- Large dependencies
+
+**Solution:**
+1. Optimize memory usage
+2. Process data in smaller chunks
+3. Use streaming approaches for large datasets
+4. Increase memory limits if necessary and possible
+
+```typescript
+// Instead of loading the entire dataset into memory
+export const handler = async (input, context) => {
+  // This might exceed memory limits
+  const entireDataset = await fetchEntireDataset();
+  const processedData = processEntireDataset(entireDataset);
+  
+  return { success: true, result: processedData };
+};
+
+// Process data in chunks
+export const handler = async (input, context) => {
+  const { chunkSize = 100, offset = 0 } = input;
+  
+  // Fetch just one chunk
+  const dataChunk = await fetchDatasetChunk(offset, chunkSize);
+  
+  // Process just this chunk
+  const processedChunk = processDataChunk(dataChunk);
+  
+  // Store the processed chunk
+  await context.state.set(`processedData:${offset}`, processedChunk);
+  
+  // If there's more data, emit an event to process the next chunk
+  if (dataChunk.length === chunkSize) {
+    await context.emit('data.chunk.processed', {
+      chunkSize,
+      offset: offset + chunkSize
+    });
+  } else {
+    // All chunks processed, emit completion event
+    await context.emit('data.processing.completed', {
+      totalChunks: Math.ceil(offset / chunkSize) + 1
+    });
+  }
+  
+  return { success: true };
+};
+```
+
+## Deployment Errors
+
+### Step Name Conflict
+
+**Error Message:**
+```
+Error: Step name conflict: 'ProcessPayment' is already defined
+```
+
+**Cause:**
+This error occurs when two steps have the same name. Step names must be unique within a Motia application.
+
+**Solution:**
+Ensure each step has a unique name, typically by using a naming convention that includes the step's purpose and context:
+
+```typescript
+// Instead of generic names like 'ProcessPayment'
+export const config = {
+  name: 'ProcessPayment' // Too generic, might conflict
+};
+
+// Use more specific names
+export const config = {
+  name: 'OrderService.ProcessPayment' // More specific, less likely to conflict
+};
+
+// Or
+export const config = {
+  name: 'SubscriptionRenewal.ProcessPayment' // Clearly different from the above
+};
+```
+
+### API Path Conflict
+
+**Error Message:**
+```
+Error: API path conflict: '/users/:id' is already defined with method 'GET'
+```
+
+**Cause:**
+This error occurs when two API steps are configured with the same path and method.
+
+**Solution:**
+Ensure each combination of API path and method is unique:
+
+```typescript
+// These two steps would conflict
+export const configA = {
+  type: 'api',
+  name: 'GetUser',
+  path: '/users/:id',
+  method: 'GET'
+};
+
+export const configB = {
+  type: 'api',
+  name: 'FetchUser', // Different name but same path and method
+  path: '/users/:id',
+  method: 'GET'
+};
+
+// Fix by using different paths or methods
+export const configB = {
+  type: 'api',
+  name: 'FetchUserDetails',
+  path: '/users/:id/details', // Different path
+  method: 'GET'
+};
+
+// Or
+export const configB = {
+  type: 'api',
+  name: 'UpdateUser',
+  path: '/users/:id',
+  method: 'PUT' // Different method
+};
+```
+
+### Invalid Event Topic
+
+**Error Message:**
+```
+Error: Invalid event topic: 'user created'. Topics must use dot notation (e.g., 'user.created')
+```
+
+**Cause:**
+This error occurs when an event topic doesn't follow the required format. Motia requires event topics to use dot notation.
+
+**Solution:**
+Format event topics using dot notation, with each segment in lowercase and separated by periods:
+
+```typescript
+// Incorrect event topics
+export const config = {
+  emits: [
+    'user created', // Spaces are not allowed
+    'UserCreated',  // Camel case is not recommended
+    'user-created'  // Hyphens are not recommended
+  ]
+};
+
+// Correct event topics
+export const config = {
+  emits: [
+    'user.created',           // Basic topic
+    'user.profile.updated',   // Nested topic
+    'payment.stripe.succeeded' // Vendor-specific topic
+  ]
+};
+```
+
+## Getting Help with Other Errors
+
+If you encounter an error not listed here:
+
+1. **Check the logs**: Look for detailed error messages and stack traces
+2. **Search the documentation**: Use the search function to find relevant information
+3. **Check the [FAQ](./faq)**: Your question might already be answered
+4. **Join the community**: Ask for help in the [Discord community](https://discord.gg/motia)
+5. **Open an issue**: If you think you've found a bug, [open an issue](https://github.com/motiajs/motia/issues) on GitHub
+
+When asking for help, always include:
+- The complete error message
+- The relevant code that's causing the error
+- Steps to reproduce the issue
+- Your Motia version

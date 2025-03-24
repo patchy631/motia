@@ -1,0 +1,308 @@
+---
+title: "Event-Driven Basics"
+description: "Introduction to event-driven thinking and how it works in Motia"
+---
+
+# Event-Driven Basics
+
+<div className="beginner-content">
+
+## Simple Definition
+
+Event-driven architecture is a design approach where components communicate by producing and consuming events rather than through direct calls.
+
+## Why It Matters
+
+Event-driven architecture is the foundation of Motia. Understanding this approach helps you:
+
+- Build more flexible and maintainable applications
+- Create loosely coupled components that can evolve independently
+- Design systems that can scale and adapt to changing requirements
+- Implement complex workflows with simple, focused components
+
+## How Events Work in Motia
+
+In Motia, events are the communication mechanism between steps. Here's how they work:
+
+1. **Events are messages** that indicate something has happened
+2. **Steps emit events** when they complete an action or reach a certain state
+3. **Other steps listen for events** they're interested in
+4. **When an event occurs**, all steps listening for that event are triggered
+
+<div className="flex justify-center my-8">
+  <img 
+    src="/docs/img/event-flow-diagram.png" 
+    alt="Event Flow in Motia" 
+    className="rounded-lg border shadow-md"
+    width="600"
+  />
+</div>
+
+### A Simple Example
+
+Let's look at a basic example:
+
+1. A user submits a form on your website
+2. An **API Step** receives this submission and emits a `form.submitted` event
+3. A **Processing Step** listens for `form.submitted` events, validates the data, and emits a `form.validated` event
+4. A **Notification Step** listens for `form.validated` events and sends a confirmation email
+
+This chain of events creates a workflow where each step has a clear, focused responsibility.
+
+</div>
+
+<div className="intermediate-content">
+
+## Event Structure
+
+In Motia, events have a specific structure:
+
+```typescript
+interface Event {
+  // The event topic (e.g., "user.created", "order.processed")
+  topic: string;
+  
+  // The data payload associated with the event
+  data: any;
+  
+  // Metadata about the event
+  meta?: {
+    // Unique identifier for the event
+    id: string;
+    
+    // When the event was created
+    timestamp: string;
+    
+    // The step that emitted the event
+    source: string;
+    
+    // Additional context information
+    context?: Record<string, any>;
+  };
+}
+```
+
+### Event Topics
+
+Event topics in Motia follow a namespaced pattern to organize events logically:
+
+```
+namespace.entity.action
+```
+
+For example:
+- `user.profile.updated`
+- `order.payment.processed`
+- `email.notification.sent`
+
+This naming convention helps organize events and makes it easier to understand what an event represents at a glance.
+
+### Event Payload
+
+The event payload (`data`) contains the information relevant to the event. For example, a `user.profile.updated` event might include:
+
+```json
+{
+  "userId": "123",
+  "updatedFields": ["name", "email"],
+  "previousValues": {
+    "name": "John Doe",
+    "email": "john@example.com"
+  },
+  "newValues": {
+    "name": "John Smith",
+    "email": "john.smith@example.com"
+  }
+}
+```
+
+The payload should include all information that listeners might need, but avoid including sensitive or unnecessary data.
+
+## Event Routing
+
+Motia routes events to steps based on the topics they're listening for:
+
+1. A step registers interest in specific event topics using the `on` property
+2. When an event is emitted, Motia finds all steps that are listening for that topic
+3. Each matching step's handler is invoked with the event data
+
+This routing mechanism allows for flexible workflows where:
+- Multiple steps can respond to the same event
+- Steps can listen for multiple event types
+- New functionality can be added by creating new steps that listen for existing events
+
+</div>
+
+<div className="advanced-content">
+
+## Event Processing Model
+
+Motia's event processing model is designed for flexibility, reliability, and performance:
+
+### Asynchronous Processing
+
+Events in Motia are processed asynchronously, which provides several benefits:
+
+- **Non-blocking**: Event emission doesn't block the emitting step
+- **Parallelism**: Multiple events can be processed simultaneously
+- **Resilience**: Failures in one event handler don't affect others
+
+### Event Guarantees
+
+Motia provides the following guarantees for event processing:
+
+- **At-least-once delivery**: Events will be delivered to all matching handlers at least once
+- **Order preservation**: Events emitted by a single step are processed in the order they were emitted
+- **Handler isolation**: Failures in one handler don't affect other handlers
+
+### Backpressure Handling
+
+When event volume exceeds processing capacity, Motia implements backpressure mechanisms:
+
+1. **Buffering**: Events are buffered up to a configurable limit
+2. **Flow control**: Event emission is throttled when buffers fill
+3. **Overflow strategies**: Configurable strategies for handling buffer overflow (e.g., drop oldest, drop newest)
+
+### Event Sourcing Considerations
+
+While Motia isn't strictly an event sourcing system, it can be used to implement event sourcing patterns:
+
+- Events can be persisted to create an immutable log
+- State can be reconstructed by replaying events
+- Point-in-time recovery is possible with a complete event log
+
+This approach requires additional configuration and careful design of event schemas to ensure they capture all necessary state changes.
+
+</div>
+
+## Code Example
+
+Here's an example of how events work in Motia:
+
+<div className="code-example">
+```typescript
+// Step that emits an event
+import { defineStep } from '@motia/core';
+
+export const orderReceivedStep = defineStep({
+  id: 'orders.received',
+  name: 'Order Received',
+  type: 'api',
+  path: '/api/orders',
+  method: 'POST',
+  emits: ['order.received'], // Declare the events this step can emit
+  run: async (input, { emit }) => {
+    const { body } = input;
+    
+    // Validate the order
+    if (!body.items || body.items.length === 0) {
+      return {
+        status: 400,
+        body: { error: 'Order must contain at least one item' }
+      };
+    }
+    
+    // Create an order ID
+    const orderId = generateOrderId();
+    
+    // Emit an event with the order data
+    await emit('order.received', {
+      orderId,
+      items: body.items,
+      customer: body.customer,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return a response to the client
+    return {
+      status: 200,
+      body: { 
+        success: true,
+        orderId,
+        message: 'Order received successfully'
+      }
+    };
+  }
+});
+
+// Step that listens for an event
+export const processOrderStep = defineStep({
+  id: 'orders.process',
+  name: 'Process Order',
+  type: 'event',
+  on: ['order.received'], // Listen for this event
+  emits: ['order.processed'],
+  run: async (input, { emit }) => {
+    // Get the order data from the event
+    const { orderId, items, customer, timestamp } = input.data;
+    
+    console.log(`Processing order ${orderId} for ${customer.name}`);
+    
+    // Process the order (in a real app, this might involve inventory checks, payment processing, etc.)
+    const processedOrder = {
+      orderId,
+      items,
+      customer,
+      status: 'processed',
+      processedAt: new Date().toISOString(),
+      receivedAt: timestamp
+    };
+    
+    // Emit an event indicating the order has been processed
+    await emit('order.processed', processedOrder);
+    
+    return { success: true };
+  }
+});
+
+// Helper function to generate an order ID
+function generateOrderId() {
+  return `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+}
+```
+</div>
+
+In this example:
+
+1. The `orderReceivedStep` creates an API endpoint that receives orders
+2. When an order is received, it emits an `order.received` event with the order data
+3. The `processOrderStep` listens for `order.received` events and processes them
+4. After processing, it emits an `order.processed` event that could trigger further steps
+
+This pattern allows you to build complex workflows by chaining events, with each step focused on a specific responsibility.
+
+## Real-World Analogies
+
+Event-driven architecture can be compared to several real-world systems:
+
+### Post Office
+
+- **Letters** are like events
+- **Addresses** are like event topics
+- **Mailboxes** are like event listeners
+- **Mail carriers** are like the event routing system
+
+Just as multiple people can receive copies of the same letter, multiple steps can respond to the same event.
+
+### Restaurant
+
+- **Orders** are like events
+- **Order types** are like event topics
+- **Kitchen stations** are like event listeners
+- **Servers** are like the event routing system
+
+When an order comes in, it's routed to the appropriate kitchen stations based on what was ordered, and each station handles its part independently.
+
+## Related Concepts
+
+- [Steps Introduction](/docs/concepts/getting-started/steps-intro)
+- [Flows Introduction](/docs/concepts/getting-started/flows-intro)
+- [Topics and Routing](/docs/concepts/core-components/topics-and-routing)
+
+## Next Steps
+
+Now that you understand the basics of event-driven architecture in Motia, you can:
+
+- Learn about [Steps](/docs/concepts/getting-started/steps-intro), the building blocks of Motia
+- Explore [Flows](/docs/concepts/getting-started/flows-intro) to see how events connect steps
+- Try the [Quickstart Guide](/docs/quickstart) to build your first event-driven application

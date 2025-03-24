@@ -1,0 +1,393 @@
+---
+title: Error Handling in Deterministic Workflows
+description: Strategies and patterns for handling errors in Motia deterministic workflows
+---
+
+# Error Handling in Deterministic Workflows
+
+Effective error handling is crucial for building robust deterministic workflows in Motia. When errors are handled properly, your workflows can gracefully recover from failures, maintain data consistency, and provide clear feedback about what went wrong.
+
+## Why Error Handling Matters
+
+In deterministic workflows, proper error handling ensures:
+
+- **Predictable recovery**: Workflows can recover from failures in consistent, well-defined ways
+- **Data integrity**: Transactional operations can be rolled back or compensated for when errors occur
+- **Observability**: Errors are properly logged and monitored, making troubleshooting easier
+- **User experience**: End users receive appropriate feedback rather than cryptic error messages
+- **System resilience**: The overall system remains stable even when individual components fail
+
+## Common Error Types in Motia Workflows
+
+When building deterministic workflows in Motia, you'll encounter several types of errors:
+
+1. **Input validation errors**: Invalid data provided to a step
+2. **External service errors**: Failures in third-party APIs or services
+3. **Resource errors**: Issues with databases, file systems, or other resources
+4. **Timeout errors**: Operations taking too long to complete
+5. **Business logic errors**: Failures related to business rules or constraints
+6. **System errors**: Unexpected failures in the Motia runtime or infrastructure
+
+## Error Handling Patterns
+
+### 1. Try-Catch Pattern
+
+The most basic error handling pattern is to use try-catch blocks within your step handlers:
+
+```typescript
+export const handler = async (input, { emit }) => {
+  try {
+    // Attempt the operation
+    const result = await riskyOperation(input);
+    
+    // Emit success event
+    await emit({
+      topic: 'operation.succeeded',
+      data: { result }
+    });
+  } catch (error) {
+    // Emit failure event
+    await emit({
+      topic: 'operation.failed',
+      data: { error: error.message }
+    });
+  }
+};
+```
+
+This pattern is simple but effective for handling expected errors within a single step.
+
+### 2. Error Classification and Routing
+
+A more sophisticated approach is to classify errors and route them to different handlers:
+
+```typescript
+export const handler = async (input, { emit }) => {
+  try {
+    const result = await riskyOperation(input);
+    
+    await emit({
+      topic: 'operation.succeeded',
+      data: { result }
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      await emit({
+        topic: 'operation.validation.failed',
+        data: { validationErrors: error.details }
+      });
+    } else if (error instanceof ExternalServiceError) {
+      await emit({
+        topic: 'operation.service.failed',
+        data: { service: error.service, message: error.message }
+      });
+    } else {
+      await emit({
+        topic: 'operation.failed',
+        data: { error: error.message }
+      });
+    }
+  }
+};
+```
+
+This pattern allows different steps to handle different types of errors, creating more specialized recovery paths.
+
+### 3. Retry Pattern
+
+For transient errors, such as network issues or temporary service outages, implementing a retry mechanism can be effective:
+
+```typescript
+export const handler = async (input, { emit, state, traceId }) => {
+  const maxRetries = 3;
+  const retryKey = 'retryCount';
+  
+  // Get current retry count from state
+  const retryCount = await state.get(traceId, retryKey) || 0;
+  
+  try {
+    const result = await riskyOperation(input);
+    
+    // Success - clear retry count and emit success
+    await state.delete(traceId, retryKey);
+    await emit({
+      topic: 'operation.succeeded',
+      data: { result }
+    });
+  } catch (error) {
+    if (isTransientError(error) && retryCount < maxRetries) {
+      // Increment retry count
+      await state.set(traceId, retryKey, retryCount + 1);
+      
+      // Emit retry event
+      await emit({
+        topic: 'operation.retry',
+        data: { 
+          originalInput: input,
+          retryCount: retryCount + 1,
+          error: error.message
+        }
+      });
+    } else {
+      // Max retries exceeded or non-transient error
+      await state.delete(traceId, retryKey);
+      await emit({
+        topic: 'operation.failed',
+        data: { 
+          error: error.message,
+          retryCount
+        }
+      });
+    }
+  }
+};
+```
+
+This pattern uses Motia's state management to track retry attempts and implements exponential backoff for more resilient operations.
+
+### 4. Circuit Breaker Pattern
+
+The circuit breaker pattern prevents cascading failures by temporarily stopping operations when a service is experiencing problems:
+
+```typescript
+export const handler = async (input, { emit, state, traceId }) => {
+  const circuitKey = 'serviceCircuitState';
+  const circuitState = await state.get(traceId, circuitKey) || { 
+    status: 'closed', 
+    failures: 0,
+    lastFailure: null
+  };
+  
+  // Check if circuit is open (service marked as unavailable)
+  if (circuitState.status === 'open') {
+    const cooldownPeriod = 60 * 1000; // 1 minute
+    const now = Date.now();
+    
+    if (now - circuitState.lastFailure < cooldownPeriod) {
+      // Circuit is open, fail fast
+      await emit({
+        topic: 'operation.circuitOpen',
+        data: { 
+          service: 'externalService',
+          openSince: new Date(circuitState.lastFailure)
+        }
+      });
+      return;
+    }
+    
+    // Cooldown period elapsed, try again with half-open circuit
+    circuitState.status = 'half-open';
+    await state.set(traceId, circuitKey, circuitState);
+  }
+  
+  try {
+    const result = await callExternalService(input);
+    
+    // Success - reset circuit
+    if (circuitState.status !== 'closed') {
+      await state.set(traceId, circuitKey, { 
+        status: 'closed', 
+        failures: 0,
+        lastFailure: null
+      });
+    }
+    
+    await emit({
+      topic: 'operation.succeeded',
+      data: { result }
+    });
+  } catch (error) {
+    // Update circuit state
+    circuitState.failures++;
+    circuitState.lastFailure = Date.now();
+    
+    // If too many failures, open the circuit
+    if (circuitState.failures >= 5) {
+      circuitState.status = 'open';
+    }
+    
+    await state.set(traceId, circuitKey, circuitState);
+    
+    await emit({
+      topic: 'operation.failed',
+      data: { 
+        error: error.message,
+        circuitStatus: circuitState.status
+      }
+    });
+  }
+};
+```
+
+This pattern helps prevent overwhelming failing services and allows them time to recover.
+
+### 5. Compensating Transaction Pattern
+
+For workflows that modify multiple systems, the compensating transaction pattern allows you to undo changes when errors occur:
+
+```typescript
+export const handler = async (input, { emit, state, traceId }) => {
+  // Record the current state before making changes
+  await state.set(traceId, 'originalState', {
+    accountBalance: input.currentBalance,
+    inventoryLevel: input.currentInventory
+  });
+  
+  try {
+    // Step 1: Update inventory
+    await updateInventory(input.productId, -1);
+    
+    // Step 2: Process payment
+    await processPayment(input.accountId, input.amount);
+    
+    // Success - emit completion event
+    await emit({
+      topic: 'purchase.completed',
+      data: { 
+        orderId: input.orderId,
+        status: 'completed'
+      }
+    });
+  } catch (error) {
+    // Get the original state
+    const originalState = await state.get(traceId, 'originalState');
+    
+    // Determine which steps need compensation
+    if (error.step === 'processPayment') {
+      // Only need to revert inventory change
+      await updateInventory(input.productId, 1); // Add the item back
+    }
+    
+    // Emit compensation event
+    await emit({
+      topic: 'purchase.compensated',
+      data: { 
+        orderId: input.orderId,
+        error: error.message,
+        compensationApplied: true
+      }
+    });
+  }
+};
+```
+
+This pattern ensures that your system remains in a consistent state even when errors occur in multi-step processes.
+
+## Implementing Error Handling Across a Workflow
+
+In Motia, error handling often spans multiple steps. Here's how to implement comprehensive error handling across a workflow:
+
+### 1. Define Error Topics
+
+Create a consistent naming convention for error topics:
+
+```
+entity.operation.failed
+entity.operation.retrying
+entity.operation.compensated
+```
+
+For example:
+- `order.validation.failed`
+- `payment.processing.failed`
+- `inventory.update.retrying`
+
+### 2. Create Dedicated Error Handling Steps
+
+Implement dedicated steps for handling specific error types:
+
+```typescript
+// paymentErrorHandler.step.ts
+export const config = {
+  type: 'event',
+  name: 'PaymentErrorHandler',
+  subscribes: ['payment.processing.failed'],
+  emits: ['payment.retry', 'order.cancelled'],
+  flows: ['order-processing']
+};
+
+export const handler = async (input, { emit, state, traceId }) => {
+  const { error, orderId, retryCount = 0 } = input;
+  
+  // Determine if we should retry
+  if (isRetryableError(error) && retryCount < 3) {
+    await emit({
+      topic: 'payment.retry',
+      data: { 
+        orderId,
+        retryCount: retryCount + 1
+      }
+    });
+  } else {
+    // Cancel the order
+    await emit({
+      topic: 'order.cancelled',
+      data: { 
+        orderId,
+        reason: `Payment failed: ${error}`,
+        retryAttempts: retryCount
+      }
+    });
+  }
+};
+```
+
+### 3. Implement Global Error Logging
+
+Create a step that subscribes to all error topics for centralized logging:
+
+```typescript
+// errorLogger.step.ts
+export const config = {
+  type: 'event',
+  name: 'ErrorLogger',
+  subscribes: [
+    'order.validation.failed',
+    'payment.processing.failed',
+    'inventory.update.failed',
+    // Add all error topics here
+  ],
+  emits: [],
+  flows: ['error-logging']
+};
+
+export const handler = async (input, { logger }) => {
+  const { topic } = input.__motia;
+  
+  logger.error({
+    message: `Error in workflow: ${topic}`,
+    data: input,
+    timestamp: new Date().toISOString()
+  });
+};
+```
+
+## Best Practices for Error Handling
+
+1. **Be specific with error topics**: Use detailed topic names that include the entity, operation, and error type
+2. **Include useful error data**: Provide enough information in error events to diagnose and fix issues
+3. **Implement appropriate retry logic**: Only retry operations that might succeed on a subsequent attempt
+4. **Use timeouts**: Set reasonable timeouts for external service calls to prevent hanging workflows
+5. **Log comprehensively**: Ensure all errors are logged with sufficient context for troubleshooting
+6. **Consider partial success**: Design workflows to handle partial success scenarios gracefully
+7. **Test error scenarios**: Explicitly test error handling paths, not just the happy path
+8. **Document error handling**: Make sure your error handling strategy is well-documented
+
+## Monitoring and Debugging Errors
+
+Motia provides several tools for monitoring and debugging errors in your workflows:
+
+1. **Workbench Visualization**: Use Motia Workbench to visualize error flows and understand how errors propagate through your system
+2. **Logging**: Implement comprehensive logging to track error occurrences and their context
+3. **Metrics**: Track error rates, retry counts, and circuit breaker status to identify systemic issues
+4. **Tracing**: Use trace IDs to follow the path of a request through your system, including error paths
+
+## Conclusion
+
+Effective error handling is essential for building robust deterministic workflows in Motia. By implementing appropriate error handling patterns and following best practices, you can create workflows that gracefully handle failures, maintain data consistency, and provide clear feedback about what went wrong.
+
+## Next Steps
+
+- [Parallel Processing](./parallel-processing) - Learn how to implement parallel execution patterns in your workflows
+- [Testing Workflows](./testing-workflows) - Discover approaches to testing your workflows, including error scenarios
+- [State Management](/docs/concepts/core-components/state-management) - Understand how to use state management for error recovery

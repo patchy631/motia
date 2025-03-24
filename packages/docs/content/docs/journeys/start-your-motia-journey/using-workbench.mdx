@@ -1,0 +1,206 @@
+---
+title: Using Workbench
+description: Visualizing and interacting with your Motia workflows using Workbench
+---
+
+# Using Workbench
+
+Workbench is Motia's visual development environment that allows you to visualize, test, and debug your workflows. In this section, we'll explore how to use Workbench to interact with the starter example and gain insights into your workflows.
+
+## What is Workbench?
+
+Workbench is a web-based interface that provides:
+
+- Visual representation of your workflows
+- Real-time monitoring of events and step executions
+- Tools for testing and debugging your steps
+- Insights into workflow performance and behavior
+
+It's an essential tool for understanding complex workflows and diagnosing issues.
+
+## Starting Workbench
+
+To start Workbench, run the following command in your project directory:
+
+```bash
+npx motia dev
+```
+
+This command starts the Motia development server and opens Workbench in your default browser. If it doesn't open automatically, you can access it at [http://localhost:3000](http://localhost:3000).
+
+## The Workbench Interface
+
+When you open Workbench, you'll see an interface with several key sections:
+
+{/* ![Workbench Interface](/docs/public/images/workbench-interface.png) */}
+
+### Flow Visualization
+
+The main area of Workbench shows a visual representation of your workflows. Each step is represented as a node, and events are shown as connections between steps.
+
+For the starter example, you'll see:
+
+- The API step (`Hello API`)
+- The Event step (`Greeting Processor`)
+- The NOOP step (`External Notification System`)
+- Connections showing the event flow between steps
+
+This visualization helps you understand the structure of your workflow at a glance.
+
+### Step Details
+
+When you click on a step in the visualization, the Step Details panel shows information about that step:
+
+- Configuration (type, name, path, etc.)
+- Input schema
+- Events it subscribes to
+- Events it emits
+- Flows it belongs to
+
+This information helps you understand the purpose and behavior of each step.
+
+### Event Log
+
+The Event Log panel shows a real-time log of events flowing through your system:
+
+- Event topics
+- Event data
+- Timestamps
+- Trace IDs
+
+This log is invaluable for debugging and understanding the runtime behavior of your workflows.
+
+### Trace View
+
+The Trace View allows you to follow the execution of a specific flow from start to finish:
+
+- Select a trace ID to see all events in that trace
+- View the sequence of steps executed
+- Examine the data passed between steps
+- Identify where errors occurred
+
+This view is particularly useful for understanding complex workflows with many steps.
+
+## Interacting with the Starter Example
+
+Let's use Workbench to interact with the starter example:
+
+### Testing the API Step
+
+1. In Workbench, find the API step (`Hello API`) in the visualization
+2. Click on it to view its details
+3. In the Step Details panel, you'll see a "Test" button
+4. Click the "Test" button to open the API testing interface
+5. You can modify the input parameters (e.g., set `name` to "Alice")
+6. Click "Send Request" to test the API endpoint
+
+When you send the request, you'll see:
+
+- The API response in the testing interface
+- New events appearing in the Event Log
+- The flow of events through the visualization (highlighted connections)
+
+This allows you to see exactly how your workflow behaves when triggered.
+
+### Following Event Flow
+
+After triggering the API step, you can follow the flow of events:
+
+1. In the Event Log, find the `greeting.requested` event
+2. Click on it to see its details
+3. Note the trace ID associated with this event
+4. In the Trace View, select this trace ID
+5. You'll see all events in this trace, showing the complete flow:
+   - `greeting.requested` (from API step to Event step)
+   - `greeting.processed` (from Event step to NOOP step)
+
+This trace view helps you understand the sequence of events and the data passed between steps.
+
+### Monitoring Step Execution
+
+Workbench also allows you to monitor the execution of individual steps:
+
+1. Click on the Event step (`Greeting Processor`) in the visualization
+2. In the Step Details panel, click the "Logs" tab
+3. You'll see logs from the step's execution, including:
+   - When the step received events
+   - What processing it performed
+   - What events it emitted
+   - Any errors that occurred
+
+These logs provide detailed insights into the behavior of each step.
+
+## Debugging with Workbench
+
+Workbench is a powerful tool for debugging workflows:
+
+### Identifying Errors
+
+When an error occurs in your workflow:
+
+1. The step where the error occurred is highlighted in red
+2. The error appears in the Event Log
+3. Detailed error information is shown in the step's logs
+
+This makes it easy to identify and diagnose issues.
+
+### Testing Different Scenarios
+
+You can use Workbench to test different scenarios:
+
+1. Modify the input parameters when testing API steps
+2. Observe how changes affect the workflow
+3. Identify edge cases or unexpected behavior
+
+This iterative testing helps you ensure your workflows handle all scenarios correctly.
+
+### Monitoring Performance
+
+Workbench also provides insights into workflow performance:
+
+1. The Event Log shows timestamps for each event
+2. You can calculate the time between events to measure performance
+3. Step logs include execution times
+
+These metrics help you identify bottlenecks and optimize your workflows.
+
+## Customizing the Visualization
+
+Workbench allows you to customize the visualization to better understand complex workflows:
+
+### Arranging Steps
+
+You can drag steps to rearrange them in the visualization:
+
+1. Click and hold on a step
+2. Drag it to a new position
+3. Release to place it
+
+This helps you organize the visualization in a way that makes sense for your workflow.
+
+### Filtering by Flow
+
+If your project has multiple flows, you can filter the visualization:
+
+1. Use the flow selector at the top of the visualization
+2. Choose the flow you want to focus on
+3. The visualization updates to show only steps in that flow
+
+This is particularly useful for projects with many steps across different flows.
+
+### Zooming and Panning
+
+For complex workflows, you can zoom and pan the visualization:
+
+1. Use the mouse wheel to zoom in and out
+2. Click and drag on the background to pan
+
+This allows you to focus on specific parts of large workflows.
+
+## Next Steps
+
+Now that you understand how to use Workbench to visualize and interact with your workflows, let's explore how to make simple modifications to the starter example:
+
+[Simple Modifications](/docs/journeys/start-your-motia-journey/simple-modifications)
+
+By making changes to the example and observing the results in Workbench, you'll deepen your understanding of how Motia works and how to build your own workflows.

@@ -1,0 +1,216 @@
+---
+title: Exploring the Starter Example
+description: Understanding the NOOP, API, and Event steps in the Motia starter example
+---
+
+# Exploring the Starter Example
+
+In this section, we'll dive deeper into the starter example that comes with every new Motia project. We'll explore each step type—NOOP, API, and Event—to understand their purpose and how they work together to create a complete workflow.
+
+## Understanding Step Types
+
+Motia workflows are built using different types of steps, each serving a specific purpose:
+
+- **API Steps**: Create HTTP endpoints that receive external requests
+- **Event Steps**: Process events emitted by other steps or external systems
+- **NOOP Steps**: Represent external processes or manual actions
+- **Cron Steps**: Execute scheduled tasks at specified intervals
+
+The starter example includes the first three types to demonstrate a simple workflow.
+
+## The API Step
+
+Let's look at the API step in the starter example:
+
+```typescript
+// hello-api.step.ts
+import { APIConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+// Define the input schema for the API endpoint
+const inputSchema = z.object({
+  name: z.string().optional(),
+});
+
+// Define the API step configuration
+export const config: APIConfig<typeof inputSchema> = {
+  type: 'api',
+  name: 'Hello API',
+  path: '/hello',
+  method: 'GET',
+  input: inputSchema,
+  emits: ['greeting.requested'],
+  flows: ['hello-flow'],
+};
+
+// Implement the API step handler
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  const name = input.name || 'World';
+  
+  logger.info('Received greeting request', { name });
+  
+  // Emit an event for the Event step to process
+  await emit({
+    topic: 'greeting.requested',
+    data: { name },
+  });
+  
+  // Return a response to the HTTP client
+  return {
+    message: `Hello, ${name}! Your greeting request has been processed.`,
+  };
+};
+```
+
+This API step:
+
+1. Creates a GET endpoint at `/hello` that accepts an optional `name` parameter
+2. Validates the input using a Zod schema
+3. Emits a `greeting.requested` event with the name
+4. Returns a response to the HTTP client
+
+### Key Components of an API Step
+
+- **`type: 'api'`**: Identifies this as an API step
+- **`path`**: The URL path for the endpoint
+- **`method`**: The HTTP method (GET, POST, etc.)
+- **`input`**: The schema for validating request parameters
+- **`emits`**: The events this step can emit
+- **`flows`**: The workflows this step belongs to
+
+## The Event Step
+
+Now let's examine the Event step:
+
+```typescript
+// hello-event.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+// Define the input schema for the event
+const inputSchema = z.object({
+  name: z.string(),
+});
+
+// Define the Event step configuration
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Greeting Processor',
+  subscribes: ['greeting.requested'],
+  emits: ['greeting.processed'],
+  input: inputSchema,
+  flows: ['hello-flow'],
+};
+
+// Implement the Event step handler
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  logger.info('Processing greeting', { name: input.name });
+  
+  // Perform some processing
+  const greeting = `Hello, ${input.name}! Welcome to Motia.`;
+  
+  // Emit a processed event
+  await emit({
+    topic: 'greeting.processed',
+    data: {
+      name: input.name,
+      greeting,
+      timestamp: new Date().toISOString(),
+    },
+  });
+  
+  logger.info('Greeting processed', { name: input.name });
+};
+```
+
+This Event step:
+
+1. Subscribes to the `greeting.requested` event emitted by the API step
+2. Processes the event by creating a greeting message
+3. Emits a `greeting.processed` event with the result
+
+### Key Components of an Event Step
+
+- **`type: 'event'`**: Identifies this as an Event step
+- **`subscribes`**: The events this step listens for
+- **`emits`**: The events this step can emit
+- **`input`**: The schema for validating event data
+- **`flows`**: The workflows this step belongs to
+
+## The NOOP Step
+
+Finally, let's look at the NOOP step:
+
+```typescript
+// hello-noop.step.ts
+import { NOOPConfig } from 'motia';
+
+// Define the NOOP step configuration
+export const config: NOOPConfig = {
+  type: 'noop',
+  name: 'External Notification System',
+  subscribes: ['greeting.processed'],
+  flows: ['hello-flow'],
+};
+```
+
+This NOOP step:
+
+1. Represents an external notification system
+2. Subscribes to the `greeting.processed` event emitted by the Event step
+3. Doesn't have a handler because it represents an external process
+
+### Key Components of a NOOP Step
+
+- **`type: 'noop'`**: Identifies this as a NOOP step
+- **`subscribes`**: The events this step listens for
+- **`flows`**: The workflows this step belongs to
+
+NOOP steps don't have handlers because they represent processes that happen outside of Motia. They're useful for documenting and visualizing external systems that interact with your workflows.
+
+## How the Steps Work Together
+
+Now that we've examined each step individually, let's see how they work together to create a complete workflow:
+
+1. A user sends a GET request to `/hello?name=Alice`
+2. The API step validates the request and emits a `greeting.requested` event
+3. The Event step receives this event, processes it, and emits a `greeting.processed` event
+4. The NOOP step represents an external system that would receive the `greeting.processed` event
+
+This simple flow demonstrates the event-driven architecture of Motia, where steps communicate through events rather than direct function calls.
+
+## Event-Driven Communication
+
+One of the key concepts in Motia is event-driven communication. Instead of steps calling each other directly, they communicate through events:
+
+- Steps emit events with specific topics and data
+- Other steps subscribe to these topics and process the events
+- This decoupling makes workflows more flexible and extensible
+
+In our example:
+- The API step emits a `greeting.requested` event
+- The Event step subscribes to this event and processes it
+- The Event step then emits a `greeting.processed` event
+- The NOOP step subscribes to this event (representing an external system)
+
+This event-driven approach allows you to add new steps to the workflow without modifying existing steps, as long as they subscribe to the appropriate events.
+
+## Flows and Tracing
+
+You may have noticed that all steps in the example belong to the same flow: `hello-flow`. Flows in Motia are used to:
+
+- Group related steps together
+- Visualize workflows in Workbench
+- Trace the execution of workflows
+
+When a step emits an event, Motia includes a trace ID that allows you to follow the execution of a flow from start to finish. This is especially useful for debugging and monitoring complex workflows.
+
+## Next Steps
+
+Now that you understand the different step types and how they work together, let's explore how to visualize and interact with your workflows using Workbench:
+
+[Using Workbench](/docs/journeys/start-your-motia-journey/using-workbench)
+
+After that, you'll learn how to make simple modifications to the example:
+
+[Simple Modifications](/docs/journeys/start-your-motia-journey/simple-modifications)

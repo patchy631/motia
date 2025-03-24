@@ -1,0 +1,921 @@
+---
+title: Custom Extensions in Motia
+description: Techniques and patterns for extending Motia's core capabilities with custom functionality tailored to your specific needs
+---
+
+# Custom Extensions
+
+Custom extensions allow you to extend Motia's core capabilities with functionality tailored to your specific needs. This pattern is useful when you need capabilities beyond what's provided out of the box, enabling you to create specialized components that integrate seamlessly with the Motia ecosystem.
+
+## Understanding Custom Extensions
+
+Motia provides a flexible architecture that allows for various types of extensions:
+
+- **Custom Step Types**: Create new types of steps beyond the built-in API, Event, Cron, and NOOP steps
+- **State Management Extensions**: Extend the state management system with custom storage backends or behaviors
+- **Event Routing Extensions**: Implement custom event routing logic for complex scenarios
+- **Monitoring Extensions**: Build specialized monitoring and observability tools
+- **Domain-Specific Abstractions**: Develop higher-level abstractions for your specific domain
+
+By creating custom extensions, you can tailor Motia to your specific requirements while maintaining compatibility with the core platform.
+
+## When to Use Custom Extensions
+
+Consider creating custom extensions when:
+
+- You need functionality that isn't available in the core platform
+- You want to simplify common patterns in your domain
+- You need to integrate with specialized systems or services
+- You want to optimize performance for specific use cases
+- You need to enforce custom validation or business rules
+- You're building reusable components across multiple projects
+
+## Basic Extension Patterns
+
+### 1. Custom Step Types
+
+Create custom step types to encapsulate specialized functionality:
+
+```typescript
+// customStepType.ts
+import { StepConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+
+// Define the input schema for your custom step type
+export const customStepSchema = z.object({
+  // Define your step's configuration parameters
+  name: z.string(),
+  options: z.object({
+    // Step-specific options
+    option1: z.string(),
+    option2: z.number().optional(),
+    option3: z.boolean().default(false),
+  }),
+  // Other common step properties
+  flows: z.array(z.string()),
+});
+
+// Define the step type
+export const CUSTOM_STEP_TYPE = 'custom';
+
+// Register the custom step type with Motia
+export function registerCustomStepType() {
+  return {
+    type: CUSTOM_STEP_TYPE,
+    schema: customStepSchema,
+    handler: customStepHandler,
+  };
+}
+
+// Implement the custom step handler
+export const customStepHandler: StepHandler<typeof customStepSchema> = async (
+  config,
+  { emit, state, logger }
+) => {
+  try {
+    logger.info('Executing custom step', {
+      name: config.name,
+      options: config.options,
+    });
+    
+    // Implement your custom step logic here
+    const result = await executeCustomLogic(config.options);
+    
+    // Emit the result
+    await emit({
+      topic: 'custom.step.completed',
+      data: {
+        name: config.name,
+        result,
+      },
+    });
+    
+    return {
+      success: true,
+      result,
+    };
+  } catch (error) {
+    logger.error('Error executing custom step', { error });
+    
+    // Emit error event
+    await emit({
+      topic: 'custom.step.failed',
+      data: {
+        name: config.name,
+        error: error.message,
+      },
+    });
+    
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+// Helper function for custom logic
+async function executeCustomLogic(options) {
+  // Implement your custom logic here
+  // This could involve calling external services, processing data, etc.
+  return {
+    // Result of your custom logic
+  };
+}
+```
+
+To use your custom step type:
+
+```typescript
+// customStep.config.ts
+import { CUSTOM_STEP_TYPE } from './customStepType';
+
+export const config = {
+  type: CUSTOM_STEP_TYPE,
+  name: 'My Custom Step',
+  options: {
+    option1: 'value1',
+    option2: 42,
+    option3: true,
+  },
+  flows: ['my-workflow'],
+};
+```
+
+This pattern:
+1. Defines a custom step type with its own configuration schema
+2. Implements a handler for the custom step type
+3. Registers the custom step type with Motia
+4. Allows you to use the custom step type in your workflows
+
+### 2. Custom State Providers
+
+Extend Motia's state management with custom storage backends:
+
+```typescript
+// customStateProvider.ts
+import { StateProvider } from 'motia';
+import { MongoClient } from 'mongodb';
+
+export class MongoStateProvider implements StateProvider {
+  private client: MongoClient;
+  private db: any;
+  private collection: any;
+  
+  constructor(connectionString: string, dbName: string, collectionName: string) {
+    this.client = new MongoClient(connectionString);
+    this.db = this.client.db(dbName);
+    this.collection = this.db.collection(collectionName);
+  }
+  
+  async initialize() {
+    await this.client.connect();
+    
+    // Create indexes for efficient lookups
+    await this.collection.createIndex({ namespace: 1, key: 1 });
+    
+    return this;
+  }
+  
+  async get(namespace: string, key: string): Promise<any> {
+    const document = await this.collection.findOne({ namespace, key });
+    
+    if (!document) {
+      return null;
+    }
+    
+    // Check if the value has expired
+    if (document.expiresAt && new Date() > new Date(document.expiresAt)) {
+      // Value has expired, delete it
+      await this.delete(namespace, key);
+      return null;
+    }
+    
+    return document.value;
+  }
+  
+  async set(namespace: string, key: string, value: any, ttlSeconds?: number): Promise<void> {
+    const document = {
+      namespace,
+      key,
+      value,
+      updatedAt: new Date(),
+      expiresAt: ttlSeconds ? new Date(Date.now() + ttlSeconds * 1000) : null,
+    };
+    
+    await this.collection.updateOne(
+      { namespace, key },
+      { $set: document },
+      { upsert: true }
+    );
+  }
+  
+  async delete(namespace: string, key: string): Promise<void> {
+    await this.collection.deleteOne({ namespace, key });
+  }
+  
+  async close(): Promise<void> {
+    await this.client.close();
+  }
+}
+```
+
+To use your custom state provider:
+
+```typescript
+// server.ts
+import { Server } from 'motia';
+import { MongoStateProvider } from './customStateProvider';
+
+async function startServer() {
+  // Initialize the custom state provider
+  const stateProvider = await new MongoStateProvider(
+    'mongodb://localhost:27017',
+    'motia',
+    'state'
+  ).initialize();
+  
+  // Create the Motia server with the custom state provider
+  const server = new Server({
+    stateProvider,
+    // Other server options
+  });
+  
+  // Start the server
+  await server.start();
+  
+  return server;
+}
+```
+
+This pattern:
+1. Implements a custom state provider that uses MongoDB for storage
+2. Handles state retrieval, storage, and expiration
+3. Integrates with Motia's state management system
+4. Allows you to use MongoDB for state storage in your workflows
+
+### 3. Custom Event Middleware
+
+Create custom middleware for event processing:
+
+```typescript
+// eventMiddleware.ts
+import { EventMiddleware } from 'motia';
+
+export const loggingMiddleware: EventMiddleware = async (event, next) => {
+  // Log the event before processing
+  console.log(`Processing event: ${event.topic}`, {
+    data: event.data,
+    timestamp: new Date().toISOString(),
+  });
+  
+  // Measure processing time
+  const startTime = Date.now();
+  
+  try {
+    // Pass the event to the next middleware or handler
+    const result = await next(event);
+    
+    // Log the result
+    console.log(`Event processed: ${event.topic}`, {
+      processingTimeMs: Date.now() - startTime,
+      success: true,
+    });
+    
+    return result;
+  } catch (error) {
+    // Log the error
+    console.error(`Error processing event: ${event.topic}`, {
+      error: error.message,
+      processingTimeMs: Date.now() - startTime,
+    });
+    
+    // Re-throw the error
+    throw error;
+  }
+};
+
+export const validationMiddleware: EventMiddleware = async (event, next) => {
+  // Validate the event data
+  if (!event.data) {
+    throw new Error('Event data is required');
+  }
+  
+  // Add validation logic specific to your application
+  validateEventData(event.topic, event.data);
+  
+  // Pass the event to the next middleware or handler
+  return next(event);
+};
+
+export const enrichmentMiddleware: EventMiddleware = async (event, next) => {
+  // Enrich the event with additional data
+  const enrichedEvent = {
+    ...event,
+    data: {
+      ...event.data,
+      enrichedAt: new Date().toISOString(),
+      // Add other enrichment data
+    },
+  };
+  
+  // Pass the enriched event to the next middleware or handler
+  return next(enrichedEvent);
+};
+
+// Helper function for validation
+function validateEventData(topic: string, data: any) {
+  // Implement validation logic based on the topic
+  switch (topic) {
+    case 'user.created':
+      if (!data.userId || !data.email) {
+        throw new Error('User events require userId and email');
+      }
+      break;
+    
+    case 'order.placed':
+      if (!data.orderId || !data.items || !Array.isArray(data.items)) {
+        throw new Error('Order events require orderId and items array');
+      }
+      break;
+    
+    // Add validation for other event types
+  }
+}
+```
+
+To use your custom middleware:
+
+```typescript
+// server.ts
+import { Server } from 'motia';
+import { loggingMiddleware, validationMiddleware, enrichmentMiddleware } from './eventMiddleware';
+
+async function startServer() {
+  // Create the Motia server
+  const server = new Server({
+    // Server options
+  });
+  
+  // Register middleware in the desired order
+  server.use(loggingMiddleware);
+  server.use(validationMiddleware);
+  server.use(enrichmentMiddleware);
+  
+  // Start the server
+  await server.start();
+  
+  return server;
+}
+```
+
+This pattern:
+1. Creates custom middleware for event processing
+2. Implements logging, validation, and enrichment middleware
+3. Registers middleware with the Motia server
+4. Processes events through the middleware chain
+
+## Advanced Extension Patterns
+
+### 1. Domain-Specific Step Libraries
+
+Create libraries of specialized steps for your domain:
+
+```typescript
+// analyticsSteps.ts
+import { StepConfig, StepHandler } from 'motia';
+import { z } from 'zod';
+import { AnalyticsClient } from './analyticsClient';
+
+// Initialize the analytics client
+const analyticsClient = new AnalyticsClient({
+  apiKey: process.env.ANALYTICS_API_KEY,
+  endpoint: process.env.ANALYTICS_ENDPOINT,
+});
+
+// Event tracking step
+export const trackEventSchema = z.object({
+  type: z.literal('event'),
+  name: z.string(),
+  subscribes: z.array(z.string()),
+  emits: z.array(z.string()),
+  input: z.object({
+    eventName: z.string(),
+    properties: z.record(z.string(), z.any()),
+    userId: z.string().optional(),
+    anonymousId: z.string().optional(),
+  }),
+  flows: z.array(z.string()),
+});
+
+export const trackEventHandler: StepHandler<typeof trackEventSchema> = async (
+  input,
+  { emit, logger }
+) => {
+  try {
+    logger.info('Tracking analytics event', {
+      eventName: input.eventName,
+      userId: input.userId,
+      anonymousId: input.anonymousId,
+    });
+    
+    // Track the event
+    const result = await analyticsClient.track({
+      event: input.eventName,
+      properties: input.properties,
+      userId: input.userId,
+      anonymousId: input.anonymousId,
+      timestamp: new Date(),
+    });
+    
+    // Emit the result
+    await emit({
+      topic: 'analytics.event.tracked',
+      data: {
+        eventName: input.eventName,
+        result,
+      },
+    });
+    
+    logger.info('Analytics event tracked', {
+      eventName: input.eventName,
+      success: result.success,
+    });
+  } catch (error) {
+    logger.error('Error tracking analytics event', { error });
+    
+    // Emit error event
+    await emit({
+      topic: 'analytics.event.failed',
+      data: {
+        eventName: input.eventName,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// User identification step
+export const identifyUserSchema = z.object({
+  type: z.literal('event'),
+  name: z.string(),
+  subscribes: z.array(z.string()),
+  emits: z.array(z.string()),
+  input: z.object({
+    userId: z.string(),
+    traits: z.record(z.string(), z.any()),
+    anonymousId: z.string().optional(),
+  }),
+  flows: z.array(z.string()),
+});
+
+export const identifyUserHandler: StepHandler<typeof identifyUserSchema> = async (
+  input,
+  { emit, logger }
+) => {
+  try {
+    logger.info('Identifying user', {
+      userId: input.userId,
+      anonymousId: input.anonymousId,
+    });
+    
+    // Identify the user
+    const result = await analyticsClient.identify({
+      userId: input.userId,
+      traits: input.traits,
+      anonymousId: input.anonymousId,
+      timestamp: new Date(),
+    });
+    
+    // Emit the result
+    await emit({
+      topic: 'analytics.user.identified',
+      data: {
+        userId: input.userId,
+        result,
+      },
+    });
+    
+    logger.info('User identified', {
+      userId: input.userId,
+      success: result.success,
+    });
+  } catch (error) {
+    logger.error('Error identifying user', { error });
+    
+    // Emit error event
+    await emit({
+      topic: 'analytics.user.identification.failed',
+      data: {
+        userId: input.userId,
+        error: error.message,
+      },
+    });
+  }
+};
+
+// Export all analytics steps
+export const analyticsSteps = {
+  trackEvent: {
+    schema: trackEventSchema,
+    handler: trackEventHandler,
+  },
+  identifyUser: {
+    schema: identifyUserSchema,
+    handler: identifyUserHandler,
+  },
+  // Add other analytics-related steps
+};
+```
+
+To use your domain-specific step library:
+
+```typescript
+// analyticsFlow.ts
+import { analyticsSteps } from './analyticsSteps';
+
+// Track event step configuration
+export const trackEventConfig = {
+  type: 'event',
+  name: 'Track User Action',
+  subscribes: ['user.action.performed'],
+  emits: ['analytics.event.tracked', 'analytics.event.failed'],
+  input: analyticsSteps.trackEvent.schema.shape.input,
+  flows: ['user-analytics'],
+};
+
+// Identify user step configuration
+export const identifyUserConfig = {
+  type: 'event',
+  name: 'Identify User',
+  subscribes: ['user.registered', 'user.updated'],
+  emits: ['analytics.user.identified', 'analytics.user.identification.failed'],
+  input: analyticsSteps.identifyUser.schema.shape.input,
+  flows: ['user-analytics'],
+};
+
+// Register the handlers
+export const trackEventHandler = analyticsSteps.trackEvent.handler;
+export const identifyUserHandler = analyticsSteps.identifyUser.handler;
+```
+
+This pattern:
+1. Creates a library of specialized steps for analytics
+2. Encapsulates analytics logic in reusable components
+3. Provides consistent error handling and logging
+4. Makes it easy to use analytics functionality in different workflows
+
+### 2. Custom Plugins
+
+Create plugins that extend Motia with new capabilities:
+
+```typescript
+// monitoringPlugin.ts
+import { Plugin, Server, Event } from 'motia';
+import { PrometheusClient } from './prometheusClient';
+
+export interface MonitoringPluginOptions {
+  endpoint?: string;
+  prefix?: string;
+  defaultLabels?: Record<string, string>;
+  collectInterval?: number;
+}
+
+export class MonitoringPlugin implements Plugin {
+  private client: PrometheusClient;
+  private options: MonitoringPluginOptions;
+  private eventCounter: any;
+  private eventDurationHistogram: any;
+  private activeFlowsGauge: any;
+  private activeFlows: Set<string> = new Set();
+  
+  constructor(options: MonitoringPluginOptions = {}) {
+    this.options = {
+      prefix: 'motia_',
+      collectInterval: 10000,
+      ...options,
+    };
+    
+    this.client = new PrometheusClient({
+      endpoint: this.options.endpoint,
+    });
+  }
+  
+  async initialize(server: Server): Promise<void> {
+    // Initialize metrics
+    this.eventCounter = this.client.createCounter({
+      name: `${this.options.prefix}events_total`,
+      help: 'Total number of events processed',
+      labelNames: ['topic', 'success'],
+    });
+    
+    this.eventDurationHistogram = this.client.createHistogram({
+      name: `${this.options.prefix}event_duration_seconds`,
+      help: 'Event processing duration in seconds',
+      labelNames: ['topic'],
+      buckets: [0.01, 0.05, 0.1, 0.5, 1, 5],
+    });
+    
+    this.activeFlowsGauge = this.client.createGauge({
+      name: `${this.options.prefix}active_flows`,
+      help: 'Number of currently active flows',
+    });
+    
+    // Register event listeners
+    server.on('event', this.handleEvent.bind(this));
+    server.on('flowStarted', this.handleFlowStarted.bind(this));
+    server.on('flowCompleted', this.handleFlowCompleted.bind(this));
+    
+    // Start metrics collection
+    this.startMetricsCollection();
+    
+    console.log('Monitoring plugin initialized');
+  }
+  
+  private async handleEvent(event: Event): Promise<void> {
+    const startTime = Date.now();
+    
+    // Create a listener for the event completion
+    event.once('completed', (success: boolean) => {
+      // Increment the event counter
+      this.eventCounter.inc({
+        topic: event.topic,
+        success: success.toString(),
+      });
+      
+      // Record the event duration
+      const durationSeconds = (Date.now() - startTime) / 1000;
+      this.eventDurationHistogram.observe(
+        { topic: event.topic },
+        durationSeconds
+      );
+    });
+  }
+  
+  private handleFlowStarted(flowId: string): void {
+    this.activeFlows.add(flowId);
+    this.activeFlowsGauge.set(this.activeFlows.size);
+  }
+  
+  private handleFlowCompleted(flowId: string): void {
+    this.activeFlows.delete(flowId);
+    this.activeFlowsGauge.set(this.activeFlows.size);
+  }
+  
+  private startMetricsCollection(): void {
+    // Collect metrics at regular intervals
+    setInterval(() => {
+      this.client.collect();
+    }, this.options.collectInterval);
+  }
+}
+```
+
+To use your custom plugin:
+
+```typescript
+// server.ts
+import { Server } from 'motia';
+import { MonitoringPlugin } from './monitoringPlugin';
+
+async function startServer() {
+  // Create the Motia server
+  const server = new Server({
+    // Server options
+  });
+  
+  // Register the monitoring plugin
+  const monitoringPlugin = new MonitoringPlugin({
+    endpoint: 'http://prometheus:9090/metrics',
+    prefix: 'my_app_',
+    defaultLabels: {
+      environment: process.env.NODE_ENV,
+      service: 'my-motia-service',
+    },
+  });
+  
+  await server.registerPlugin(monitoringPlugin);
+  
+  // Start the server
+  await server.start();
+  
+  return server;
+}
+```
+
+This pattern:
+1. Creates a plugin that extends Motia with monitoring capabilities
+2. Collects metrics on event processing and flow execution
+3. Integrates with Prometheus for metrics storage and visualization
+4. Provides insights into system performance and behavior
+
+### 3. Custom CLI Extensions
+
+Extend Motia's CLI with custom commands:
+
+```typescript
+// cliExtensions.ts
+import { Command } from 'commander';
+import { MotiaCliExtension } from 'motia/cli';
+import { generateDocs } from './docGenerator';
+import { validateWorkflows } from './workflowValidator';
+import { deployWorkflows } from './workflowDeployer';
+
+export const docsExtension: MotiaCliExtension = {
+  name: 'docs',
+  register: (program: Command) => {
+    program
+      .command('docs')
+      .description('Generate documentation for workflows')
+      .option('-o, --output <dir>', 'Output directory', './docs')
+      .option('-f, --format <format>', 'Documentation format (markdown, html)', 'markdown')
+      .option('--include-diagrams', 'Include flow diagrams', false)
+      .action(async (options) => {
+        try {
+          console.log('Generating documentation...');
+          await generateDocs({
+            outputDir: options.output,
+            format: options.format,
+            includeDiagrams: options.includeDiagrams,
+          });
+          console.log(`Documentation generated in ${options.output}`);
+        } catch (error) {
+          console.error('Error generating documentation:', error);
+          process.exit(1);
+        }
+      });
+  },
+};
+
+export const validateExtension: MotiaCliExtension = {
+  name: 'validate',
+  register: (program: Command) => {
+    program
+      .command('validate')
+      .description('Validate workflows for common issues')
+      .option('-p, --path <path>', 'Path to workflows directory', './steps')
+      .option('--strict', 'Enable strict validation', false)
+      .action(async (options) => {
+        try {
+          console.log('Validating workflows...');
+          const results = await validateWorkflows({
+            path: options.path,
+            strict: options.strict,
+          });
+          
+          if (results.errors.length > 0) {
+            console.error('Validation errors:');
+            results.errors.forEach(error => {
+              console.error(`- ${error.message} (${error.file})`);
+            });
+            process.exit(1);
+          }
+          
+          if (results.warnings.length > 0) {
+            console.warn('Validation warnings:');
+            results.warnings.forEach(warning => {
+              console.warn(`- ${warning.message} (${warning.file})`);
+            });
+          }
+          
+          console.log('Validation successful!');
+        } catch (error) {
+          console.error('Error validating workflows:', error);
+          process.exit(1);
+        }
+      });
+  },
+};
+
+export const deployExtension: MotiaCliExtension = {
+  name: 'deploy',
+  register: (program: Command) => {
+    program
+      .command('deploy')
+      .description('Deploy workflows to an environment')
+      .option('-e, --environment <env>', 'Target environment', 'development')
+      .option('-p, --path <path>', 'Path to workflows directory', './steps')
+      .option('--dry-run', 'Perform a dry run without deploying', false)
+      .action(async (options) => {
+        try {
+          console.log(`Deploying workflows to ${options.environment}...`);
+          
+          if (options.dryRun) {
+            console.log('Dry run mode enabled, no changes will be made');
+          }
+          
+          const results = await deployWorkflows({
+            environment: options.environment,
+            path: options.path,
+            dryRun: options.dryRun,
+          });
+          
+          console.log(`Deployment ${options.dryRun ? 'dry run' : 'completed'}:`);
+          console.log(`- Added: ${results.added.length}`);
+          console.log(`- Updated: ${results.updated.length}`);
+          console.log(`- Removed: ${results.removed.length}`);
+          console.log(`- Unchanged: ${results.unchanged.length}`);
+        } catch (error) {
+          console.error('Error deploying workflows:', error);
+          process.exit(1);
+        }
+      });
+  },
+};
+
+// Export all CLI extensions
+export const cliExtensions = [
+  docsExtension,
+  validateExtension,
+  deployExtension,
+];
+```
+
+To use your custom CLI extensions:
+
+```typescript
+// cli.ts
+import { program } from 'commander';
+import { registerCoreCommands } from 'motia/cli';
+import { cliExtensions } from './cliExtensions';
+
+// Register core Motia commands
+registerCoreCommands(program);
+
+// Register custom extensions
+cliExtensions.forEach(extension => {
+  extension.register(program);
+});
+
+// Parse command line arguments
+program.parse(process.argv);
+```
+
+This pattern:
+1. Creates custom CLI extensions for documentation, validation, and deployment
+2. Registers the extensions with the Motia CLI
+3. Provides additional functionality for workflow management
+4. Integrates with existing Motia CLI commands
+
+## Best Practices for Custom Extensions
+
+### 1. Follow Motia's Design Principles
+
+Ensure your extensions align with Motia's core design principles:
+
+- **Event-Driven**: Use events for communication between components
+- **Composable**: Create small, focused extensions that can be combined
+- **Declarative**: Prefer declarative configuration over imperative code
+- **Type-Safe**: Use TypeScript and Zod for type safety
+- **Testable**: Design extensions to be easily testable
+
+### 2. Maintain Compatibility
+
+Ensure your extensions work well with the core platform:
+
+- **Version Compatibility**: Document which Motia versions your extension supports
+- **Minimal Dependencies**: Avoid unnecessary dependencies
+- **Graceful Degradation**: Handle cases where your extension can't function
+- **Feature Detection**: Check for required features before using them
+- **Backward Compatibility**: Maintain compatibility with older versions when possible
+
+### 3. Document Your Extensions
+
+Provide clear documentation for your extensions:
+
+- **Usage Examples**: Show how to use your extension with code examples
+- **Configuration Options**: Document all configuration options
+- **Error Handling**: Explain how errors are handled and reported
+- **Performance Considerations**: Note any performance implications
+- **Security Implications**: Document any security considerations
+
+### 4. Test Thoroughly
+
+Implement comprehensive testing for your extensions:
+
+- **Unit Tests**: Test individual components in isolation
+- **Integration Tests**: Test how your extension integrates with Motia
+- **Edge Cases**: Test unusual or extreme scenarios
+- **Error Handling**: Verify that errors are handled correctly
+- **Performance Testing**: Measure the performance impact of your extension
+
+### 5. Share and Collaborate
+
+Consider sharing your extensions with the community:
+
+- **Open Source**: Release your extensions as open source when appropriate
+- **Versioning**: Use semantic versioning for your extensions
+- **Contribution Guidelines**: Provide guidelines for contributors
+- **Issue Tracking**: Set up issue tracking for bug reports and feature requests
+- **Continuous Integration**: Implement CI/CD for your extensions
+
+## Conclusion
+
+Custom extensions provide a powerful way to extend Motia's capabilities and tailor the platform to your specific needs. By creating custom step types, state providers, event middleware, and other extensions, you can build specialized functionality that integrates seamlessly with the Motia ecosystem.
+
+When creating custom extensions, focus on maintaining compatibility with the core platform, following Motia's design principles, and providing clear documentation. This approach will ensure that your extensions are reliable, maintainable, and valuable to your team and potentially the broader Motia community.
+
+## Next Steps
+
+- [Agent Orchestration](./agent-orchestration) - Explore techniques for coordinating multiple specialized agents
+- [Hybrid Approaches](./hybrid-approaches) - Discover patterns for combining deterministic and agentic workflows
+- [Scaling Strategies](./scaling-strategies) - Learn about approaches to scaling Motia workflows

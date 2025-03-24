@@ -1,0 +1,607 @@
+---
+title: "Creating NOOP Steps"
+description: "Learn how to create NOOP steps that represent external processes or manual actions in Motia"
+---
+
+# Creating NOOP Steps
+
+<div className="intermediate-content">
+
+NOOP (No Operation) steps are a unique type of step in Motia that represent external processes, manual actions, or decision points that occur outside the system. This guide will show you how to create and use NOOP steps to model real-world interactions in your workflows.
+
+## What Are NOOP Steps?
+
+NOOP steps are steps that:
+
+1. Represent processes that happen outside of Motia
+2. Act as placeholders for manual actions or external systems
+3. Define virtual events they can emit or subscribe to
+4. Don't have a traditional handler function that executes automatically
+
+NOOP steps are essential for modeling complete workflows that include human intervention, external system interactions, or decision points that can't be automated within Motia itself.
+
+</div>
+
+## Basic NOOP Step
+
+Here's a basic example of a NOOP step:
+
+<div className="code-example">
+```typescript
+// steps/approvals/manualApproval.ts
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Manual Approval',
+  description: 'Represents a manual approval process by a human reviewer',
+  virtualEmits: ['approval.granted', 'approval.rejected'],
+  virtualSubscribes: ['approval.requested'],
+  flows: ['document-approval']
+};
+
+// NOOP steps don't have a handler function since they represent
+// external processes that don't execute within Motia
+```
+</div>
+
+This NOOP step:
+1. Represents a manual approval process
+2. Virtually subscribes to `approval.requested` events
+3. Can virtually emit either `approval.granted` or `approval.rejected` events
+4. Is part of the `document-approval` flow
+
+## NOOP Step Properties
+
+NOOP steps have the following properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `string` | Yes | Must be `'noop'` for NOOP steps |
+| `name` | `string` | Yes | Human-readable name for the step |
+| `description` | `string` | No | Description of what the step represents |
+| `virtualEmits` | `string[]` | Yes | Array of event topics this step can virtually emit |
+| `virtualSubscribes` | `string[]` | Yes | Array of event topics this step virtually subscribes to |
+| `flows` | `string[]` | No | Array of flow identifiers this step belongs to |
+
+### The `virtualEmits` Property
+
+The `virtualEmits` property defines the events that can be triggered from this NOOP step. These events represent the possible outcomes or actions that can result from the external process.
+
+### The `virtualSubscribes` Property
+
+The `virtualSubscribes` property defines the events that can trigger this NOOP step. These events represent the conditions or actions that would initiate the external process.
+
+<div className="intermediate-content">
+
+## NOOP Step Patterns
+
+### Manual Approval Process
+
+One common use case for NOOP steps is representing a manual approval process:
+
+```typescript
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Document Approval',
+  description: 'Represents a document approval process by a manager',
+  virtualEmits: [
+    'document.approved',
+    'document.rejected',
+    'document.revision.requested'
+  ],
+  virtualSubscribes: ['document.submitted'],
+  flows: ['document-workflow']
+};
+```
+
+This NOOP step represents a document approval process where:
+1. It's triggered when a document is submitted (`document.submitted`)
+2. It can result in three possible outcomes:
+   - The document is approved (`document.approved`)
+   - The document is rejected (`document.rejected`)
+   - Revisions are requested (`document.revision.requested`)
+
+### External System Integration
+
+NOOP steps can represent integration with external systems:
+
+```typescript
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Payment Gateway',
+  description: 'Represents payment processing through an external payment gateway',
+  virtualEmits: [
+    'payment.succeeded',
+    'payment.failed',
+    'payment.pending'
+  ],
+  virtualSubscribes: ['payment.initiated'],
+  flows: ['checkout-process']
+};
+```
+
+This NOOP step represents a payment gateway where:
+1. It's triggered when a payment is initiated (`payment.initiated`)
+2. It can result in three possible outcomes:
+   - The payment succeeds (`payment.succeeded`)
+   - The payment fails (`payment.failed`)
+   - The payment is pending further verification (`payment.pending`)
+
+### Decision Point
+
+NOOP steps can represent decision points in a workflow:
+
+```typescript
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Shipping Method Selection',
+  description: 'Represents a customer selecting a shipping method',
+  virtualEmits: [
+    'shipping.standard.selected',
+    'shipping.express.selected',
+    'shipping.overnight.selected'
+  ],
+  virtualSubscribes: ['checkout.shipping'],
+  flows: ['checkout-process']
+};
+```
+
+This NOOP step represents a shipping method selection where:
+1. It's triggered when the checkout process reaches the shipping step (`checkout.shipping`)
+2. It can result in three possible selections:
+   - Standard shipping (`shipping.standard.selected`)
+   - Express shipping (`shipping.express.selected`)
+   - Overnight shipping (`shipping.overnight.selected`)
+
+</div>
+
+<div className="advanced-content">
+
+## Advanced NOOP Step Techniques
+
+### Modeling Complex External Processes
+
+For complex external processes with multiple stages, you can create a series of connected NOOP steps:
+
+```typescript
+// steps/loanProcess/loanApplication.ts
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Loan Application',
+  description: 'Represents a customer submitting a loan application',
+  virtualEmits: ['loan.application.submitted'],
+  virtualSubscribes: ['loan.started'],
+  flows: ['loan-process']
+};
+```
+
+```typescript
+// steps/loanProcess/creditCheck.ts
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Credit Check',
+  description: 'Represents a credit check performed by a credit bureau',
+  virtualEmits: [
+    'credit.check.passed',
+    'credit.check.failed'
+  ],
+  virtualSubscribes: ['loan.application.submitted'],
+  flows: ['loan-process']
+};
+```
+
+```typescript
+// steps/loanProcess/underwritingReview.ts
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Underwriting Review',
+  description: 'Represents a manual review by an underwriter',
+  virtualEmits: [
+    'loan.approved',
+    'loan.rejected',
+    'loan.additional.info.requested'
+  ],
+  virtualSubscribes: ['credit.check.passed'],
+  flows: ['loan-process']
+};
+```
+
+This series of NOOP steps models a loan application process with multiple stages:
+1. The customer submits a loan application
+2. A credit check is performed by an external credit bureau
+3. An underwriter reviews the application and makes a decision
+
+### Representing Timeouts and Expirations
+
+NOOP steps can be used to represent processes with timeouts or expirations:
+
+```typescript
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Payment Authorization',
+  description: 'Represents a payment authorization that expires after 24 hours',
+  virtualEmits: [
+    'payment.authorized',
+    'payment.authorization.expired',
+    'payment.authorization.cancelled'
+  ],
+  virtualSubscribes: ['payment.authorization.requested'],
+  flows: ['payment-processing']
+};
+```
+
+This NOOP step represents a payment authorization process where:
+1. It's triggered when a payment authorization is requested
+2. It can result in three possible outcomes:
+   - The payment is authorized
+   - The authorization expires after 24 hours
+   - The authorization is cancelled
+
+### Modeling User Interactions
+
+NOOP steps can represent complex user interactions:
+
+```typescript
+import { NoopConfig } from '@motia/core';
+
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Account Verification',
+  description: 'Represents a user verifying their account through email or SMS',
+  virtualEmits: [
+    'account.verified.email',
+    'account.verified.sms',
+    'account.verification.expired',
+    'account.verification.failed'
+  ],
+  virtualSubscribes: ['account.created'],
+  flows: ['user-onboarding']
+};
+```
+
+This NOOP step represents an account verification process where:
+1. It's triggered when a new account is created
+2. It can result in multiple possible outcomes:
+   - The account is verified through email
+   - The account is verified through SMS
+   - The verification link/code expires
+   - The verification fails (e.g., too many incorrect attempts)
+
+</div>
+
+## Using NOOP Steps in Workflows
+
+### Triggering NOOP Steps
+
+In a real workflow, NOOP steps are triggered by events that match their `virtualSubscribes` property. For example:
+
+```typescript
+// An API step that triggers the manual approval process
+import { ApiRouteConfig, StepHandler } from '@motia/core';
+
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: 'Submit Document',
+  path: '/api/documents',
+  method: 'POST',
+  emits: ['document.submitted'],
+  flows: ['document-workflow']
+};
+
+export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
+  const { body } = req;
+  
+  logger.info('Document submitted', { documentId: body.id });
+  
+  // Emit an event that will trigger the NOOP step
+  await emit({
+    topic: 'document.submitted',
+    data: {
+      documentId: body.id,
+      title: body.title,
+      submittedBy: body.userId,
+      submittedAt: new Date().toISOString()
+    }
+  });
+  
+  return {
+    status: 200,
+    body: {
+      success: true,
+      message: 'Document submitted for approval'
+    }
+  };
+};
+```
+
+### Simulating NOOP Step Outcomes
+
+In the Motia Workbench, you can simulate the outcomes of NOOP steps by manually triggering the events defined in their `virtualEmits` property. This allows you to test and visualize the complete workflow without actually implementing the external processes.
+
+### Handling NOOP Step Outcomes
+
+Other steps in your workflow can subscribe to the events that NOOP steps virtually emit:
+
+```typescript
+// An event step that handles the document approval outcome
+import { EventConfig, StepHandler } from '@motia/core';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  documentId: z.string(),
+  approvedBy: z.string(),
+  approvedAt: z.string()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Process Approved Document',
+  subscribes: ['document.approved'],
+  emits: ['document.published'],
+  input: inputSchema,
+  flows: ['document-workflow']
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  const { documentId, approvedBy, approvedAt } = input;
+  
+  logger.info('Processing approved document', { documentId, approvedBy });
+  
+  // Process the approved document
+  const publishedDocument = await publishDocument(documentId);
+  
+  // Emit an event with the published document
+  await emit({
+    topic: 'document.published',
+    data: {
+      documentId,
+      publishedUrl: publishedDocument.url,
+      publishedAt: new Date().toISOString()
+    }
+  });
+};
+
+async function publishDocument(documentId) {
+  // Logic to publish the document
+  return {
+    url: `https://example.com/documents/${documentId}`
+  };
+}
+```
+
+## Best Practices for NOOP Steps
+
+### 1. Clear Naming and Description
+
+Since NOOP steps represent external processes, it's important to name them clearly and provide detailed descriptions:
+
+```typescript
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Manager Expense Approval',
+  description: 'Represents the process where a manager reviews and approves or rejects an expense report. For expenses over $1000, additional approval from finance is required.',
+  virtualEmits: ['expense.approved', 'expense.rejected', 'expense.additional.approval.required'],
+  virtualSubscribes: ['expense.submitted'],
+  flows: ['expense-management']
+};
+```
+
+### 2. Comprehensive Event Definitions
+
+Define all possible events that can trigger or result from the NOOP step:
+
+```typescript
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Customer Support Ticket',
+  description: 'Represents a customer support ticket being handled by a support agent',
+  virtualEmits: [
+    'ticket.resolved',
+    'ticket.escalated',
+    'ticket.pending.customer',
+    'ticket.pending.thirdparty',
+    'ticket.closed.no.response'
+  ],
+  virtualSubscribes: [
+    'ticket.created',
+    'ticket.customer.replied',
+    'ticket.reopened'
+  ],
+  flows: ['customer-support']
+};
+```
+
+### 3. Document External Process Details
+
+In your documentation or comments, provide details about how the external process works:
+
+```typescript
+/**
+ * Payment Gateway Integration
+ * 
+ * This NOOP step represents the integration with the PaymentProvider payment gateway.
+ * 
+ * Integration Details:
+ * - API Documentation: https://docs.paymentprovider.com
+ * - Authentication: API key in X-API-Key header
+ * - Webhook Configuration: Configure webhooks in the PaymentProvider dashboard
+ *   to send payment status updates to: https://your-app.com/api/webhooks/payments
+ * 
+ * Webhook Handling:
+ * The webhook endpoint should emit the appropriate events based on the payment status:
+ * - 'payment.succeeded' when status is 'succeeded'
+ * - 'payment.failed' when status is 'failed'
+ * - 'payment.pending' when status is 'pending'
+ */
+export const config: NoopConfig = {
+  type: 'noop',
+  name: 'Payment Gateway',
+  description: 'Represents payment processing through the PaymentProvider gateway',
+  virtualEmits: ['payment.succeeded', 'payment.failed', 'payment.pending'],
+  virtualSubscribes: ['payment.initiated'],
+  flows: ['checkout-process']
+};
+```
+
+### 4. Group Related NOOP Steps
+
+For complex external processes, group related NOOP steps together:
+
+```
+steps/
+├── loanProcess/
+│   ├── loanApplication.ts
+│   ├── creditCheck.ts
+│   ├── underwritingReview.ts
+│   └── loanFunding.ts
+```
+
+### 5. Implement Real Integrations
+
+While NOOP steps represent external processes, you should eventually implement real integrations for production use:
+
+```typescript
+// Webhook handler for payment gateway callbacks
+import { ApiRouteConfig, StepHandler } from '@motia/core';
+
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: 'Payment Gateway Webhook',
+  path: '/api/webhooks/payments',
+  method: 'POST',
+  emits: ['payment.succeeded', 'payment.failed', 'payment.pending'],
+  flows: ['checkout-process']
+};
+
+export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
+  const { body } = req;
+  
+  // Verify webhook signature
+  if (!verifyWebhookSignature(req.headers['x-signature'], body)) {
+    logger.warn('Invalid webhook signature', { headers: req.headers });
+    return { status: 401, body: { error: 'Invalid signature' } };
+  }
+  
+  logger.info('Payment webhook received', { 
+    paymentId: body.id,
+    status: body.status
+  });
+  
+  // Emit the appropriate event based on the payment status
+  switch (body.status) {
+    case 'succeeded':
+      await emit({
+        topic: 'payment.succeeded',
+        data: {
+          paymentId: body.id,
+          amount: body.amount,
+          currency: body.currency,
+          customerId: body.customer,
+          succeededAt: new Date(body.created * 1000).toISOString()
+        }
+      });
+      break;
+      
+    case 'failed':
+      await emit({
+        topic: 'payment.failed',
+        data: {
+          paymentId: body.id,
+          amount: body.amount,
+          currency: body.currency,
+          customerId: body.customer,
+          error: body.error,
+          failedAt: new Date(body.created * 1000).toISOString()
+        }
+      });
+      break;
+      
+    case 'pending':
+      await emit({
+        topic: 'payment.pending',
+        data: {
+          paymentId: body.id,
+          amount: body.amount,
+          currency: body.currency,
+          customerId: body.customer,
+          pendingReason: body.pending_reason,
+          createdAt: new Date(body.created * 1000).toISOString()
+        }
+      });
+      break;
+      
+    default:
+      logger.warn('Unknown payment status', { status: body.status });
+      break;
+  }
+  
+  return { status: 200, body: { received: true } };
+};
+
+function verifyWebhookSignature(signature, body) {
+  // Implementation of webhook signature verification
+  return true; // Placeholder
+}
+```
+
+## Common Questions
+
+### How do I test workflows with NOOP steps?
+
+You can test workflows with NOOP steps by:
+
+1. Using the Motia Workbench to manually trigger the events that NOOP steps virtually emit
+2. Creating test scripts that programmatically emit these events
+3. Implementing mock versions of the external processes for testing
+
+### Can NOOP steps have actual handler functions?
+
+No, NOOP steps don't have handler functions because they represent processes that happen outside of Motia. Instead, you would implement separate steps (like API steps for webhooks) to handle the real integration with external systems.
+
+### How do I implement the actual integration for a NOOP step?
+
+To implement the actual integration for a NOOP step:
+
+1. Create API steps to handle incoming webhooks or callbacks from the external system
+2. Implement client libraries or API calls to interact with the external system
+3. Ensure that the API steps emit the same events that the NOOP step virtually emits
+
+### Can I convert a NOOP step to another type of step?
+
+Yes, as your application evolves, you might convert a NOOP step to another type:
+
+1. Start with a NOOP step to represent an external process during initial development
+2. Implement the actual integration using API steps and event steps
+3. Update your workflow to use the new steps instead of the NOOP step
+
+### How do I handle timeouts for NOOP steps?
+
+Since NOOP steps don't execute within Motia, you need to implement timeout handling separately:
+
+1. Create a cron step that checks for processes that have been in a pending state for too long
+2. Implement timeout logic in your external system and have it call back to your application
+3. Use a scheduled job to emit timeout events for processes that haven't completed within the expected timeframe
+
+## Next Steps
+
+Now that you know how to create NOOP steps, you might want to:
+
+- Learn about [Event Steps](/docs/guides/step-creation/event-steps) to process events
+- Explore [API Steps](/docs/guides/step-creation/api-steps) to create HTTP endpoints
+- Understand [Cron Steps](/docs/guides/step-creation/cron-steps) for scheduled tasks
+- Dive into [Flow Patterns](/docs/concepts/core-components/flow-patterns) to design effective workflows

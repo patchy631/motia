@@ -1,0 +1,487 @@
+---
+title: "Debugging Guide"
+description: "Systematic approaches to diagnose and fix issues in your Motia workflows"
+---
+
+# Debugging Guide
+
+This guide provides systematic approaches to diagnose and fix issues in your Motia workflows. Whether you're encountering errors, unexpected behavior, or performance problems, these debugging techniques will help you identify and resolve the root cause.
+
+## Debugging Fundamentals
+
+### Understanding Motia's Execution Model
+
+Before diving into debugging techniques, it's important to understand how Motia executes workflows:
+
+1. **Event-driven**: Steps are triggered by events, either from API calls, scheduled tasks, or other steps
+2. **Asynchronous**: Steps execute asynchronously, which can make debugging more complex
+3. **State-based**: Workflows often rely on state to maintain context between steps
+4. **Distributed**: In production, steps may run on different machines or containers
+
+This execution model influences how you approach debugging.
+
+### The Debugging Process
+
+Follow this general process when debugging Motia workflows:
+
+1. **Reproduce the issue**: Create a reliable way to reproduce the problem
+2. **Gather information**: Collect logs, error messages, and state data
+3. **Isolate the problem**: Narrow down where the issue is occurring
+4. **Test hypotheses**: Make small changes to test your theories about the cause
+5. **Apply the fix**: Implement and verify your solution
+6. **Document the issue**: Record what you learned for future reference
+
+## Debugging Tools
+
+### Logging
+
+Logging is your primary tool for debugging Motia workflows. Every step has access to a logger:
+
+```typescript
+export const handler = async (input, { logger }) => {
+  // Different log levels for different types of information
+  logger.debug('Detailed information for debugging');
+  logger.info('General information about step execution');
+  logger.warn('Warning that might need attention');
+  logger.error('Error that needs immediate attention');
+  
+  // You can log objects too
+  logger.info('Input received:', input);
+  
+  // For complex objects, use JSON.stringify with formatting
+  logger.debug('Complex state:', JSON.stringify(someComplexObject, null, 2));
+  
+  return { success: true };
+};
+```
+
+#### Effective Logging Strategies
+
+- **Log at the right level**: Use debug for detailed information, info for normal operations, warn for potential issues, and error for failures
+- **Log at boundaries**: Log when events are received and emitted
+- **Log state changes**: Log before and after state modifications
+- **Include context**: Include relevant IDs and timestamps in log messages
+- **Structure logs**: Use consistent formats to make logs easier to parse
+
+### The Workbench
+
+The Motia Workbench provides visual tools for debugging:
+
+1. **Flow Visualization**: See the connections between steps and the flow of events
+2. **Event Inspector**: View the details of events as they flow through the system
+3. **State Explorer**: Examine the current state of your workflow
+4. **Step Execution**: See which steps have executed and their results
+5. **Logs Viewer**: View logs from all steps in one place
+
+To access these tools, run your Motia application in development mode and open the Workbench in your browser.
+
+### Step Tracing
+
+Step tracing allows you to follow the execution path of your workflow:
+
+```typescript
+export const handler = async (input, { logger, traceId }) => {
+  // Log with the traceId to follow this specific execution
+  logger.info(`[${traceId}] Processing input`);
+  
+  // Your step logic here
+  
+  logger.info(`[${traceId}] Processing completed`);
+  return { success: true };
+};
+```
+
+You can then filter logs by the traceId to see the complete execution path of a specific workflow instance.
+
+## Common Debugging Scenarios
+
+### 1. Events Not Being Received
+
+If a step isn't receiving expected events:
+
+#### Diagnosis
+
+1. **Check event topics**: Verify that the emitting step is using the exact same topic name that the receiving step is subscribing to
+2. **Check event payload**: Ensure the event payload matches what the receiving step expects
+3. **Check step registration**: Verify that both steps are correctly registered and deployed
+4. **Check for errors**: Look for errors in the emitting step that might prevent the event from being sent
+
+#### Example Debugging Approach
+
+```typescript
+// In the emitting step
+export const handler = async (input, { emit, logger }) => {
+  try {
+    // Log before emitting
+    logger.debug('About to emit event', {
+      topic: 'user.created',
+      payload: userData
+    });
+    
+    await emit('user.created', userData);
+    
+    // Log after emitting
+    logger.debug('Event emitted successfully');
+    
+    return { success: true };
+  } catch (error) {
+    // Log any errors
+    logger.error('Failed to emit event', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// In the receiving step
+export const config = {
+  type: 'event',
+  name: 'UserProcessor',
+  subscribes: ['user.created'] // Make sure this matches exactly
+};
+
+export const handler = async (input, { logger }) => {
+  // Log when event is received
+  logger.debug('Received event', {
+    topic: 'user.created',
+    payload: input
+  });
+  
+  // Rest of the handler...
+};
+```
+
+### 2. State Management Issues
+
+If you're having trouble with state:
+
+#### Diagnosis
+
+1. **Check key names**: Verify that you're using the same key names when setting and getting state
+2. **Check for async issues**: Ensure you're awaiting state operations
+3. **Check state values**: Log state values before and after operations
+4. **Check for concurrent modifications**: Look for multiple steps modifying the same state
+
+#### Example Debugging Approach
+
+```typescript
+export const handler = async (input, { state, logger }) => {
+  const userId = input.userId;
+  
+  // Log before getting state
+  logger.debug(`Getting state for key: user:${userId}`);
+  
+  const userData = await state.get(`user:${userId}`);
+  
+  // Log the retrieved state
+  logger.debug('Retrieved user data:', userData);
+  
+  if (!userData) {
+    logger.warn(`No user data found for ID: ${userId}`);
+    return { success: false, error: 'User not found' };
+  }
+  
+  // Modify the state
+  const updatedUserData = {
+    ...userData,
+    lastActive: new Date().toISOString()
+  };
+  
+  // Log before setting state
+  logger.debug('Updating user data:', updatedUserData);
+  
+  await state.set(`user:${userId}`, updatedUserData);
+  
+  // Log after setting state
+  logger.debug('User data updated successfully');
+  
+  return { success: true };
+};
+```
+
+### 3. API Step Issues
+
+If API endpoints aren't working as expected:
+
+#### Diagnosis
+
+1. **Check request format**: Verify that clients are sending requests in the expected format
+2. **Check path and method**: Ensure the path and method in the step configuration match what clients are using
+3. **Check request handling**: Look for errors in the request handling logic
+4. **Test directly**: Use tools like curl or Postman to test the endpoint directly
+
+#### Example Debugging Approach
+
+```typescript
+export const config = {
+  type: 'api',
+  name: 'CreateUser',
+  path: '/users',
+  method: 'POST'
+};
+
+export const handler = async (request, { logger }) => {
+  // Log the incoming request
+  logger.debug('Received API request', {
+    method: request.method,
+    path: request.path,
+    headers: request.headers,
+    body: request.body,
+    query: request.query
+  });
+  
+  try {
+    // Validate the request
+    if (!request.body || !request.body.email) {
+      logger.warn('Invalid request: missing email');
+      return {
+        status: 400,
+        body: { error: 'Email is required' }
+      };
+    }
+    
+    // Process the request
+    // ...
+    
+    // Log the response
+    logger.debug('Sending response', {
+      status: 201,
+      body: { id: userId }
+    });
+    
+    return {
+      status: 201,
+      body: { id: userId }
+    };
+  } catch (error) {
+    logger.error('Error processing API request', error);
+    
+    return {
+      status: 500,
+      body: { error: 'Internal server error' }
+    };
+  }
+};
+```
+
+### 4. Performance Issues
+
+If workflows are running slowly:
+
+#### Diagnosis
+
+1. **Identify bottlenecks**: Look for steps that take a long time to execute
+2. **Check external dependencies**: Verify that external APIs or databases are responding quickly
+3. **Look for inefficient patterns**: Check for N+1 queries or unnecessary state operations
+4. **Monitor resource usage**: Check CPU, memory, and network usage
+
+#### Example Debugging Approach
+
+```typescript
+export const handler = async (input, { logger }) => {
+  // Start timing
+  const startTime = Date.now();
+  
+  // Log the start of processing
+  logger.debug('Starting processing');
+  
+  // First operation
+  const operation1StartTime = Date.now();
+  const result1 = await someOperation();
+  logger.debug(`Operation 1 completed in ${Date.now() - operation1StartTime}ms`);
+  
+  // Second operation
+  const operation2StartTime = Date.now();
+  const result2 = await anotherOperation();
+  logger.debug(`Operation 2 completed in ${Date.now() - operation2StartTime}ms`);
+  
+  // Third operation
+  const operation3StartTime = Date.now();
+  const result3 = await yetAnotherOperation();
+  logger.debug(`Operation 3 completed in ${Date.now() - operation3StartTime}ms`);
+  
+  // Log the total processing time
+  logger.info(`Total processing time: ${Date.now() - startTime}ms`);
+  
+  return { success: true };
+};
+```
+
+## Advanced Debugging Techniques
+
+### Debugging with Custom Events
+
+You can emit custom debug events to help trace execution:
+
+```typescript
+export const handler = async (input, { emit, logger }) => {
+  // Emit a debug event at the start
+  await emit('debug.step.started', {
+    step: 'ProcessOrder',
+    input,
+    timestamp: Date.now()
+  });
+  
+  try {
+    // Your step logic here
+    
+    // Emit a debug event for a key point in processing
+    await emit('debug.order.validated', {
+      orderId: input.orderId,
+      timestamp: Date.now()
+    });
+    
+    // More processing...
+    
+    // Emit a debug event at the end
+    await emit('debug.step.completed', {
+      step: 'ProcessOrder',
+      result: { success: true },
+      timestamp: Date.now()
+    });
+    
+    return { success: true };
+  } catch (error) {
+    // Emit a debug event for errors
+    await emit('debug.step.error', {
+      step: 'ProcessOrder',
+      error: error.message,
+      timestamp: Date.now()
+    });
+    
+    throw error;
+  }
+};
+```
+
+You can then create a special debug step that subscribes to these events and logs them or stores them for analysis.
+
+### Debugging with State Snapshots
+
+For complex workflows, you can take snapshots of state at different points:
+
+```typescript
+export const handler = async (input, { state, logger }) => {
+  // Take a snapshot of the initial state
+  await state.set(`debug:${input.orderId}:initial`, {
+    timestamp: Date.now(),
+    input,
+    state: await state.get(`order:${input.orderId}`)
+  });
+  
+  // Process the order
+  // ...
+  
+  // Take a snapshot after processing
+  await state.set(`debug:${input.orderId}:processed`, {
+    timestamp: Date.now(),
+    result,
+    state: await state.get(`order:${input.orderId}`)
+  });
+  
+  return { success: true };
+};
+```
+
+You can then create a debug API endpoint that retrieves and displays these snapshots.
+
+### Debugging with Mocks
+
+For complex dependencies, you can create mock versions for testing:
+
+```typescript
+// Mock external API for testing
+const mockPaymentAPI = {
+  processPayment: async (paymentDetails) => {
+    // Simulate API behavior without making actual calls
+    if (!paymentDetails.cardNumber) {
+      throw new Error('Card number is required');
+    }
+    
+    // Simulate different responses based on input
+    if (paymentDetails.cardNumber === '4111111111111111') {
+      return { success: true, transactionId: 'mock-transaction-123' };
+    } else {
+      return { success: false, error: 'Card declined' };
+    }
+  }
+};
+
+// Use the mock in your step
+export const handler = async (input, { logger }) => {
+  try {
+    // Use the mock instead of the real API
+    const paymentResult = await mockPaymentAPI.processPayment(input.payment);
+    
+    logger.debug('Payment result:', paymentResult);
+    
+    return { success: paymentResult.success };
+  } catch (error) {
+    logger.error('Payment error:', error);
+    return { success: false, error: error.message };
+  }
+};
+```
+
+## Debugging in Different Environments
+
+### Local Development
+
+In local development:
+- Use the Workbench for visual debugging
+- Set log levels to `debug` for maximum information
+- Use breakpoints in your IDE if supported
+- Take advantage of hot reloading to quickly test changes
+
+### Staging Environment
+
+In staging:
+- Use structured logging to capture detailed information
+- Set up monitoring and alerting to catch issues
+- Use tracing to follow requests through the system
+- Replicate production-like conditions as much as possible
+
+### Production Environment
+
+In production:
+- Be careful with log levels to avoid performance impact
+- Use sampling for detailed logging of a subset of requests
+- Set up proper monitoring and alerting
+- Use distributed tracing to track requests across services
+
+## Debugging Checklist
+
+When facing an issue, go through this checklist:
+
+1. **Can you reproduce the issue?**
+   - If yes, create a reliable reproduction case
+   - If no, add more logging to catch it next time
+
+2. **Is the issue in your code or a dependency?**
+   - Check if the error originates in your step code
+   - Check if it's coming from an external API or service
+
+3. **Is it a configuration issue?**
+   - Check step configuration (event topics, API paths, etc.)
+   - Check environment configuration
+
+4. **Is it a data issue?**
+   - Check input data format and validity
+   - Check state data for corruption or unexpected values
+
+5. **Is it an infrastructure issue?**
+   - Check for resource constraints (memory, CPU)
+   - Check for network issues
+   - Check for deployment problems
+
+## Getting Help
+
+If you're still stuck after trying these debugging techniques:
+
+1. **Check the documentation**: Look for similar issues in the [Common Errors](./common-errors) guide
+2. **Search the community forum**: Someone else might have encountered the same issue
+3. **Ask for help**: Provide detailed information about your issue, including:
+   - Complete error messages
+   - Relevant code snippets
+   - Steps to reproduce
+   - Logs and any debugging information you've gathered
+
+Remember that debugging is often an iterative process. Be methodical, make one change at a time, and keep track of what you've tried.

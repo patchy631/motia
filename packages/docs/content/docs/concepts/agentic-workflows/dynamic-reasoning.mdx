@@ -1,0 +1,1362 @@
+---
+title: Dynamic Reasoning in Agentic Workflows
+description: Techniques and patterns for implementing adaptive decision-making in Motia agentic workflows
+---
+
+# Dynamic Reasoning in Agentic Workflows
+
+Dynamic reasoning is a powerful capability in agentic workflows that enables steps to make complex, context-aware decisions and adapt their behavior based on changing conditions. This guide explores techniques and patterns for implementing adaptive decision-making in your Motia applications.
+
+## Understanding Dynamic Reasoning
+
+Dynamic reasoning goes beyond simple conditional logic to incorporate sophisticated decision-making processes that can:
+
+- Analyze complex, unstructured data
+- Consider multiple factors and constraints
+- Apply domain-specific knowledge and rules
+- Learn and improve from experience
+- Explain the rationale behind decisions
+
+In Motia, dynamic reasoning is typically implemented using large language models (LLMs) or other AI technologies, combined with the platform's event-driven architecture and state management capabilities.
+
+## Basic Reasoning Patterns
+
+### 1. Chain-of-Thought Reasoning
+
+Chain-of-thought reasoning breaks down complex problems into a sequence of logical steps:
+
+```typescript
+// chainOfThought.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  problem: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Problem Solver',
+  subscribes: ['problem.solve'],
+  emits: ['problem.solved'],
+  input: inputSchema,
+  flows: ['reasoning-demo'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Use chain-of-thought prompting to solve the problem
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a problem-solving assistant that uses step-by-step reasoning.
+          When presented with a problem:
+          1. Break it down into smaller, manageable parts
+          2. Think through each part systematically
+          3. Consider different approaches and their implications
+          4. Arrive at a well-reasoned solution
+          5. Explain your reasoning process
+          
+          Return your solution as a JSON object with this structure:
+          {
+            "reasoning": [
+              {
+                "step": 1,
+                "description": "First, I'll...",
+                "thinking": "Detailed thought process for this step"
+              },
+              {
+                "step": 2,
+                "description": "Next, I'll...",
+                "thinking": "Detailed thought process for this step"
+              }
+            ],
+            "solution": "The final answer or recommendation",
+            "confidence": 0.8 // A number between 0 and 1 indicating confidence
+          }`,
+        },
+        {
+          role: 'user',
+          content: `Solve this problem: ${input.problem}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const result = JSON.parse(content);
+    
+    // Emit the solution with the reasoning process
+    await emit({
+      topic: 'problem.solved',
+      data: {
+        userId: input.userId,
+        problem: input.problem,
+        reasoning: result.reasoning,
+        solution: result.solution,
+        confidence: result.confidence,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in problem solver', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'problem.solving.failed',
+      data: {
+        userId: input.userId,
+        problem: input.problem,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Uses chain-of-thought prompting to break down a problem into steps
+2. Captures the reasoning process for each step
+3. Provides a final solution with a confidence score
+4. Returns the complete reasoning chain for transparency
+
+### 2. Multi-Criteria Decision Making
+
+Multi-criteria decision making evaluates options based on multiple factors:
+
+```typescript
+// decisionMaker.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  decision: z.object({
+    question: z.string(),
+    options: z.array(z.string()),
+    criteria: z.array(z.object({
+      name: z.string(),
+      weight: z.number().min(0).max(10),
+    })),
+    context: z.string().optional(),
+  }),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Multi-Criteria Decision Maker',
+  subscribes: ['decision.evaluate'],
+  emits: ['decision.result'],
+  input: inputSchema,
+  flows: ['decision-support'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    const { decision, userId } = input;
+    
+    // Format the criteria with weights for the prompt
+    const criteriaText = decision.criteria
+      .map(c => `${c.name} (Weight: ${c.weight}/10)`)
+      .join('\n- ');
+    
+    // Format the options
+    const optionsText = decision.options
+      .map((option, index) => `Option ${index + 1}: ${option}`)
+      .join('\n');
+    
+    // Use an LLM to evaluate the options based on the criteria
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a decision-making assistant that evaluates options based on multiple criteria.
+          For each option, you will:
+          1. Score it on each criterion (0-10)
+          2. Calculate a weighted score based on criterion weights
+          3. Provide reasoning for each score
+          4. Recommend the best option based on the highest weighted score
+          
+          Return your analysis as a JSON object with this structure:
+          {
+            "evaluations": [
+              {
+                "option": "Option text",
+                "criteriaScores": [
+                  {
+                    "criterion": "Criterion name",
+                    "score": 8,
+                    "reasoning": "Why this score was given"
+                  }
+                ],
+                "weightedScore": 7.5,
+                "overallAssessment": "Summary of this option's strengths and weaknesses"
+              }
+            ],
+            "recommendation": {
+              "option": "Recommended option",
+              "reasoning": "Why this option is recommended",
+              "confidenceLevel": "high|medium|low"
+            }
+          }`,
+        },
+        {
+          role: 'user',
+          content: `
+          Decision Question: ${decision.question}
+          
+          Options:
+          ${optionsText}
+          
+          Criteria to evaluate (with weights):
+          - ${criteriaText}
+          
+          ${decision.context ? `Additional Context: ${decision.context}` : ''}
+          
+          Please evaluate these options based on the criteria and provide a recommendation.`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const analysis = JSON.parse(content);
+    
+    // Emit the decision result
+    await emit({
+      topic: 'decision.result',
+      data: {
+        userId,
+        question: decision.question,
+        options: decision.options,
+        criteria: decision.criteria,
+        evaluations: analysis.evaluations,
+        recommendation: analysis.recommendation,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in decision maker', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'decision.evaluation.failed',
+      data: {
+        userId: input.userId,
+        decision: input.decision,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Takes a decision question, options, and weighted criteria as input
+2. Evaluates each option against each criterion
+3. Calculates weighted scores based on criterion importance
+4. Provides a recommendation with reasoning
+5. Returns detailed evaluations for transparency
+
+### 3. Contextual Analysis
+
+Contextual analysis considers the broader context when making decisions:
+
+```typescript
+// contextualAnalyzer.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  message: z.string(),
+  conversationHistory: z.array(
+    z.object({
+      role: z.enum(['user', 'assistant']),
+      content: z.string(),
+      timestamp: z.string(),
+    })
+  ),
+  userProfile: z.object({
+    preferences: z.record(z.string(), z.any()).optional(),
+    pastInteractions: z.array(z.any()).optional(),
+  }).optional(),
+  currentContext: z.object({
+    location: z.string().optional(),
+    time: z.string().optional(),
+    device: z.string().optional(),
+    activeTask: z.string().optional(),
+  }).optional(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Contextual Analyzer',
+  subscribes: ['message.analyze'],
+  emits: ['message.intent', 'message.sentiment', 'message.priority'],
+  input: inputSchema,
+  flows: ['contextual-assistant'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Format the conversation history
+    const formattedHistory = input.conversationHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+    
+    // Use an LLM to analyze the message in context
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a contextual analysis assistant. Analyze the user's message considering the conversation history, user profile, and current context.
+          
+          Return a JSON object with this structure:
+          {
+            "intent": {
+              "primary": "question|request|statement|greeting|farewell|other",
+              "specific": "More specific intent description",
+              "confidence": 0.8
+            },
+            "sentiment": {
+              "overall": "positive|negative|neutral",
+              "emotion": "happy|sad|angry|confused|curious|etc",
+              "intensity": 0.7
+            },
+            "priority": {
+              "level": "high|medium|low",
+              "urgency": true|false,
+              "reasoning": "Why this priority was assigned"
+            },
+            "contextualFactors": {
+              "timeRelevant": true|false,
+              "locationRelevant": true|false,
+              "userHistoryRelevant": true|false,
+              "keyContextualInsights": ["Insight 1", "Insight 2"]
+            }
+          }`,
+        },
+        ...formattedHistory,
+        {
+          role: 'user',
+          content: input.message,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const analysis = JSON.parse(content);
+    
+    // Emit events based on the analysis
+    await emit({
+      topic: 'message.intent',
+      data: {
+        userId: input.userId,
+        message: input.message,
+        intent: analysis.intent,
+        contextualFactors: analysis.contextualFactors,
+      },
+    });
+    
+    await emit({
+      topic: 'message.sentiment',
+      data: {
+        userId: input.userId,
+        message: input.message,
+        sentiment: analysis.sentiment,
+        contextualFactors: analysis.contextualFactors,
+      },
+    });
+    
+    await emit({
+      topic: 'message.priority',
+      data: {
+        userId: input.userId,
+        message: input.message,
+        priority: analysis.priority,
+        contextualFactors: analysis.contextualFactors,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in contextual analyzer', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'message.analysis.failed',
+      data: {
+        userId: input.userId,
+        message: input.message,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Takes a message, conversation history, user profile, and current context as input
+2. Analyzes the message considering all contextual factors
+3. Determines intent, sentiment, and priority
+4. Identifies which contextual factors are relevant to the analysis
+5. Emits separate events for different aspects of the analysis
+
+## Advanced Reasoning Techniques
+
+### 1. Multi-Step Reasoning
+
+Multi-step reasoning breaks complex reasoning into a sequence of steps, with each step building on the previous ones:
+
+```typescript
+// multiStepReasoner.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  userId: z.string(),
+  reasoningState: z.object({
+    steps: z.array(z.object({
+      name: z.string(),
+      result: z.any().optional(),
+    })),
+    currentStepIndex: z.number(),
+    finalResult: z.any().optional(),
+  }).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Multi-Step Reasoner',
+  subscribes: ['reasoning.start', 'reasoning.continue'],
+  emits: ['reasoning.continue', 'reasoning.complete'],
+  input: inputSchema,
+  flows: ['complex-reasoning'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, state, traceId, logger }) => {
+  try {
+    // Initialize or retrieve the reasoning state
+    let reasoningState = input.reasoningState;
+    
+    if (!reasoningState) {
+      // This is the first step - plan the reasoning process
+      const planResponse = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a reasoning planning assistant. Break down the given query into a sequence of reasoning steps.
+            Return a JSON object with the following structure:
+            {
+              "steps": [
+                {
+                  "name": "Step name",
+                  "description": "What this step will accomplish",
+                  "approach": "How this step will be performed"
+                }
+              ]
+            }`,
+          },
+          {
+            role: 'user',
+            content: `Plan a reasoning process for this query: ${input.query}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+      });
+      
+      const planContent = planResponse.choices[0]?.message?.content || '';
+      const plan = JSON.parse(planContent);
+      
+      // Initialize the reasoning state
+      reasoningState = {
+        steps: plan.steps.map(step => ({
+          name: step.name,
+          description: step.description,
+          approach: step.approach,
+        })),
+        currentStepIndex: 0,
+        query: input.query,
+      };
+    }
+    
+    // Get the current step
+    const currentStep = reasoningState.steps[reasoningState.currentStepIndex];
+    
+    // Execute the current reasoning step
+    const stepResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a reasoning assistant executing a specific step in a multi-step reasoning process.
+          
+          The overall query is: "${reasoningState.query}"
+          
+          You are currently working on step ${reasoningState.currentStepIndex + 1}: "${currentStep.name}"
+          Description: ${currentStep.description}
+          Approach: ${currentStep.approach}
+          
+          Previous steps and their results:
+          ${reasoningState.steps
+            .slice(0, reasoningState.currentStepIndex)
+            .map(step => `Step: ${step.name}\nResult: ${JSON.stringify(step.result)}`)
+            .join('\n\n')}
+          
+          Focus only on executing this specific step based on the previous results. Return your result as a JSON object.`,
+        },
+        {
+          role: 'user',
+          content: `Execute step ${reasoningState.currentStepIndex + 1}: ${currentStep.name}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const stepContent = stepResponse.choices[0]?.message?.content || '';
+    const stepResult = JSON.parse(stepContent);
+    
+    // Update the reasoning state with the result of this step
+    reasoningState.steps[reasoningState.currentStepIndex].result = stepResult;
+    
+    // Check if this was the last step
+    if (reasoningState.currentStepIndex === reasoningState.steps.length - 1) {
+      // This was the last step - generate the final result
+      const finalResponse = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a reasoning synthesis assistant. Combine the results of all reasoning steps to provide a final answer.
+            
+            The original query was: "${reasoningState.query}"
+            
+            The reasoning steps and their results:
+            ${reasoningState.steps
+              .map(step => `Step: ${step.name}\nResult: ${JSON.stringify(step.result)}`)
+              .join('\n\n')}
+            
+            Synthesize these results into a comprehensive final answer. Return your answer as a JSON object with the following structure:
+            {
+              "answer": "The final answer to the query",
+              "explanation": "Explanation of how the answer was derived from the reasoning steps",
+              "confidence": 0.8 // A number between 0 and 1
+            }`,
+          },
+          {
+            role: 'user',
+            content: `Synthesize the results of the reasoning steps for query: ${reasoningState.query}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+      });
+      
+      const finalContent = finalResponse.choices[0]?.message?.content || '';
+      const finalResult = JSON.parse(finalContent);
+      
+      // Update the reasoning state with the final result
+      reasoningState.finalResult = finalResult;
+      
+      // Emit the complete event
+      await emit({
+        topic: 'reasoning.complete',
+        data: {
+          userId: input.userId,
+          query: reasoningState.query,
+          steps: reasoningState.steps,
+          finalResult,
+        },
+      });
+    } else {
+      // Move to the next step
+      reasoningState.currentStepIndex += 1;
+      
+      // Emit the continue event
+      await emit({
+        topic: 'reasoning.continue',
+        data: {
+          userId: input.userId,
+          query: input.query,
+          reasoningState,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in multi-step reasoner', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'reasoning.failed',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        error: error.message,
+        reasoningState: input.reasoningState,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Breaks down complex reasoning into a sequence of steps
+2. Plans the reasoning process based on the query
+3. Executes each step sequentially, building on previous results
+4. Synthesizes the results of all steps into a final answer
+5. Maintains state across steps to track progress
+
+### 2. Hypothesis Generation and Testing
+
+This pattern generates multiple hypotheses and tests them against evidence:
+
+```typescript
+// hypothesisTester.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  situation: z.string(),
+  evidence: z.array(z.string()),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Hypothesis Tester',
+  subscribes: ['situation.analyze'],
+  emits: ['situation.analysis'],
+  input: inputSchema,
+  flows: ['hypothesis-testing'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Generate multiple hypotheses
+    const hypothesisResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a hypothesis generation assistant. Given a situation, generate multiple plausible hypotheses that could explain it.
+          
+          Return a JSON object with the following structure:
+          {
+            "hypotheses": [
+              {
+                "id": "h1",
+                "description": "Hypothesis description",
+                "assumptions": ["Assumption 1", "Assumption 2"],
+                "implications": ["Implication 1", "Implication 2"]
+              }
+            ]
+          }`,
+        },
+        {
+          role: 'user',
+          content: `Generate hypotheses for this situation: ${input.situation}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const hypothesisContent = hypothesisResponse.choices[0]?.message?.content || '';
+    const { hypotheses } = JSON.parse(hypothesisContent);
+    
+    // Step 2: Evaluate each hypothesis against the evidence
+    const evaluationPromises = hypotheses.map(async (hypothesis) => {
+      const evaluationResponse = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a hypothesis evaluation assistant. Evaluate how well a hypothesis explains the given evidence.
+            
+            For each piece of evidence, determine:
+            - Whether it supports, contradicts, or is neutral to the hypothesis
+            - The strength of support or contradiction (strong, moderate, weak)
+            - The reasoning behind your evaluation
+            
+            Return a JSON object with the following structure:
+            {
+              "evaluations": [
+                {
+                  "evidence": "Evidence text",
+                  "relation": "supports|contradicts|neutral",
+                  "strength": "strong|moderate|weak",
+                  "reasoning": "Reasoning for this evaluation"
+                }
+              ],
+              "overallScore": 0.8, // A number between 0 and 1
+              "overallAssessment": "Overall assessment of the hypothesis"
+            }`,
+          },
+          {
+            role: 'user',
+            content: `
+            Hypothesis: ${hypothesis.description}
+            
+            Evidence to evaluate:
+            ${input.evidence.map((e, i) => `${i + 1}. ${e}`).join('\n')}
+            
+            Evaluate how well this hypothesis explains the evidence.`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+      });
+      
+      const evaluationContent = evaluationResponse.choices[0]?.message?.content || '';
+      const evaluation = JSON.parse(evaluationContent);
+      
+      return {
+        hypothesis,
+        evaluation,
+      };
+    });
+    
+    const evaluatedHypotheses = await Promise.all(evaluationPromises);
+    
+    // Step 3: Rank the hypotheses and select the best one
+    const rankingResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a hypothesis ranking assistant. Rank multiple hypotheses based on their evaluations against evidence.
+          
+          Return a JSON object with the following structure:
+          {
+            "rankedHypotheses": [
+              {
+                "hypothesisId": "h1",
+                "rank": 1,
+                "score": 0.9,
+                "reasoning": "Why this hypothesis is ranked here"
+              }
+            ],
+            "bestHypothesis": {
+              "id": "h1",
+              "confidence": 0.8,
+              "explanation": "Why this is the best hypothesis"
+            },
+            "alternativeExplanations": "Discussion of alternative explanations"
+          }`,
+        },
+        {
+          role: 'user',
+          content: `
+          Situation: ${input.situation}
+          
+          Evaluated Hypotheses:
+          ${JSON.stringify(evaluatedHypotheses, null, 2)}
+          
+          Rank these hypotheses and select the best one.`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const rankingContent = rankingResponse.choices[0]?.message?.content || '';
+    const ranking = JSON.parse(rankingContent);
+    
+    // Emit the analysis result
+    await emit({
+      topic: 'situation.analysis',
+      data: {
+        userId: input.userId,
+        situation: input.situation,
+        evidence: input.evidence,
+        hypotheses: evaluatedHypotheses,
+        ranking,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in hypothesis tester', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'situation.analysis.failed',
+      data: {
+        userId: input.userId,
+        situation: input.situation,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Generates multiple hypotheses to explain a situation
+2. Evaluates each hypothesis against the available evidence
+3. Ranks the hypotheses based on their evaluations
+4. Selects the best hypothesis with an explanation
+5. Provides alternative explanations for consideration
+
+### 3. Counterfactual Reasoning
+
+Counterfactual reasoning explores alternative scenarios to evaluate decisions:
+
+```typescript
+// counterfactualReasoner.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  decision: z.object({
+    context: z.string(),
+    options: z.array(z.string()),
+    selectedOption: z.string(),
+  }),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Counterfactual Reasoner',
+  subscribes: ['decision.evaluate.counterfactual'],
+  emits: ['decision.counterfactual.analysis'],
+  input: inputSchema,
+  flows: ['decision-analysis'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    const { decision, userId } = input;
+    
+    // Generate counterfactual scenarios
+    const counterfactualResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a counterfactual reasoning assistant. Given a decision context and a selected option, generate counterfactual scenarios for each alternative option.
+          
+          For each counterfactual scenario:
+          1. Describe what would likely happen if that option were chosen
+          2. Identify key differences from the selected option
+          3. Evaluate potential benefits and risks
+          4. Assess the overall desirability compared to the selected option
+          
+          Return a JSON object with the following structure:
+          {
+            "counterfactuals": [
+              {
+                "option": "Alternative option",
+                "scenario": "Description of what would happen",
+                "keyDifferences": ["Difference 1", "Difference 2"],
+                "benefits": ["Benefit 1", "Benefit 2"],
+                "risks": ["Risk 1", "Risk 2"],
+                "overallAssessment": "Better|Worse|Similar to selected option",
+                "reasoning": "Reasoning for this assessment"
+              }
+            ],
+            "selectedOptionAnalysis": {
+              "strengths": ["Strength 1", "Strength 2"],
+              "weaknesses": ["Weakness 1", "Weakness 2"],
+              "robustness": 0.8 // How robust the decision is to changing conditions
+            },
+            "decisionQualityAssessment": {
+              "score": 0.7, // 0 to 1
+              "explanation": "Overall assessment of the decision quality",
+              "improvementSuggestions": ["Suggestion 1", "Suggestion 2"]
+            }
+          }`,
+        },
+        {
+          role: 'user',
+          content: `
+          Decision Context: ${decision.context}
+          
+          Available Options:
+          ${decision.options.map((option, i) => `${i + 1}. ${option}`).join('\n')}
+          
+          Selected Option: ${decision.selectedOption}
+          
+          Generate counterfactual scenarios for the alternative options and analyze the decision.`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = counterfactualResponse.choices[0]?.message?.content || '';
+    const analysis = JSON.parse(content);
+    
+    // Emit the counterfactual analysis
+    await emit({
+      topic: 'decision.counterfactual.analysis',
+      data: {
+        userId,
+        decision: input.decision,
+        counterfactuals: analysis.counterfactuals,
+        selectedOptionAnalysis: analysis.selectedOptionAnalysis,
+        decisionQualityAssessment: analysis.decisionQualityAssessment,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in counterfactual reasoner', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'decision.counterfactual.failed',
+      data: {
+        userId: input.userId,
+        decision: input.decision,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+This example:
+1. Takes a decision context, options, and selected option as input
+2. Generates counterfactual scenarios for alternative options
+3. Analyzes what would happen in each scenario
+4. Evaluates the strengths and weaknesses of the selected option
+5. Assesses the overall quality of the decision
+
+## Implementing Reasoning in Workflows
+
+### 1. Reasoning with External Knowledge
+
+Enhance reasoning with external knowledge sources:
+
+```typescript
+// knowledgeEnhancedReasoner.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+import { searchKnowledgeBase } from '../services/knowledgeBase';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  query: z.string(),
+  domain: z.string(),
+  userId: z.string(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Knowledge-Enhanced Reasoner',
+  subscribes: ['query.reason'],
+  emits: ['query.response'],
+  input: inputSchema,
+  flows: ['knowledge-reasoning'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Step 1: Retrieve relevant knowledge from the knowledge base
+    const relevantKnowledge = await searchKnowledgeBase(input.query, input.domain);
+    
+    // Step 2: Format the knowledge for the prompt
+    const knowledgeText = relevantKnowledge
+      .map(k => `Source: ${k.source}\nContent: ${k.content}\nRelevance: ${k.relevance}\n---`)
+      .join('\n');
+    
+    // Step 3: Use the LLM to reason with the knowledge
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a knowledge-enhanced reasoning assistant for the ${input.domain} domain. 
+          Use the provided knowledge to answer the query. 
+          If the knowledge is insufficient, acknowledge the limitations.
+          
+          Return a JSON object with this structure:
+          {
+            "reasoning": {
+              "relevantKnowledgePoints": ["Point 1", "Point 2"],
+              "analysis": "Analysis of how the knowledge applies to the query",
+              "gaps": ["Knowledge gap 1", "Knowledge gap 2"]
+            },
+            "answer": "The answer to the query",
+            "confidence": 0.8, // A number between 0 and 1
+            "sourcesUsed": ["Source 1", "Source 2"]
+          }`,
+        },
+        {
+          role: 'user',
+          content: `
+          Query: ${input.query}
+          
+          Available Knowledge:
+          ${knowledgeText}
+          
+          Please reason through this query using the provided knowledge.`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+    
+    const content = response.choices[0]?.message?.content || '';
+    const result = JSON.parse(content);
+    
+    // Emit the reasoned response
+    await emit({
+      topic: 'query.response',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        domain: input.domain,
+        reasoning: result.reasoning,
+        answer: result.answer,
+        confidence: result.confidence,
+        sourcesUsed: result.sourcesUsed,
+        knowledgeUsed: relevantKnowledge.filter(k => 
+          result.sourcesUsed.includes(k.source)
+        ),
+      },
+    });
+  } catch (error) {
+    logger.error('Error in knowledge-enhanced reasoner', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'query.reasoning.failed',
+      data: {
+        userId: input.userId,
+        query: input.query,
+        domain: input.domain,
+        error: error.message,
+      },
+    });
+  }
+};
+```
+
+### 2. Collaborative Reasoning
+
+Implement collaborative reasoning between multiple agents:
+
+```typescript
+// collaborativeReasoner.step.ts
+import { EventConfig, StepHandler } from 'motia';
+import { OpenAI } from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const inputSchema = z.object({
+  problem: z.string(),
+  perspectives: z.array(z.string()),
+  userId: z.string(),
+  discussionState: z.object({
+    rounds: z.array(z.object({
+      perspectives: z.record(z.string(), z.string()),
+      synthesis: z.string().optional(),
+    })),
+    currentRound: z.number(),
+    conclusion: z.string().optional(),
+  }).optional(),
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Collaborative Reasoner',
+  subscribes: ['problem.collaborate', 'problem.collaborate.continue'],
+  emits: ['problem.collaborate.continue', 'problem.collaborate.complete'],
+  input: inputSchema,
+  flows: ['collaborative-reasoning'],
+};
+
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  try {
+    // Initialize or retrieve the discussion state
+    let discussionState = input.discussionState;
+    
+    if (!discussionState) {
+      // This is the first round - initialize the discussion
+      discussionState = {
+        rounds: [],
+        currentRound: 0,
+        problem: input.problem,
+        perspectives: input.perspectives,
+      };
+    }
+    
+    // Check if we need to generate perspectives for the current round
+    if (!discussionState.rounds[discussionState.currentRound]) {
+      // Generate perspectives for this round
+      const perspectivePromises = input.perspectives.map(async (perspective) => {
+        const perspectiveResponse = await openai.chat.completions.create({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a reasoning assistant representing the "${perspective}" perspective. 
+              Analyze the problem from this specific viewpoint.
+              
+              ${discussionState.currentRound > 0 ? `
+              Previous discussion rounds:
+              ${discussionState.rounds
+                .map((round, i) => 
+                  `Round ${i + 1}:\n${Object.entries(round.perspectives)
+                    .map(([p, view]) => `${p}: ${view}`)
+                    .join('\n')}\n\nSynthesis: ${round.synthesis || 'None'}`
+                )
+                .join('\n\n')}
+              ` : ''}
+              
+              Provide your perspective on the problem, considering previous discussion if applicable.`,
+            },
+            {
+              role: 'user',
+              content: `Problem: ${input.problem}
+              
+              Provide the "${perspective}" perspective on this problem.`,
+            },
+          ],
+        });
+        
+        return [
+          perspective, 
+          perspectiveResponse.choices[0]?.message?.content || ''
+        ];
+      });
+      
+      const perspectives = Object.fromEntries(await Promise.all(perspectivePromises));
+      
+      // Add the perspectives to the current round
+      discussionState.rounds[discussionState.currentRound] = {
+        perspectives,
+      };
+    }
+    
+    // Check if we need to synthesize the perspectives for the current round
+    if (!discussionState.rounds[discussionState.currentRound].synthesis) {
+      // Synthesize the perspectives
+      const currentRound = discussionState.rounds[discussionState.currentRound];
+      
+      const synthesisResponse = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a synthesis assistant that combines multiple perspectives on a problem.
+            Identify areas of agreement, disagreement, and potential integration of ideas.
+            
+            Return a synthesis that:
+            1. Summarizes the key points from each perspective
+            2. Identifies common ground
+            3. Highlights key differences
+            4. Suggests ways to integrate the perspectives`,
+          },
+          {
+            role: 'user',
+            content: `
+            Problem: ${input.problem}
+            
+            Perspectives:
+            ${Object.entries(currentRound.perspectives)
+              .map(([perspective, view]) => `${perspective}: ${view}`)
+              .join('\n\n')}
+            
+            Please synthesize these perspectives.`,
+          },
+        ],
+      });
+      
+      const synthesis = synthesisResponse.choices[0]?.message?.content || '';
+      
+      // Add the synthesis to the current round
+      discussionState.rounds[discussionState.currentRound].synthesis = synthesis;
+    }
+    
+    // Determine if we should continue to another round or conclude
+    const MAX_ROUNDS = 3;
+    if (discussionState.currentRound < MAX_ROUNDS - 1) {
+      // Move to the next round
+      discussionState.currentRound += 1;
+      
+      // Emit the continue event
+      await emit({
+        topic: 'problem.collaborate.continue',
+        data: {
+          userId: input.userId,
+          problem: input.problem,
+          perspectives: input.perspectives,
+          discussionState,
+        },
+      });
+    } else {
+      // Generate a conclusion
+      const conclusionResponse = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a conclusion assistant that provides a final analysis after multiple rounds of collaborative reasoning.
+            
+            Return a JSON object with this structure:
+            {
+              "conclusion": "The final conclusion",
+              "keyInsights": ["Insight 1", "Insight 2"],
+              "tradeoffs": ["Tradeoff 1", "Tradeoff 2"],
+              "recommendedApproach": "The recommended approach",
+              "confidenceLevel": "high|medium|low"
+            }`,
+          },
+          {
+            role: 'user',
+            content: `
+            Problem: ${input.problem}
+            
+            Discussion rounds:
+            ${discussionState.rounds
+              .map((round, i) => 
+                `Round ${i + 1}:\n${Object.entries(round.perspectives)
+                  .map(([p, view]) => `${p}: ${view}`)
+                  .join('\n')}\n\nSynthesis: ${round.synthesis}`
+              )
+              .join('\n\n')}
+            
+            Please provide a final conclusion based on this collaborative reasoning process.`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+      });
+      
+      const conclusionContent = conclusionResponse.choices[0]?.message?.content || '';
+      const conclusion = JSON.parse(conclusionContent);
+      
+      // Add the conclusion to the discussion state
+      discussionState.conclusion = conclusion;
+      
+      // Emit the complete event
+      await emit({
+        topic: 'problem.collaborate.complete',
+        data: {
+          userId: input.userId,
+          problem: input.problem,
+          perspectives: input.perspectives,
+          discussionState,
+          conclusion,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Error in collaborative reasoner', { error });
+    
+    // Emit an error event
+    await emit({
+      topic: 'problem.collaborate.failed',
+      data: {
+        userId: input.userId,
+        problem: input.problem,
+        perspectives: input.perspectives,
+        error: error.message,
+        discussionState: input.discussionState,
+      },
+    });
+  }
+};
+```
+
+## Best Practices for Dynamic Reasoning
+
+### 1. Design for Transparency
+
+Make reasoning processes transparent and explainable:
+
+- **Show the reasoning steps**: Return intermediate steps and thought processes
+- **Explain decisions**: Provide clear explanations for decisions and recommendations
+- **Cite sources**: Reference the knowledge or data used in reasoning
+- **Quantify uncertainty**: Include confidence scores or uncertainty estimates
+- **Log reasoning paths**: Maintain detailed logs of reasoning processes for review
+
+### 2. Handle Uncertainty
+
+Implement strategies for handling uncertainty:
+
+- **Express confidence levels**: Include confidence scores with all conclusions
+- **Consider multiple hypotheses**: Generate and evaluate alternative explanations
+- **Identify knowledge gaps**: Explicitly note when information is missing or uncertain
+- **Use probabilistic reasoning**: Incorporate probabilities when appropriate
+- **Implement fallbacks**: Have deterministic fallbacks for when reasoning is uncertain
+
+### 3. Optimize Performance
+
+Balance reasoning depth with performance:
+
+- **Use appropriate models**: Choose the right LLM for the task (smaller models for simpler reasoning)
+- **Implement caching**: Cache reasoning results for similar inputs
+- **Batch related operations**: Combine related reasoning steps when possible
+- **Implement timeouts**: Set reasonable timeouts for reasoning operations
+- **Use progressive reasoning**: Start with simple reasoning and progressively add complexity as needed
+
+### 4. Ensure Robustness
+
+Make reasoning systems robust to various inputs and conditions:
+
+- **Validate inputs**: Ensure inputs are well-formed and reasonable
+- **Handle edge cases**: Test with unusual or extreme inputs
+- **Implement error recovery**: Gracefully handle errors in reasoning steps
+- **Monitor reasoning quality**: Track metrics for reasoning performance
+- **Implement circuit breakers**: Prevent cascading failures in reasoning systems
+
+### 5. Combine with Other Techniques
+
+Enhance reasoning with complementary techniques:
+
+- **Integrate retrieval**: Use retrieval-augmented generation for knowledge-intensive tasks
+- **Incorporate structured knowledge**: Use knowledge graphs or ontologies to guide reasoning
+- **Combine with rules**: Integrate rule-based systems for well-defined constraints
+- **Use multi-agent approaches**: Implement collaborative reasoning with specialized agents
+- **Leverage human feedback**: Incorporate human input for critical decisions
+
+## Conclusion
+
+Dynamic reasoning is a powerful capability that enables agentic workflows to make complex, context-aware decisions. By implementing the patterns and techniques described in this guide, you can create intelligent applications that can analyze complex data, consider multiple factors, and adapt their behavior based on changing conditions.
+
+The key to effective dynamic reasoning is to combine the strengths of large language models with Motia's event-driven architecture and state management capabilities. This combination allows you to create workflows that can break down complex problems, reason through them step by step, and arrive at well-reasoned conclusions.
+
+As you implement dynamic reasoning in your Motia applications, remember to prioritize transparency, handle uncertainty appropriately, optimize performance, ensure robustness, and combine reasoning with other techniques as needed. By following these best practices, you can create agentic workflows that make intelligent decisions while remaining reliable, explainable, and efficient.
+
+## Next Steps
+
+- [Agent Types](./agent-types) - Explore different types of agents and their use cases
+- [LLM Integration](./llm-integration) - Learn more about integrating large language models into your workflows
+- [Dynamic Emits](./dynamic-emits) - Discover patterns for dynamic event emission in agentic workflows

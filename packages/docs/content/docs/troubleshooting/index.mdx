@@ -1,0 +1,120 @@
+---
+title: "Troubleshooting Overview"
+description: "Find solutions to common issues and learn debugging techniques for Motia workflows"
+---
+
+# Troubleshooting Overview
+
+This section provides resources to help you diagnose and resolve issues with your Motia workflows. Whether you're encountering errors, performance problems, or unexpected behavior, you'll find guidance here to get your workflows back on track.
+
+## How to Use This Section
+
+The troubleshooting resources are organized to help you find solutions quickly:
+
+- **[Common Errors](./common-errors)**: A catalog of frequently encountered errors with explanations and solutions
+- **[Debugging Guide](./debugging-guide)**: Step-by-step approaches to diagnose issues in your workflows
+- **[Performance Issues](./performance-issues)**: Solutions for workflows that are slow or consuming too many resources
+- **[FAQ](./faq)**: Quick answers to frequently asked questions
+
+## Troubleshooting Process
+
+When you encounter an issue with your Motia workflow, we recommend following this process:
+
+1. **Identify the symptoms**: What exactly is happening? Is it an error message, unexpected behavior, or performance issue?
+2. **Check the logs**: Motia provides detailed logs that can help pinpoint the source of the problem
+3. **Consult the documentation**: Look for similar issues in our troubleshooting guides
+4. **Isolate the problem**: Try to reproduce the issue in a simplified workflow
+5. **Apply the solution**: Implement the recommended fix and test your workflow
+
+## Using the Workbench for Troubleshooting
+
+The Motia Workbench is a powerful tool for diagnosing issues:
+
+1. **Visualize the workflow**: See the flow of events and identify where things might be going wrong
+2. **Inspect state**: Check the state at different points in your workflow
+3. **Monitor events**: See which events are being emitted and received
+4. **Step through execution**: Follow the execution path to find where issues occur
+
+```typescript
+// Example: Adding detailed logging to help troubleshoot
+export const handler = async (input, { emit, state, logger }) => {
+  // Log the input for debugging
+  logger.debug('Received input:', input);
+  
+  try {
+    // Your step logic here
+    const result = await processData(input);
+    
+    // Log the result
+    logger.debug('Processing result:', result);
+    
+    // Emit an event with the result
+    await emit('data.processed', result);
+    
+    return { success: true };
+  } catch (error) {
+    // Log the error with details
+    logger.error('Error processing data:', error);
+    logger.error('Input that caused the error:', input);
+    
+    // You might want to emit an error event
+    await emit('data.processing.error', { 
+      error: error.message,
+      input
+    });
+    
+    return { success: false, error: error.message };
+  }
+};
+```
+
+## Common Troubleshooting Scenarios
+
+Here are some of the most common issues you might encounter:
+
+### 1. Events Not Being Received
+
+If steps aren't receiving expected events:
+
+- Check that the emitting step is correctly specifying the event topic
+- Verify that the receiving step is subscribing to the correct topic
+- Ensure that the event payload structure matches what the receiving step expects
+- Check for typos in event topic names
+
+### 2. State Management Issues
+
+If you're having trouble with state:
+
+- Verify that keys are consistent across steps
+- Check that you're handling asynchronous state operations correctly
+- Ensure you're not exceeding size limits for state values
+- Consider using namespaced keys to avoid conflicts
+
+### 3. API Steps Not Working
+
+If API endpoints aren't functioning as expected:
+
+- Confirm the path and method are correctly configured
+- Check that request validation is working as intended
+- Verify that the response format matches what clients expect
+- Test the endpoint directly using tools like curl or Postman
+
+### 4. Performance Problems
+
+If workflows are running slowly:
+
+- Look for unnecessary state operations
+- Check for inefficient event patterns
+- Consider parallel processing for independent operations
+- Optimize external API calls and database queries
+
+## Getting Additional Help
+
+If you can't find a solution in the troubleshooting documentation:
+
+- Check the [community forum](https://community.motia.dev) for similar issues
+- Search for issues on the [GitHub repository](https://github.com/motiajs/motia)
+- Join the [Discord community](https://discord.gg/motia) to ask for help
+- Contact [support](mailto:support@motia.dev) for critical issues
+
+Remember that providing detailed information about your issue will help others assist you more effectively. Include error messages, relevant code snippets, and steps to reproduce the problem when seeking help.

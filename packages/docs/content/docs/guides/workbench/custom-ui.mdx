@@ -1,0 +1,612 @@
+---
+title: Custom UI Components
+description: Learn how to create custom visualizations for your steps in the Motia Workbench
+---
+
+# Custom UI Components
+
+Motia Workbench allows you to create custom UI components for your steps, providing a more intuitive and informative visualization of your workflows. This guide will show you how to create custom UI components for different types of steps and how to use them effectively in your workflows.
+
+## Understanding UI Components
+
+UI components in Motia Workbench serve several purposes:
+
+- **Visual Clarity**: Make your workflow easier to understand at a glance
+- **Contextual Information**: Show relevant information about each step
+- **Interactive Elements**: Allow users to interact with steps directly
+- **Status Indicators**: Display the current state of each step
+- **Branding**: Apply your organization's visual identity to your workflows
+
+## Types of UI Customization
+
+Motia supports two main approaches to UI customization:
+
+1. **UI Steps**: Custom React components for step visualization
+2. **NOOP Steps**: Special steps that represent external processes or manual actions
+
+## UI Steps
+
+UI Steps allow you to create custom visualizations for your steps using React components.
+
+### File Structure
+
+To create a UI Step, you need to create a `.tsx` or `.jsx` file next to your step file with the same base name:
+
+```
+steps/
+  └── myStep/
+      ├── myStep.step.ts      # Step definition
+      └── myStep.step.tsx     # Visual override
+```
+
+### Basic UI Step
+
+Here's a simple example of a UI Step:
+
+```typescript
+// myStep.step.tsx
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+import type { EventNodeProps } from 'motia/workbench'
+
+export default function MyStep({ data }: EventNodeProps) {
+  return (
+    <EventNode
+      data={data}
+      variant="white"
+      shape="rounded"
+      className="py-2 px-4"
+    >
+      <div className="text-sm font-medium">{data.name}</div>
+      <div className="text-xs text-gray-500">{data.description}</div>
+    </EventNode>
+  )
+}
+```
+
+This creates a simple white, rounded node with the step name and description.
+
+### Available Components
+
+Motia Workbench provides several components for creating custom UI:
+
+#### EventNode
+
+The main component for general-purpose steps:
+
+```typescript
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+import type { EventNodeProps } from 'motia/workbench'
+
+export default function CustomStep({ data }: EventNodeProps) {
+  return (
+    <EventNode
+      data={data}
+      variant="white" // 'white', 'ghost', or 'noop'
+      shape="rounded" // 'rounded', 'square', or 'noop'
+      className="py-2 px-4"
+    >
+      <div>Custom content</div>
+    </EventNode>
+  )
+}
+```
+
+#### ApiNode
+
+Specialized component for API-related steps:
+
+```typescript
+import React from 'react'
+import { ApiNode } from 'motia/workbench'
+import type { ApiNodeProps } from 'motia/workbench'
+
+export default function ApiStep({ data }: ApiNodeProps) {
+  return (
+    <ApiNode
+      data={data}
+      className="border-blue-500"
+    >
+      <div>API endpoint: {data.name}</div>
+      <div>Method: {data.method}</div>
+      <div>Path: {data.path}</div>
+    </ApiNode>
+  )
+}
+```
+
+#### BaseHandle
+
+Component for creating connection points on custom nodes:
+
+```typescript
+import React from 'react'
+import { BaseHandle, Position } from 'motia/workbench'
+
+export default function CustomNode() {
+  return (
+    <div className="p-4 bg-gray-800 rounded-lg border border-gray-600 text-white">
+      <div className="text-sm font-medium">Custom Node</div>
+      <BaseHandle type="target" position={Position.Top} />
+      <BaseHandle type="source" position={Position.Bottom} />
+    </div>
+  )
+}
+```
+
+### Accessing Step Data
+
+The `data` prop provides access to the step's configuration and state:
+
+```typescript
+export default function CustomStep({ data }: EventNodeProps) {
+  return (
+    <EventNode data={data}>
+      <div>Step Name: {data.name}</div>
+      <div>Step Type: {data.type}</div>
+      <div>Subscribes to: {data.subscribes.join(', ')}</div>
+      <div>Emits: {data.emits.join(', ')}</div>
+    </EventNode>
+  )
+}
+```
+
+### Adding Interactivity
+
+You can add interactive elements to your UI components:
+
+```typescript
+import React, { useState } from 'react'
+import { EventNode } from 'motia/workbench'
+import type { EventNodeProps } from 'motia/workbench'
+
+export default function InteractiveStep({ data }: EventNodeProps) {
+  const [expanded, setExpanded] = useState(false)
+  
+  return (
+    <EventNode data={data}>
+      <div className="text-sm font-medium">{data.name}</div>
+      <button 
+        onClick={() => setExpanded(!expanded)}
+        className="px-2 py-1 bg-blue-500 text-white rounded text-xs"
+      >
+        {expanded ? 'Hide Details' : 'Show Details'}
+      </button>
+      
+      {expanded && (
+        <div className="mt-2 text-xs">
+          <div>Type: {data.type}</div>
+          <div>Subscribes to: {data.subscribes.join(', ')}</div>
+          <div>Emits: {data.emits.join(', ')}</div>
+        </div>
+      )}
+    </EventNode>
+  )
+}
+```
+
+### Styling Guidelines
+
+When creating custom UI components, follow these guidelines:
+
+- **Use Tailwind CSS**: Stick to Tailwind's utility classes for consistent styling
+- **Responsive Design**: Ensure your components work well at different sizes
+- **Consistent Colors**: Use a consistent color scheme across your components
+- **Clear Typography**: Use readable font sizes and weights
+- **Accessible Design**: Ensure sufficient contrast and keyboard accessibility
+
+## NOOP Steps
+
+NOOP (No Operation) steps represent external processes or manual actions in your workflow. They're particularly useful for visualizing parts of your workflow that happen outside of Motia.
+
+### Creating a NOOP Step
+
+To create a NOOP step, you need two files:
+
+```typescript
+// externalProcess.step.ts
+export const config = {
+  type: 'noop',
+  name: 'External Process',
+  description: 'Represents an external system or manual process',
+  virtualEmits: ['process.completed'],
+  virtualSubscribes: ['process.started'],
+  flows: ['my-flow']
+}
+```
+
+```typescript
+// externalProcess.step.tsx
+import React from 'react'
+import { BaseHandle, Position } from 'motia/workbench'
+
+export default function ExternalProcess() {
+  return (
+    <div className="p-4 bg-yellow-100 rounded-lg border border-yellow-300 text-yellow-800">
+      <div className="text-sm font-medium">External Process</div>
+      <div className="text-xs">Manual approval required</div>
+      <BaseHandle type="target" position={Position.Top} />
+      <BaseHandle type="source" position={Position.Bottom} />
+    </div>
+  )
+}
+```
+
+### Common NOOP Step Use Cases
+
+NOOP steps are useful for representing:
+
+#### External API Calls
+
+```typescript
+export const config = {
+  type: 'noop',
+  name: 'Payment Gateway',
+  description: 'External payment processing',
+  virtualSubscribes: ['payment.initiated'],
+  virtualEmits: ['payment.completed', 'payment.failed'],
+  flows: ['checkout']
+}
+```
+
+#### Human-in-the-Loop Processes
+
+```typescript
+export const config = {
+  type: 'noop',
+  name: 'Manager Approval',
+  description: 'Requires manager review and approval',
+  virtualSubscribes: ['approval.requested'],
+  virtualEmits: ['approval.granted', 'approval.denied'],
+  flows: ['expense-approval']
+}
+```
+
+#### Physical Processes
+
+```typescript
+export const config = {
+  type: 'noop',
+  name: 'Warehouse Fulfillment',
+  description: 'Physical order fulfillment process',
+  virtualSubscribes: ['order.confirmed'],
+  virtualEmits: ['order.shipped'],
+  flows: ['order-processing']
+}
+```
+
+#### Testing and Simulation
+
+```typescript
+export const config = {
+  type: 'noop',
+  name: 'Test Event Generator',
+  description: 'Generates test events for development',
+  virtualSubscribes: [],
+  virtualEmits: ['test.event.generated'],
+  flows: ['test-flow']
+}
+```
+
+## Advanced UI Techniques
+
+### Custom Icons
+
+You can use custom icons in your UI components:
+
+```typescript
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+import { ShoppingCart, CreditCard, Truck } from 'lucide-react'
+
+export default function OrderStep({ data }) {
+  // Choose icon based on step name or other properties
+  const getIcon = () => {
+    if (data.name.includes('Payment')) return <CreditCard className="w-4 h-4" />;
+    if (data.name.includes('Shipping')) return <Truck className="w-4 h-4" />;
+    return <ShoppingCart className="w-4 h-4" />;
+  };
+
+  return (
+    <EventNode data={data}>
+      <div className="flex items-center gap-2">
+        {getIcon()}
+        <span>{data.name}</span>
+      </div>
+    </EventNode>
+  )
+}
+```
+
+### Status Indicators
+
+Add status indicators to show the current state of a step:
+
+```typescript
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+import { CheckCircle, AlertCircle, Clock } from 'lucide-react'
+
+export default function StatusStep({ data, status }) {
+  const getStatusIndicator = () => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'waiting':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <EventNode data={data}>
+      <div className="flex items-center justify-between">
+        <span>{data.name}</span>
+        {getStatusIndicator()}
+      </div>
+    </EventNode>
+  )
+}
+```
+
+### Data Visualization
+
+Incorporate data visualization into your UI components:
+
+```typescript
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+
+export default function MetricsStep({ data, metrics }) {
+  // Simple bar chart for metrics
+  return (
+    <EventNode data={data}>
+      <div className="text-sm font-medium">{data.name}</div>
+      <div className="mt-2">
+        {Object.entries(metrics).map(([key, value]) => (
+          <div key={key} className="flex items-center text-xs mt-1">
+            <span className="w-24 truncate">{key}:</span>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full" 
+                style={{ width: `${Math.min(value * 100, 100)}%` }}
+              />
+            </div>
+            <span className="ml-2">{value.toFixed(2)}</span>
+          </div>
+        ))}
+      </div>
+    </EventNode>
+  )
+}
+```
+
+### Interactive Controls
+
+Add interactive controls to your UI components:
+
+```typescript
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+
+export default function ControlStep({ data, onTrigger }) {
+  return (
+    <EventNode data={data}>
+      <div className="text-sm font-medium">{data.name}</div>
+      <div className="mt-2 flex gap-2">
+        <button 
+          onClick={() => onTrigger('success')}
+          className="px-2 py-1 bg-green-500 text-white rounded text-xs"
+        >
+          Success
+        </button>
+        <button 
+          onClick={() => onTrigger('error')}
+          className="px-2 py-1 bg-red-500 text-white rounded text-xs"
+        >
+          Error
+        </button>
+        <button 
+          onClick={() => onTrigger('retry')}
+          className="px-2 py-1 bg-yellow-500 text-white rounded text-xs"
+        >
+          Retry
+        </button>
+      </div>
+    </EventNode>
+  )
+}
+```
+
+## Best Practices
+
+### Design Principles
+
+Follow these design principles for effective UI components:
+
+- **Clarity**: Make the purpose and state of each step immediately clear
+- **Consistency**: Use consistent visual language across all steps
+- **Simplicity**: Avoid cluttering the UI with unnecessary information
+- **Hierarchy**: Use visual hierarchy to emphasize important information
+- **Feedback**: Provide clear feedback for user interactions
+
+### Performance Considerations
+
+Keep these performance considerations in mind:
+
+- **Minimize State**: Use state sparingly to avoid unnecessary re-renders
+- **Memoize Components**: Use React.memo for complex components
+- **Optimize Renders**: Avoid expensive calculations in render functions
+- **Lazy Loading**: Load complex visualizations only when needed
+- **Throttle Events**: Throttle event handlers for frequent events like mouse movements
+
+### Accessibility
+
+Ensure your UI components are accessible:
+
+- **Keyboard Navigation**: Ensure all interactive elements are keyboard accessible
+- **Screen Reader Support**: Add appropriate ARIA attributes
+- **Color Contrast**: Maintain sufficient contrast for text and important elements
+- **Text Size**: Use readable text sizes (minimum 12px)
+- **Focus Indicators**: Provide clear focus indicators for interactive elements
+
+## Examples
+
+### Payment Processing Step
+
+```typescript
+// paymentStep.step.tsx
+import React from 'react'
+import { EventNode } from 'motia/workbench'
+import { CreditCard, CheckCircle, XCircle } from 'lucide-react'
+
+export default function PaymentStep({ data, status = 'pending', amount = 0 }) {
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <EventNode
+      data={data}
+      variant="white"
+      className="border-blue-500"
+    >
+      <div className="flex items-center gap-2">
+        <CreditCard className="w-5 h-5 text-blue-500" />
+        <span className="font-medium">Payment Processing</span>
+        {getStatusIcon()}
+      </div>
+      <div className="mt-1 text-sm">
+        Amount: ${amount.toFixed(2)}
+      </div>
+      <div className="mt-2 h-1 w-full bg-gray-200 rounded">
+        {status === 'pending' && (
+          <div className="h-1 bg-blue-500 rounded animate-pulse" style={{ width: '60%' }} />
+        )}
+        {status === 'completed' && (
+          <div className="h-1 bg-green-500 rounded" style={{ width: '100%' }} />
+        )}
+        {status === 'failed' && (
+          <div className="h-1 bg-red-500 rounded" style={{ width: '100%' }} />
+        )}
+      </div>
+    </EventNode>
+  )
+}
+```
+
+### Data Transformation Step
+
+```typescript
+// transformStep.step.tsx
+import React, { useState } from 'react'
+import { EventNode } from 'motia/workbench'
+import { FileText, ArrowRight } from 'lucide-react'
+
+export default function TransformStep({ data }) {
+  const [showDetails, setShowDetails] = useState(false)
+  
+  // Example transformation data
+  const inputSchema = { type: 'object', properties: { name: { type: 'string' } } }
+  const outputSchema = { type: 'object', properties: { fullName: { type: 'string' } } }
+  
+  return (
+    <EventNode
+      data={data}
+      variant="white"
+      className="border-purple-500"
+    >
+      <div className="flex items-center gap-2">
+        <FileText className="w-5 h-5 text-purple-500" />
+        <span className="font-medium">Data Transformation</span>
+      </div>
+      <button 
+        onClick={() => setShowDetails(!showDetails)}
+        className="mt-2 text-xs text-purple-500 hover:underline"
+      >
+        {showDetails ? 'Hide Details' : 'Show Details'}
+      </button>
+      
+      {showDetails && (
+        <div className="mt-2 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="p-2 border border-gray-300 rounded bg-gray-50">
+              <pre className="text-xs">{JSON.stringify(inputSchema, null, 2)}</pre>
+            </div>
+            <ArrowRight className="w-4 h-4" />
+            <div className="p-2 border border-gray-300 rounded bg-gray-50">
+              <pre className="text-xs">{JSON.stringify(outputSchema, null, 2)}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+    </EventNode>
+  )
+}
+```
+
+### External API Step
+
+```typescript
+// externalApiStep.step.ts
+export const config = {
+  type: 'noop',
+  name: 'External API',
+  description: 'Call to third-party service',
+  virtualSubscribes: ['api.request'],
+  virtualEmits: ['api.response', 'api.error'],
+  flows: ['integration-flow']
+}
+```
+
+```typescript
+// externalApiStep.step.tsx
+import React from 'react'
+import { BaseHandle, Position } from 'motia/workbench'
+import { Globe, ArrowDown, ArrowUp } from 'lucide-react'
+
+export default function ExternalApiStep() {
+  return (
+    <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
+      <div className="flex items-center gap-2">
+        <Globe className="w-5 h-5 text-gray-700" />
+        <span className="font-medium text-gray-800">External API</span>
+      </div>
+      <div className="mt-1 text-xs text-gray-600">Third-party service integration</div>
+      
+      <div className="mt-3 flex items-center justify-center gap-4">
+        <div className="flex flex-col items-center">
+          <ArrowDown className="w-4 h-4 text-blue-500" />
+          <span className="text-xs">Request</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <ArrowUp className="w-4 h-4 text-green-500" />
+          <span className="text-xs">Response</span>
+        </div>
+      </div>
+      
+      <BaseHandle type="target" position={Position.Top} />
+      <BaseHandle type="source" position={Position.Bottom} />
+    </div>
+  )
+}
+```
+
+## Next Steps
+
+Now that you understand how to create custom UI components for your steps, you might want to explore:
+
+- [Flow Visualization](./visualization): Learn more about visualizing your workflows
+- [Debugging Techniques](./debugging): Discover tools and strategies for debugging workflows
+- [Performance Monitoring](./performance): Monitor and optimize your workflow performance
