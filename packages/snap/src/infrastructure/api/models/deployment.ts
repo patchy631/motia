@@ -15,4 +15,4 @@ export type DeploymentStatus = 'pending' | 'in_progress' | 'completed' | 'failed
 export interface DeploymentConfig {
   config: Record<string, unknown>
   version: string
-} 
+}

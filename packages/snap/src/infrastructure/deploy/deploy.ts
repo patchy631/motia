@@ -8,11 +8,7 @@ import { DeploymentService } from './services/deployment-service'
 import { getSelectedStage } from '../config-utils'
 
 export class DeploymentManager {
-  async deploy(
-    apiKey: string,
-    projectDir: string = process.cwd(),
-    version: string = 'latest',
-  ): Promise<void> {
+  async deploy(apiKey: string, projectDir: string = process.cwd(), version: string = 'latest'): Promise<void> {
     const deploymentService = new DeploymentService(apiKey)
 
     const stage = getSelectedStage()
@@ -38,10 +34,7 @@ export class DeploymentManager {
 
     const deploymentId = await deploymentService.uploadConfiguration(stepsConfig, stage.id, version)
 
-    const uploadResult = await deploymentService.uploadZipFile(
-      deploymentId,
-      distDir,
-    )
+    const uploadResult = await deploymentService.uploadZipFile(deploymentId, distDir)
 
     if (!uploadResult.success) {
       throw new GenericDeploymentError(
@@ -52,14 +45,14 @@ export class DeploymentManager {
     }
 
     await deploymentService.startDeployment(deploymentId)
-    
+
     const deploymentStatus = await this.pollDeploymentStatus(deploymentService, deploymentId)
-    
+
     if (!deploymentStatus.success) {
       throw new GenericDeploymentError(
         new Error(`Deployment failed: ${deploymentStatus.message}`),
         'DEPLOYMENT_FAILED',
-        `Deployment failed: ${deploymentStatus.message}`
+        `Deployment failed: ${deploymentStatus.message}`,
       )
     }
 
@@ -83,45 +76,45 @@ export class DeploymentManager {
 
   private async pollDeploymentStatus(
     deploymentService: DeploymentService,
-    deploymentId: string
+    deploymentId: string,
   ): Promise<{ success: boolean; message: string }> {
     logger.info('Starting deployment status polling...')
-    
+
     const MAX_ATTEMPTS = 30
     const POLLING_INTERVAL_MS = 10000
     const startTime = Date.now()
 
-    
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
       const elapsedTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
-      
+
       logger.info(`Checking deployment status... (Elapsed time: ${elapsedTime})`)
       const status = await deploymentService.getDeploymentStatus(deploymentId)
-      
-      
+
       if (status.status === 'completed') {
         const totalTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
         logger.success(`Deployment completed successfully in ${totalTime}`)
         return { success: true, message: 'Deployment completed successfully' }
       }
-      
+
       if (status.status === 'failed') {
         const totalTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
         logger.error(`Deployment failed after ${totalTime}: ${status.errorMessage || 'Unknown error'}`)
         return { success: false, message: status.errorMessage || 'Unknown error' }
       }
-      
+
       if (attempt < MAX_ATTEMPTS) {
-        logger.info(`Deployment in progress (${status.status})... (Elapsed time: ${elapsedTime}) - Checking again in 10 seconds`)
-        await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS))
+        logger.info(
+          `Deployment in progress (${status.status})... (Elapsed time: ${elapsedTime}) - Checking again in 10 seconds`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS))
       } else {
         const totalTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
         logger.warning(`Deployment status check timed out after ${totalTime}`)
         return { success: false, message: 'Deployment status check timed out' }
       }
     }
-    
+
     return { success: false, message: 'Maximum polling attempts reached' }
   }
 }

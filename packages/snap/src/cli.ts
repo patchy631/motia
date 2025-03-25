@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-require-imports */
-import { program, Option } from 'commander'
+import { program } from 'commander'
 import path from 'path'
 import fs from 'fs'
-import { build } from '@/builder/build'
-import { DeploymentManager } from '@/infrastructure/deploy/deploy'
 
 const defaultPort = 3000
 
@@ -171,10 +169,13 @@ infrastructure
       await initInfrastructure({
         name: arg.name,
         description: arg.description,
-        apiKey: arg.apiKey
+        apiKey: arg.apiKey,
       })
     } catch (error) {
-      console.error('❌ Infrastructure initialization failed:', error instanceof Error ? error.message : 'Unknown error')
+      console.error(
+        '❌ Infrastructure initialization failed:',
+        error instanceof Error ? error.message : 'Unknown error',
+      )
       process.exit(1)
     }
   })
@@ -197,19 +198,21 @@ infrastructure
       process.exit(1)
     }
   })
-const project = infrastructure.command('project').description('Manage deployment projects')
 
-project
-  .command('list')
+infrastructure
+  .command('list-projects')
   .description('List all projects')
   .option('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
-  .option('-u, --api-base-url <url>', 'Base URL for the API (defaults to MOTIA_API_URL env var or https://api.motia.io)')
+  .option(
+    '-u, --api-base-url <url>',
+    'Base URL for the API (defaults to MOTIA_API_URL env var or https://api.motia.io)',
+  )
   .action(async (arg) => {
     try {
       const { listProjects } = require('./infrastructure/project')
       await listProjects({
         apiKey: arg.apiKey,
-        apiBaseUrl: arg.apiBaseUrl
+        apiBaseUrl: arg.apiBaseUrl,
       })
     } catch (error) {
       console.error('❌ Failed to list projects:', error instanceof Error ? error.message : 'Unknown error')
@@ -217,31 +220,8 @@ project
     }
   })
 
-project
-  .command('id')
-  .description('Get the project ID from the current config')
-  .action(async () => {
-    try {
-      const { getProjectId } = require('./infrastructure/project')
-      const projectId = getProjectId()
-      
-      if (projectId) {
-        console.log(`Project ID: ${projectId}`)
-      } else {
-        console.error('❌ No project ID found in motia.config.json')
-        console.error('Initialize the project first with motia infrastructure init or check your config file')
-        process.exit(1)
-      }
-    } catch (error) {
-      console.error('❌ Failed to get project ID:', error instanceof Error ? error.message : 'Unknown error')
-      process.exit(1)
-    }
-  })
-
-const stage = infrastructure.command('stage').description('Manage deployment stages')
-
-stage
-  .command('create')
+infrastructure
+  .command('create-stage')
   .description('Create a new deployment stage')
   .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
   .option('-n, --name <stage name>', 'The name for your deployment stage')
@@ -260,15 +240,15 @@ stage
     }
   })
 
-stage
-  .command('select')
+infrastructure
+  .command('select-stage')
   .description('Select a deployment stage')
   .option('-n, --name <stage name>', 'The name of the stage to select')
   .action(async (arg) => {
     try {
       const { selectStage } = require('./infrastructure/stage')
       await selectStage({
-        name: arg.name
+        name: arg.name,
       })
     } catch (error) {
       console.error('❌ Stage selection failed:', error instanceof Error ? error.message : 'Unknown error')
@@ -276,8 +256,8 @@ stage
     }
   })
 
-stage
-  .command('list')
+infrastructure
+  .command('list-stages')
   .description('List all deployment stages')
   .requiredOption('-k, --api-key <api key>', 'API key for authentication (when using API)')
   .option('-a, --api', 'Fetch stages from API instead of local config')

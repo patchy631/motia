@@ -21,7 +21,7 @@ export class AxiosClient extends ApiBase {
     try {
       const url = this.getUrl(endpoint)
       const headers = this.getHeaders(additionalHeaders)
-      
+
       const response = await axios({
         method,
         url,
@@ -37,10 +37,10 @@ export class AxiosClient extends ApiBase {
         throw this.buildApiError(
           error.response?.status || 0,
           error.message,
-          error.response?.data?.error || error.response?.data?.message || error.response?.statusText
+          error.response?.data?.error || error.response?.data?.message || error.response?.statusText,
         )
       }
       return this.handleApiError(error)
     }
   }
-} 
+}

@@ -21,10 +21,10 @@ export async function createFolderZip(
 
     const zipFileName = `${deploymentId}.zip`
     const zipFilePath = path.join(outputPath, zipFileName)
-    
+
     const output = fs.createWriteStream(zipFilePath)
     const archive = archiver('zip', {
-      zlib: { level: 9 }
+      zlib: { level: 9 },
     })
 
     output.on('close', () => {
@@ -49,6 +49,8 @@ export function removeZipFile(zipFilePath: string): void {
       logger.info(`Removed temporary zip file: ${zipFilePath}`)
     }
   } catch (error) {
-    logger.warning(`Failed to remove temporary zip file ${zipFilePath}: ${error instanceof Error ? error.message : String(error)}`)
+    logger.warning(
+      `Failed to remove temporary zip file ${zipFilePath}: ${error instanceof Error ? error.message : String(error)}`,
+    )
   }
-} 
+}

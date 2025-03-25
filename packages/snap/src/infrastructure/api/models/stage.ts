@@ -4,4 +4,4 @@ export interface Stage {
   description?: string
   projectId: string
   apiUrl?: string
-} 
+}

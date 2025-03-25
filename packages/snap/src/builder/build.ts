@@ -144,6 +144,18 @@ const buildNode = async (step: Step, builder: Builder) => {
       sourcemap: true,
       outfile: outputJsFile,
       platform: 'node',
+      external: [
+        'tedious',
+        'mssql',
+        'mysql',
+        'mysql2',
+        'pg',
+        'pg-native',
+        'pg-query-stream',
+        'oracledb',
+        'better-sqlite3',
+        'sqlite3',
+      ],
     })
 
     await new Promise<void>((resolve, reject) => {

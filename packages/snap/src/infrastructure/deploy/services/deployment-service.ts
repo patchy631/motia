@@ -20,7 +20,7 @@ export class DeploymentService {
   ): Promise<string> {
     try {
       logger.info('Uploading configuration...')
-      const deploymentId = await this.deploymentClient.uploadStepsConfig(stepsConfig,  stageId, version)
+      const deploymentId = await this.deploymentClient.uploadStepsConfig(stepsConfig, stageId, version)
       logger.success('Configuration uploaded successfully')
       logger.success(`Deployment started with ID: ${deploymentId}`)
       return deploymentId
@@ -31,16 +31,10 @@ export class DeploymentService {
     }
   }
 
-  async uploadZipFile(
-    deploymentId: string,
-    distDir: string,
-  ): Promise<UploadResult> {
+  async uploadZipFile(deploymentId: string, distDir: string): Promise<UploadResult> {
     logger.info('Uploading zip file...')
 
-    const { filePath, cleanup } = await fileManager.createDeployableZip(
-      deploymentId,
-      distDir,
-    )
+    const { filePath, cleanup } = await fileManager.createDeployableZip(deploymentId, distDir)
 
     const uploadResult: UploadResult = {
       bundlePath: filePath,
@@ -51,10 +45,7 @@ export class DeploymentService {
     }
 
     try {
-      const uploadId = await this.deploymentClient.uploadZipFile(
-        filePath,
-        deploymentId,
-      )
+      const uploadId = await this.deploymentClient.uploadZipFile(filePath, deploymentId)
 
       uploadResult.uploadId = uploadId
 
@@ -71,8 +62,7 @@ export class DeploymentService {
     }
 
     return uploadResult
-  } 
-
+  }
 
   async startDeployment(deploymentId: string): Promise<void> {
     try {
@@ -95,4 +85,3 @@ export class DeploymentService {
     }
   }
 }
-

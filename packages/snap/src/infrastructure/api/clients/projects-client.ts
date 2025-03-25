@@ -6,7 +6,7 @@ export class ProjectsClient extends HttpClient {
   async createProject(name: string, description?: string): Promise<Project> {
     return this.request<Project>(ENDPOINTS.PROJECTS, 'POST', {
       name,
-      description
+      description,
     })
   }
 
@@ -18,14 +18,11 @@ export class ProjectsClient extends HttpClient {
     return this.request<Project>(`${ENDPOINTS.PROJECTS}/${projectId}`)
   }
 
-  async updateProject(
-    projectId: string, 
-    data: { name?: string; description?: string }
-  ): Promise<Project> {
+  async updateProject(projectId: string, data: { name?: string; description?: string }): Promise<Project> {
     return this.request<Project>(`${ENDPOINTS.PROJECTS}/${projectId}`, 'PATCH', data)
   }
 
   async deleteProject(projectId: string): Promise<void> {
     return this.request<void>(`${ENDPOINTS.PROJECTS}/${projectId}`, 'DELETE')
   }
-} 
+}

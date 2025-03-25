@@ -23,7 +23,7 @@ export class ApiBase {
     return {
       'Content-Type': 'application/json',
       'X-API-Key': this.apiKey,
-      ...additionalHeaders
+      ...additionalHeaders,
     }
   }
 
@@ -38,7 +38,7 @@ export class ApiBase {
     throw {
       status: 0,
       message: 'Network Error',
-      details: (error as Error).message
+      details: (error as Error).message,
     } as ApiError
   }
 
@@ -46,17 +46,16 @@ export class ApiBase {
     return {
       status,
       message,
-      details
+      details,
     }
   }
-
-  protected parseResponseData(text: string): any {
+  protected parseResponseData(text: string): unknown {
     if (!text) return {}
-    
+
     try {
       return JSON.parse(text)
     } catch (e) {
       return { message: text }
     }
   }
-} 
+}
