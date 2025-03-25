@@ -1,4 +1,6 @@
-import { ApiService, API_BASE_URL, ApiError } from './api-service'
+import { API_BASE_URL } from './api/core/api-constants'
+import { ApiFactory } from './api/api-factory'
+import { ApiError } from './api/core/api-base'
 import { 
   ProjectConfig,
   readConfig,
@@ -35,9 +37,10 @@ export async function createProject(options: {
         }
       }
 
-      const apiService = new ApiService(apiKey)
+      const apiFactory = new ApiFactory(apiKey)
+      const projectsClient = apiFactory.getProjectsClient()
       
-      const projectData = await apiService.createProject(projectName, projectDescription)
+      const projectData = await projectsClient.createProject(projectName, projectDescription)
 
       // Initialize the config
       const config: ProjectConfig = {
@@ -87,8 +90,9 @@ export async function listProjects(options: {
     console.log('Fetching projects...')
     
     try {
-      const apiService = new ApiService(apiKey, apiBaseUrl)
-      const projects = await apiService.getProjects()
+      const apiFactory = new ApiFactory(apiKey, apiBaseUrl)
+      const projectsClient = apiFactory.getProjectsClient()
+      const projects = await projectsClient.getProjects()
       
       if (projects.length === 0) {
         console.log('No projects found.')

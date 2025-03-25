@@ -17,8 +17,6 @@ require('ts-node').register({
 const packageJsonPath = path.resolve(__dirname, '..', '..', 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 
-program.version(packageJson.version, '-v, --version', 'Output the current version')
-
 program
   .command('version')
   .description('Display detailed version information')
@@ -185,7 +183,7 @@ infrastructure
   .command('deploy')
   .description('Deploy the project to the Motia deployment service')
   .requiredOption('-k, --api-key <key>', 'The API key for authentication')
-  .option('-v, --version <version>', 'The version to deploy', 'latest')
+  .option('-r, --release <version>', 'The version to deploy', 'latest')
   .action(async (arg) => {
     try {
       const { build } = require('./builder/build')
@@ -193,7 +191,7 @@ infrastructure
 
       const { DeploymentManager } = require('./infrastructure/deploy/deploy')
       const deploymentManager = new DeploymentManager()
-      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.version)
+      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.release)
     } catch (error) {
       console.error('❌ Deployment failed:', error)
       process.exit(1)
@@ -295,5 +293,7 @@ stage
       process.exit(1)
     }
   })
+
+program.version(packageJson.version, '-v, --version', 'Output the current version')
 
 program.parse(process.argv)

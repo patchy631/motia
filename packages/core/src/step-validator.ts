@@ -67,7 +67,7 @@ const eventSchema = z
     subscribes: z.array(z.string()),
     emits: emits,
     virtualEmits: emits.optional(),
-    input: z.union([jsonSchema, z.null()]).optional(),
+    input: z.union([jsonSchema, z.object({}), z.null()]).optional(),
     flows: z.array(z.string()).optional(),
     includeFiles: z.array(z.string()).optional(),
   })
@@ -84,7 +84,7 @@ const apiSchema = z
     virtualEmits: emits.optional(),
     virtualSubscribes: z.array(z.string()).optional(),
     flows: z.array(z.string()).optional(),
-    bodySchema: z.union([jsonSchema, z.null()]).optional(),
+    bodySchema: z.union([jsonSchema, z.object({}), z.null()]).optional(),
     includeFiles: z.array(z.string()).optional(),
     middleware: z.array(z.any()).optional(),
   })
@@ -137,7 +137,7 @@ export const validateStep = (step: Step): ValidationResult => {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: 'Invalid step configuration',
+        error: error.errors.map((err) => err.message).join(', '),
         errors: error.errors.map((err) => ({ path: err.path.join('.'), message: err.message })),
       }
     }

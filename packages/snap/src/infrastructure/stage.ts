@@ -1,4 +1,5 @@
-import { ApiError, ApiService } from './api-service'
+import { ApiError } from './api/core/api-base'
+import { ApiFactory } from './api/api-factory'
 import { exitWithError, getProjectId, question, readConfig, readline, writeConfig } from './config-utils'
 
 export async function createStage(options: { name?: string; description?: string; apiKey: string }): Promise<void> {
@@ -40,9 +41,10 @@ export async function createStage(options: { name?: string; description?: string
     console.log(`Creating stage "${stageName}" via API...`)
 
     try {
-      const apiService = new ApiService(apiKey)
+      const apiFactory = new ApiFactory(apiKey)
+      const stagesClient = apiFactory.getStagesClient()
 
-      const stageData = await apiService.createStage(stageName, projectId, stageDescription)
+      const stageData = await stagesClient.createStage(stageName, projectId, stageDescription)
 
       // Store the stage data in the config
       config.stages[stageName] = {
@@ -159,8 +161,9 @@ export async function listStages(options: { apiKey?: string; useApi?: boolean })
 
       try {
         console.log('Fetching stages from API...')
-        const apiService = new ApiService(apiKey)
-        const stages = await apiService.getStages(projectId)
+        const apiFactory = new ApiFactory(apiKey)
+        const stagesClient = apiFactory.getStagesClient()
+        const stages = await stagesClient.getStages(projectId)
 
         if (stages.length === 0) {
           console.log('No stages found.')
@@ -268,8 +271,9 @@ export async function deleteStage(options: { name?: string; apiKey: string; skip
     if (!options.skipApiDelete && stageId && projectId) {
       try {
         console.log(`Deleting stage "${stageName}" from API...`)
-        const apiService = new ApiService(options.apiKey)
-        await apiService.deleteStage(projectId, stageId)
+        const apiFactory = new ApiFactory(options.apiKey)
+        const stagesClient = apiFactory.getStagesClient()
+        await stagesClient.deleteStage(projectId, stageId)
         console.log(`✅ Stage "${stageName}" deleted from API successfully.`)
       } catch (error) {
         console.error(

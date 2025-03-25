@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { DeploymentResult } from './types'
-import { FileManager } from './file-manager'
+import { fileManager } from './file-manager'
 import { logger } from './logger'
 import { GenericDeploymentError, MissingApiKeyError, MissingStepsConfigError } from './error'
 import { DeploymentService } from './services/deployment-service'
@@ -33,38 +33,37 @@ export class DeploymentManager {
     }
 
     const stepsConfig = JSON.parse(fs.readFileSync(stepsConfigPath, 'utf-8'))
-    const zipFiles = FileManager.retrieveZipFiles(projectDir, stepsConfig)
-
-    if (zipFiles.length === 0) {
-      logger.warning('No zip files found to deploy')
-      return
-    }
-
-    logger.info(`Found ${zipFiles.length} zip files to deploy`)
 
     logger.info(`Deploying to environment: ${stage?.name}, version: ${version}`)
 
-    const flowGroups = FileManager.groupStepsByFlow(zipFiles)
-    logger.info(`Deploying steps for ${Object.keys(flowGroups).length} flows`)
-
     const deploymentId = await deploymentService.uploadConfiguration(stepsConfig, stage.id, version)
 
-    const { uploadResults, failedUploads, allSuccessful } = await deploymentService.uploadZipFiles(
-      zipFiles,
+    const uploadResult = await deploymentService.uploadZipFile(
       deploymentId,
+      distDir,
     )
 
-    if (!allSuccessful) {
+    if (!uploadResult.success) {
       throw new GenericDeploymentError(
-        new Error(`Deployment aborted due to ${failedUploads.length} upload failures out of ${zipFiles.length} files.`),
+        new Error(`Deployment aborted due to ${uploadResult.error}`),
         'UPLOAD_FAILURES',
-        `Deployment aborted due to ${failedUploads.length} upload failures out of ${zipFiles.length} files.`,
+        `Deployment aborted due to ${uploadResult.error}`,
       )
     }
 
     await deploymentService.startDeployment(deploymentId)
+    
+    const deploymentStatus = await this.pollDeploymentStatus(deploymentService, deploymentId)
+    
+    if (!deploymentStatus.success) {
+      throw new GenericDeploymentError(
+        new Error(`Deployment failed: ${deploymentStatus.message}`),
+        'DEPLOYMENT_FAILED',
+        `Deployment failed: ${deploymentStatus.message}`
+      )
+    }
 
-    const deploymentResults: DeploymentResult[] = uploadResults.map((result) => ({
+    const deploymentResults: DeploymentResult[] = [uploadResult].map((result) => ({
       bundlePath: result.bundlePath,
       deploymentId: result.success ? deploymentId : undefined,
       stepType: result.stepType,
@@ -77,8 +76,52 @@ export class DeploymentManager {
       success: result.success,
     }))
 
-    FileManager.writeDeploymentResults(projectDir, deploymentResults, zipFiles, flowGroups, stage.name, version)
+    fileManager.writeDeploymentResults(projectDir, deploymentResults, stage.name, version)
 
     logger.success('Deployment process completed successfully')
+  }
+
+  private async pollDeploymentStatus(
+    deploymentService: DeploymentService,
+    deploymentId: string
+  ): Promise<{ success: boolean; message: string }> {
+    logger.info('Starting deployment status polling...')
+    
+    const MAX_ATTEMPTS = 30
+    const POLLING_INTERVAL_MS = 10000
+    const startTime = Date.now()
+
+    
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+      const elapsedTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
+      
+      logger.info(`Checking deployment status... (Elapsed time: ${elapsedTime})`)
+      const status = await deploymentService.getDeploymentStatus(deploymentId)
+      
+      
+      if (status.status === 'completed') {
+        const totalTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
+        logger.success(`Deployment completed successfully in ${totalTime}`)
+        return { success: true, message: 'Deployment completed successfully' }
+      }
+      
+      if (status.status === 'failed') {
+        const totalTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
+        logger.error(`Deployment failed after ${totalTime}: ${status.errorMessage || 'Unknown error'}`)
+        return { success: false, message: status.errorMessage || 'Unknown error' }
+      }
+      
+      if (attempt < MAX_ATTEMPTS) {
+        logger.info(`Deployment in progress (${status.status})... (Elapsed time: ${elapsedTime}) - Checking again in 10 seconds`)
+        await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS))
+      } else {
+        const totalTime = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
+        logger.warning(`Deployment status check timed out after ${totalTime}`)
+        return { success: false, message: 'Deployment status check timed out' }
+      }
+    }
+    
+    return { success: false, message: 'Maximum polling attempts reached' }
   }
 }

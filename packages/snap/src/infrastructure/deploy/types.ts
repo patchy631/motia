@@ -57,23 +57,9 @@ export interface ZipFileInfo {
  * Summary of a deployment operation
  */
 export interface DeploymentSummary {
-  totalSteps: number
-  successfulDeployments: number
-  failedDeployments: number
   deploymentTime: string
   environment: string
   version: string
-  flows: {
-    name: string
-    steps: {
-      name?: string
-      type: 'node' | 'python'
-      path?: string
-      success: boolean
-      deploymentId?: string
-      error?: string
-    }[]
-  }[]
 }
 
 export interface UploadResult {

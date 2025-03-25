@@ -1,14 +1,16 @@
-import { UploadResult, ZipFileInfo } from '../types'
-import { ApiClient } from './api-client'
+import path from 'path'
+import { ApiFactory, DeploymentsClient } from '../../api'
+import { ConfigUploadFailureError, DeploymentFailureError } from '../error'
 import { logger } from '../logger'
-import { ConfigUploadFailureError, DeploymentFailureError, FailedUpload } from '../error'
-import { formatError, logFailures } from '../utils/error-handler'
-
+import { UploadResult } from '../types'
+import { formatError } from '../utils/error-handler'
+import { fileManager } from '../file-manager'
 export class DeploymentService {
-  private readonly apiClient: ApiClient
+  private readonly deploymentClient: DeploymentsClient
 
-  constructor(private readonly apiKey: string) {
-    this.apiClient = new ApiClient(this.apiKey)
+  constructor(apiKey: string, apiUrl?: string) {
+    const apiFactory = new ApiFactory(apiKey, apiUrl)
+    this.deploymentClient = apiFactory.getDeploymentsClient()
   }
 
   async uploadConfiguration(
@@ -18,7 +20,7 @@ export class DeploymentService {
   ): Promise<string> {
     try {
       logger.info('Uploading configuration...')
-      const deploymentId = await this.apiClient.uploadStepsConfig(stepsConfig,  stageId, version)
+      const deploymentId = await this.deploymentClient.uploadStepsConfig(stepsConfig,  stageId, version)
       logger.success('Configuration uploaded successfully')
       logger.success(`Deployment started with ID: ${deploymentId}`)
       return deploymentId
@@ -29,80 +31,67 @@ export class DeploymentService {
     }
   }
 
-  async uploadZipFiles(
-    zipFiles: ZipFileInfo[],
+  async uploadZipFile(
     deploymentId: string,
-  ): Promise<{
-    uploadResults: UploadResult[]
-    failedUploads: FailedUpload[]
-    allSuccessful: boolean
-  }> {
-    logger.info('Uploading zip files...')
+    distDir: string,
+  ): Promise<UploadResult> {
+    logger.info('Uploading zip file...')
 
-    let allSuccessful = true
-    const uploadResults: UploadResult[] = []
-    const failedUploads: FailedUpload[] = []
+    const { filePath, cleanup } = await fileManager.createDeployableZip(
+      deploymentId,
+      distDir,
+    )
 
-    for (const zipFile of zipFiles) {
-      try {
-        const uploadId = await this.apiClient.uploadZipFile(
-          zipFile.zipPath,
-          deploymentId,
-        )
-
-        uploadResults.push({
-          bundlePath: zipFile.bundlePath,
-          uploadId,
-          stepType: zipFile.config.type,
-          stepName: zipFile.stepName,
-          success: true,
-        })
-
-        logger.success(`Uploaded ${zipFile.bundlePath}`)
-      } catch (error) {
-        allSuccessful = false
-        const errorMessage = formatError(error)
-
-        logger.error(`Failed to upload ${zipFile.bundlePath}: ${errorMessage}`)
-
-        failedUploads.push({
-          path: zipFile.bundlePath,
-          name: zipFile.stepName,
-          type: zipFile.config.type,
-          error: errorMessage,
-        })
-
-        uploadResults.push({
-          bundlePath: zipFile.bundlePath,
-          stepType: zipFile.config.type,
-          stepName: zipFile.stepName,
-          error: errorMessage,
-          success: false,
-        })
-      }
+    const uploadResult: UploadResult = {
+      bundlePath: filePath,
+      uploadId: '',
+      stepType: 'zip',
+      stepName: path.basename(filePath),
+      success: true,
     }
 
-    if (allSuccessful) {
-      logger.success(`All ${zipFiles.length} zip files uploaded successfully`)
-    } else {
-      logFailures(failedUploads, zipFiles.length)
+    try {
+      const uploadId = await this.deploymentClient.uploadZipFile(
+        filePath,
+        deploymentId,
+      )
+
+      uploadResult.uploadId = uploadId
+
+      logger.success(`Uploaded bundle successfully`)
+    } catch (error) {
+      const errorMessage = formatError(error)
+
+      logger.error(`Failed to upload bundle: ${errorMessage}`)
+
+      uploadResult.error = errorMessage
+      uploadResult.success = false
+    } finally {
+      cleanup()
     }
 
-    return {
-      uploadResults,
-      failedUploads,
-      allSuccessful,
-    }
-  }
+    return uploadResult
+  } 
+
 
   async startDeployment(deploymentId: string): Promise<void> {
     try {
       logger.info('Finalizing deployment...')
-      await this.apiClient.startDeployment(deploymentId)
+      await this.deploymentClient.startDeployment(deploymentId)
     } catch (error) {
       const errorMessage = formatError(error)
       logger.error(`Failed to finalize deployment: ${errorMessage}`)
       throw new DeploymentFailureError(errorMessage)
+    }
+  }
+
+  async getDeploymentStatus(deploymentId: string): Promise<{ status: string; errorMessage?: string; output?: string }> {
+    try {
+      return await this.deploymentClient.getDeploymentStatus(deploymentId)
+    } catch (error) {
+      const errorMessage = formatError(error)
+      logger.error(`Failed to check deployment status: ${errorMessage}`)
+      throw new DeploymentFailureError(`Failed to check deployment status: ${errorMessage}`)
     }
   }
 }
