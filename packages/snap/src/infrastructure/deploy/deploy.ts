@@ -5,16 +5,22 @@ import { fileManager } from './file-manager'
 import { logger } from './logger'
 import { GenericDeploymentError, MissingApiKeyError, MissingStepsConfigError } from './error'
 import { DeploymentService } from './services/deployment-service'
-import { getSelectedStage } from '../config-utils'
+import { getSelectedStage, getStage } from '../config-utils'
+import { parseEnvFile } from './utils/env-parser'
 
 export class DeploymentManager {
-  async deploy(apiKey: string, projectDir: string = process.cwd(), version: string = 'latest'): Promise<void> {
+  async deploy(
+    apiKey: string,
+    projectDir: string = process.cwd(),
+    version: string = 'latest',
+    options: { stage?: string; envFile?: string } = {},
+  ): Promise<void> {
     const deploymentService = new DeploymentService(apiKey)
 
-    const stage = getSelectedStage()
+    const stage = options.stage ? getStage(options.stage) : getSelectedStage()
 
     if (!stage) {
-      throw new Error('No stage selected')
+      throw new Error(options.stage ? `Stage "${options.stage}" not found` : 'No stage selected')
     }
 
     if (!apiKey) {
@@ -44,7 +50,9 @@ export class DeploymentManager {
       )
     }
 
-    await deploymentService.startDeployment(deploymentId)
+    const envData = loadEnvData(options.envFile)
+
+    await deploymentService.startDeployment(deploymentId, envData)
 
     const deploymentStatus = await this.pollDeploymentStatus(deploymentService, deploymentId)
 
@@ -117,4 +125,16 @@ export class DeploymentManager {
 
     return { success: false, message: 'Maximum polling attempts reached' }
   }
+}
+
+const loadEnvData = (envFile: string | undefined): Record<string, string> => {
+  if (!envFile) {
+    return {}
+  }
+  if (!fs.existsSync(envFile)) {
+    throw new Error(`Environment file not found: ${envFile}`)
+  }
+  const data = parseEnvFile(envFile)
+  logger.info('Environment variables loaded from file')
+  return data
 }

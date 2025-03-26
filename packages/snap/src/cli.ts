@@ -185,6 +185,8 @@ infrastructure
   .description('Deploy the project to the Motia deployment service')
   .requiredOption('-k, --api-key <key>', 'The API key for authentication')
   .option('-r, --release <version>', 'The version to deploy', 'latest')
+  .option('-s, --stage <stage>', 'Override the selected stage')
+  .option('-e, --env-file <path>', 'Path to environment file')
   .action(async (arg) => {
     try {
       const { build } = require('./builder/build')
@@ -192,7 +194,10 @@ infrastructure
 
       const { DeploymentManager } = require('./infrastructure/deploy/deploy')
       const deploymentManager = new DeploymentManager()
-      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.release)
+      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.release, {
+        stage: arg.stage,
+        envFile: arg.envFile,
+      })
     } catch (error) {
       console.error('❌ Deployment failed:', error)
       process.exit(1)

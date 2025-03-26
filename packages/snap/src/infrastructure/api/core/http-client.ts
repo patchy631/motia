@@ -27,7 +27,7 @@ export class HttpClient extends ApiBase {
         throw this.buildApiError(
           response.status,
           response.statusText || 'Request failed',
-          responseData.error?.message || responseData.error?.details || text
+          responseData.error?.message || responseData.error?.details || text,
         )
       }
 

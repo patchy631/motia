@@ -72,10 +72,7 @@ const installModulegraph = async (builder: Builder): Promise<void> => {
 }
 
 const loadEsbuildConfig = async (projectDir: string): Promise<esbuild.BuildOptions | null> => {
-  const configFiles = [
-    'esbuild.config.json',
-    '.esbuildrc.json'
-  ]
+  const configFiles = ['esbuild.config.json', '.esbuildrc.json']
 
   for (const configFile of configFiles) {
     const configPath = path.join(projectDir, configFile)
@@ -165,7 +162,7 @@ const buildNode = async (step: Step, builder: Builder) => {
       bundle: true,
       sourcemap: true,
       outfile: outputJsFile,
-      platform: 'node'
+      platform: 'node',
     }
 
     await esbuild.build(userConfig ? { ...defaultConfig, ...userConfig } : defaultConfig)

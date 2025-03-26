@@ -73,8 +73,9 @@ export class DeploymentsClient extends AxiosClient {
     return uploadId
   }
 
-  async startDeployment(deploymentId: string): Promise<void> {
-    await this.makeRequest<void>(`${ENDPOINTS.DEPLOYMENTS}/${deploymentId}/start`, 'POST')
+  async startDeployment(deploymentId: string, envData?: Record<string, string>): Promise<void> {
+    const environmentVariables = envData || {}
+    await this.makeRequest<void>(`${ENDPOINTS.DEPLOYMENTS}/${deploymentId}/start`, 'POST', { environmentVariables })
   }
 
   async getDeployment(deploymentId: string): Promise<Deployment> {

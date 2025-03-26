@@ -5,6 +5,7 @@ import { logger } from '../logger'
 import { UploadResult } from '../types'
 import { formatError } from '../utils/error-handler'
 import { fileManager } from '../file-manager'
+
 export class DeploymentService {
   private readonly deploymentClient: DeploymentsClient
 
@@ -64,10 +65,10 @@ export class DeploymentService {
     return uploadResult
   }
 
-  async startDeployment(deploymentId: string): Promise<void> {
+  async startDeployment(deploymentId: string, envData?: Record<string, string>): Promise<void> {
     try {
       logger.info('Finalizing deployment...')
-      await this.deploymentClient.startDeployment(deploymentId)
+      await this.deploymentClient.startDeployment(deploymentId, envData)
     } catch (error) {
       const errorMessage = formatError(error)
       logger.error(`Failed to finalize deployment: ${errorMessage}`)
