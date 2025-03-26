@@ -1,4 +1,4 @@
-import { ApiBase } from './api-base'
+import { ApiBase, ApiResponse } from './api-base'
 import { API_BASE_URL } from './api-constants'
 
 export class HttpClient extends ApiBase {
@@ -21,17 +21,17 @@ export class HttpClient extends ApiBase {
 
       const response = await fetch(url, options)
       const text = await response.text()
-      const data = this.parseResponseData(text)
+      const responseData = this.parseResponseData(text) as ApiResponse<unknown>
 
       if (!response.ok) {
         throw this.buildApiError(
           response.status,
           response.statusText || 'Request failed',
-          data.error || data.message || text,
+          responseData.error?.message || responseData.error?.details || text
         )
       }
 
-      return data as T
+      return responseData.data as T
     } catch (error) {
       return this.handleApiError(error)
     }

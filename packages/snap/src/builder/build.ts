@@ -71,6 +71,27 @@ const installModulegraph = async (builder: Builder): Promise<void> => {
   })
 }
 
+const loadEsbuildConfig = async (projectDir: string): Promise<esbuild.BuildOptions | null> => {
+  const configFiles = [
+    'esbuild.config.json',
+    '.esbuildrc.json'
+  ]
+
+  for (const configFile of configFiles) {
+    const configPath = path.join(projectDir, configFile)
+    if (fs.existsSync(configPath)) {
+      try {
+        const configContent = fs.readFileSync(configPath, 'utf-8')
+        return JSON.parse(configContent)
+      } catch (err) {
+        console.warn(colors.yellow(`Warning: Failed to load esbuild config from ${configFile}`))
+      }
+    }
+  }
+
+  return null
+}
+
 const buildPython = async (step: Step, builder: Builder) => {
   const archive = archiver('zip', { zlib: { level: 9 } })
   const entrypointPath = step.filePath.replace(builder.projectDir, '')
@@ -138,25 +159,16 @@ const buildNode = async (step: Step, builder: Builder) => {
   builder.printer.printStepBuilding(step)
 
   try {
-    await esbuild.build({
+    const userConfig = await loadEsbuildConfig(builder.projectDir)
+    const defaultConfig: esbuild.BuildOptions = {
       entryPoints: [step.filePath],
       bundle: true,
       sourcemap: true,
       outfile: outputJsFile,
-      platform: 'node',
-      external: [
-        'tedious',
-        'mssql',
-        'mysql',
-        'mysql2',
-        'pg',
-        'pg-native',
-        'pg-query-stream',
-        'oracledb',
-        'better-sqlite3',
-        'sqlite3',
-      ],
-    })
+      platform: 'node'
+    }
+
+    await esbuild.build(userConfig ? { ...defaultConfig, ...userConfig } : defaultConfig)
 
     await new Promise<void>((resolve, reject) => {
       const archive = archiver('zip', { zlib: { level: 9 } })
