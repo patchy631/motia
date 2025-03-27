@@ -78,6 +78,10 @@ export class DeploymentsClient extends AxiosClient {
     await this.makeRequest<void>(`${ENDPOINTS.DEPLOYMENTS}/${deploymentId}/start`, 'POST', { environmentVariables })
   }
 
+  async promoteVersion(stageId: string, version: string): Promise<void> {
+    await this.makeRequest<void>(`${ENDPOINTS.STAGES}/${stageId}/${version}/promote`, 'POST')
+  }
+
   async getDeployment(deploymentId: string): Promise<Deployment> {
     return this.makeRequest<Deployment>(`${ENDPOINTS.DEPLOYMENTS}/${deploymentId}`, 'GET')
   }

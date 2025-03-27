@@ -20,18 +20,17 @@ export class HttpClient extends ApiBase {
       }
 
       const response = await fetch(url, options)
-      const text = await response.text()
-      const responseData = this.parseResponseData(text) as ApiResponse<unknown>
+      const data = await response.json()
 
       if (!response.ok) {
         throw this.buildApiError(
           response.status,
           response.statusText || 'Request failed',
-          responseData.error?.message || responseData.error?.details || text,
+          data.error?.message || data.error?.details || data.message,
         )
       }
 
-      return responseData.data as T
+      return data
     } catch (error) {
       return this.handleApiError(error)
     }

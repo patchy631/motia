@@ -3,6 +3,7 @@
 import { program } from 'commander'
 import path from 'path'
 import fs from 'fs'
+import { getStage } from './infrastructure/config-utils'
 
 const defaultPort = 3000
 
@@ -184,7 +185,7 @@ infrastructure
   .command('deploy')
   .description('Deploy the project to the Motia deployment service')
   .requiredOption('-k, --api-key <key>', 'The API key for authentication')
-  .option('-r, --release <version>', 'The version to deploy', 'latest')
+  .option('-v, --version <version>', 'The version to deploy', 'latest')
   .option('-s, --stage <stage>', 'Override the selected stage')
   .option('-e, --env-file <path>', 'Path to environment file')
   .action(async (arg) => {
@@ -198,6 +199,7 @@ infrastructure
         stage: arg.stage,
         envFile: arg.envFile,
       })
+      process.exit(0)
     } catch (error) {
       console.error('❌ Deployment failed:', error)
       process.exit(1)
@@ -279,6 +281,30 @@ infrastructure
     }
   })
 
-program.version(packageJson.version, '-v, --version', 'Output the current version')
+infrastructure
+  .command('update')
+  .description('Update a stage to a specific version')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication')
+  .requiredOption('-s, --stage <stage>', 'The stage to update')
+  .requiredOption('-v, --version <version>', 'The version to promote')
+  .action(async (arg) => {
+    try {
+      const stage = getStage(arg.stage)
+      if (!stage) {
+        throw new Error(`Stage "${arg.stage}" not found`)
+      }
+
+      const { DeploymentService } = require('./infrastructure/deploy/services/deployment-service')
+      const deploymentService = new DeploymentService(arg.apiKey)
+      await deploymentService.promoteVersion(stage.id, arg.version)
+      console.log(`✅ Version ${arg.version} promoted successfully to ${arg.stage}`)
+      process.exit(0)
+    } catch (error) {
+      console.error('❌ Version promotion failed:', error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
+program.version(packageJson.version, '-V, --vers', 'Output the current version')
 
 program.parse(process.argv)

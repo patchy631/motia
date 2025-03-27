@@ -2,6 +2,7 @@ import { API_BASE_URL } from './api/core/api-constants'
 import { ApiFactory } from './api/api-factory'
 import { ApiError } from './api/core/api-base'
 import { ProjectConfig, readConfig, writeConfig, question, readline, exitWithError } from './config-utils'
+import { logger } from './deploy/logger';
 
 export async function createProject(options: { name?: string; description?: string; apiKey: string }): Promise<void> {
   try {
@@ -31,6 +32,8 @@ export async function createProject(options: { name?: string; description?: stri
 
       const projectData = await projectsClient.createProject(projectName, projectDescription)
 
+      logger.info(`Project created: ${projectData?.id}`)
+
       // Initialize the config
       const config: ProjectConfig = {
         name: projectName,
@@ -52,7 +55,7 @@ export async function createProject(options: { name?: string; description?: stri
         // Next steps
         console.log('\nNext steps:')
         console.log('  1. Create a stage with: motia infrastructure stage create')
-        console.log(`     motia infrastructure stage create -n <stage-name> -k <api-key>`)
+        console.log(`     motia infrastructure create-stage -n <stage-name> -k <api-key>`)
       }
     } catch (error) {
       handleApiError(error, 'Project creation via API failed. Please check your API key.')

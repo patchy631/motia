@@ -85,4 +85,16 @@ export class DeploymentService {
       throw new DeploymentFailureError(`Failed to check deployment status: ${errorMessage}`)
     }
   }
+
+  async promoteVersion(stageId: string, version: string): Promise<void> {
+    try {
+      logger.info(`Promoting version ${version} to stage ${stageId}...`)
+      await this.deploymentClient.promoteVersion(stageId, version)
+      logger.success(`Successfully promoted version ${version} to stage ${stageId}`)
+    } catch (error) {
+      const errorMessage = formatError(error)
+      logger.error(`Failed to promote version: ${errorMessage}`)
+      throw new DeploymentFailureError(`Failed to promote version: ${errorMessage}`)
+    }
+  }
 }
