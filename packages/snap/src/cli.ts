@@ -195,7 +195,7 @@ infrastructure
 
       const { DeploymentManager } = require('./infrastructure/deploy/deploy')
       const deploymentManager = new DeploymentManager()
-      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.release, {
+      await deploymentManager.deploy(arg.apiKey, process.cwd(), arg.version, {
         stage: arg.stage,
         envFile: arg.envFile,
       })
