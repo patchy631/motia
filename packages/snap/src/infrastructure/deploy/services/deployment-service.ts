@@ -1,10 +1,11 @@
 import path from 'path'
-import { ApiFactory, DeploymentsClient } from '../../api'
+import { ApiError, ApiFactory, DeploymentsClient } from '../../api'
 import { ConfigUploadFailureError, DeploymentFailureError } from '../error'
 import { logger } from '../logger'
 import { UploadResult } from '../types'
 import { formatError } from '../utils/error-handler'
 import { fileManager } from '../file-manager'
+import { DeploymentStartResponse } from '../../api/models/responses/deployment-responses'
 
 export class DeploymentService {
   private readonly deploymentClient: DeploymentsClient
@@ -26,8 +27,9 @@ export class DeploymentService {
       logger.success(`Deployment started with ID: ${deploymentId}`)
       return deploymentId
     } catch (error) {
-      const errorMessage = formatError(error)
-      logger.error(`Failed to upload steps configuration: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const details = error instanceof ApiError ? error.details : undefined
+      logger.error(`Failed to upload steps configuration: ${errorMessage}${details ? `\nDetails: ${details}` : ''}`)
       throw new ConfigUploadFailureError(errorMessage)
     }
   }
@@ -65,13 +67,14 @@ export class DeploymentService {
     return uploadResult
   }
 
-  async startDeployment(deploymentId: string, envData?: Record<string, string>): Promise<void> {
+  async startDeployment(deploymentId: string, envData?: Record<string, string>): Promise<DeploymentStartResponse> {
     try {
       logger.info('Finalizing deployment...')
-      await this.deploymentClient.startDeployment(deploymentId, envData)
+      return this.deploymentClient.startDeployment(deploymentId, envData)
     } catch (error) {
-      const errorMessage = formatError(error)
-      logger.error(`Failed to finalize deployment: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const details = error instanceof ApiError ? error.details : undefined
+      logger.error(`Failed to finalize deployment: ${errorMessage}${details ? `\nDetails: ${details}` : ''}`)
       throw new DeploymentFailureError(errorMessage)
     }
   }
@@ -80,8 +83,9 @@ export class DeploymentService {
     try {
       return await this.deploymentClient.getDeploymentStatus(deploymentId)
     } catch (error) {
-      const errorMessage = formatError(error)
-      logger.error(`Failed to check deployment status: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const details = error instanceof ApiError ? error.details : undefined
+      logger.error(`Failed to check deployment status: ${errorMessage}${details ? `\nDetails: ${details}` : ''}`)
       throw new DeploymentFailureError(`Failed to check deployment status: ${errorMessage}`)
     }
   }
@@ -90,10 +94,10 @@ export class DeploymentService {
     try {
       logger.info(`Promoting version ${version} to stage ${stageId}...`)
       await this.deploymentClient.promoteVersion(stageId, version)
-      logger.success(`Successfully promoted version ${version} to stage ${stageId}`)
     } catch (error) {
-      const errorMessage = formatError(error)
-      logger.error(`Failed to promote version: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const details = error instanceof ApiError ? error.details : undefined
+      logger.error(`Failed to promote version: ${errorMessage}${details ? `\nDetails: ${details}` : ''}`)
       throw new DeploymentFailureError(`Failed to promote version: ${errorMessage}`)
     }
   }

@@ -8,6 +8,8 @@ export async function createFolderZip(
   folderPath: string,
 ): Promise<{ filePath: string; cleanup: () => void }> {
   const outputPath = path.join(process.cwd(), '.motia', 'deployments')
+  fs.mkdirSync(outputPath, { recursive: true })
+  
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(folderPath)) {
       reject(new Error(`Folder not found: ${folderPath}`))

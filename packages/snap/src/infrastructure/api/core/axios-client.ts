@@ -1,45 +1,58 @@
-import axios from 'axios'
+import axios, { AxiosError, AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios'
 import { ApiBase } from './api-base'
 import { API_BASE_URL, DEFAULT_TIMEOUT } from './api-constants'
+
+interface ErrorResponse {
+  error?: {
+    message?: string
+    details?: string
+    code?: string
+  }
+  message?: string
+  details?: string
+  code?: string
+}
 
 export class AxiosClient extends ApiBase {
   constructor(apiKey: string, baseUrl: string = API_BASE_URL) {
     super(apiKey, baseUrl)
   }
 
-  protected async makeRequest<T, D = unknown>(
+  protected async makeRequest<T>(
     endpoint: string,
-    method: string = 'POST',
-    data?: D,
-    additionalHeaders: Record<string, string> = {},
-    options: {
-      timeout?: number
-      maxContentLength?: number
-      maxBodyLength?: number
-    } = {},
+    method: string = 'GET',
+    data?: unknown,
+    config: Omit<AxiosRequestConfig, 'url' | 'method' | 'data' | 'headers'> & { headers?: RawAxiosRequestHeaders } = {}
   ): Promise<T> {
-    try {
-      const url = this.getUrl(endpoint)
-      const headers = this.getHeaders(additionalHeaders)
+    const url = this.getUrl(endpoint)
 
+    try {
       const response = await axios({
-        method,
         url,
+        method,
         data,
-        headers,
-        timeout: options.timeout || DEFAULT_TIMEOUT,
-        ...options,
+        headers: this.getHeaders(config.headers as Record<string, string> || {}),
+        ...config,
       })
 
-      return response.data
+      return response.data as T
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<ErrorResponse>
+        const responseData = axiosError.response?.data || {}
+
         throw this.buildApiError(
-          error.response?.status || 0,
-          error.message,
-          error.response?.data?.error || error.response?.data?.message || error.response?.statusText,
+          axiosError.response?.status || 0,
+          responseData.error?.message || responseData.message || axiosError.message,
+          responseData.error?.details || responseData.details,
+          responseData.error?.code || responseData.code || `HTTP_${axiosError.response?.status}`
         )
       }
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw this.buildApiError(408, 'Request timeout', error.message, 'REQUEST_TIMEOUT')
+      }
+
       return this.handleApiError(error)
     }
   }

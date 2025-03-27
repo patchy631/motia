@@ -52,7 +52,7 @@ export class DeploymentManager {
 
     const envData = loadEnvData(options.envFile)
 
-    await deploymentService.startDeployment(deploymentId, envData)
+    const deployment = await deploymentService.startDeployment(deploymentId, envData)
 
     const deploymentStatus = await this.pollDeploymentStatus(deploymentService, deploymentId)
 
@@ -77,7 +77,13 @@ export class DeploymentManager {
       success: result.success,
     }))
 
-    fileManager.writeDeploymentResults(projectDir, deploymentResults, stage.name, version)
+    const result = deploymentResults[0]
+    const status = result.success ? 'SUCCESS' : 'FAILED'
+    logger.info(`Deployment Result:
+    Status: ${status}
+    Environment: ${result.environment}
+    Version: ${result.version}${result.error ? `\n    Error: ${result.error}` : ''}
+    Api Gateway: ${deployment.apiGatewayUrl}`)
 
     logger.success('Deployment process completed successfully')
   }

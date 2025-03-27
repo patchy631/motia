@@ -20,18 +20,23 @@ export class HttpClient extends ApiBase {
       }
 
       const response = await fetch(url, options)
-      const data = await response.json()
+      const contentType = response.headers.get('content-type')
+      const data = contentType?.includes('application/json') ? await response.json() : await response.text()
 
       if (!response.ok) {
         throw this.buildApiError(
           response.status,
-          response.statusText || 'Request failed',
-          data.error?.message || data.error?.details || data.message,
+          data.error?.message || data.message || response.statusText || 'Request failed',
+          data.error?.details || data.details,
+          data.error?.code || `HTTP_${response.status}`
         )
       }
 
-      return data
+      return data as T
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw this.buildApiError(408, 'Request timeout', error.message, 'REQUEST_TIMEOUT')
+      }
       return this.handleApiError(error)
     }
   }

@@ -1,13 +1,73 @@
-export interface ApiError {
+export interface ApiErrorResponse {
   status: number
   message: string
   details?: string
+  code?: string
+}
+
+export class ApiError extends Error {
+  readonly status: number
+  readonly details?: string
+  readonly code?: string
+
+  constructor(error: ApiErrorResponse) {
+    super(error.message)
+    this.name = 'ApiError'
+    this.status = error.status
+    this.details = error.details
+    this.code = error.code
+  }
+}
+
+export class NetworkError extends ApiError {
+  constructor(error: Error) {
+    super({
+      status: 0,
+      message: 'Network Error',
+      details: error.message,
+      code: 'NETWORK_ERROR'
+    })
+    this.name = 'NetworkError'
+  }
+}
+
+export class UnauthorizedError extends ApiError {
+  constructor(message = 'Unauthorized') {
+    super({
+      status: 401,
+      message,
+      code: 'UNAUTHORIZED'
+    })
+    this.name = 'UnauthorizedError'
+  }
+}
+
+export class ForbiddenError extends ApiError {
+  constructor(message = 'Forbidden') {
+    super({
+      status: 403,
+      message,
+      code: 'FORBIDDEN'
+    })
+    this.name = 'ForbiddenError'
+  }
+}
+
+export class NotFoundError extends ApiError {
+  constructor(resource: string) {
+    super({
+      status: 404,
+      message: `${resource} not found`,
+      code: 'NOT_FOUND'
+    })
+    this.name = 'NotFoundError'
+  }
 }
 
 export interface ApiResponse<T> {
   success: boolean
   data?: T
-  error?: ApiError
+  error?: ApiErrorResponse
 }
 
 export class ApiBase {
@@ -32,30 +92,33 @@ export class ApiBase {
   }
 
   protected handleApiError(error: unknown): never {
-    if ((error as ApiError).status) {
+    if (error instanceof ApiError) {
       throw error
     }
-    throw {
-      status: 0,
-      message: 'Network Error',
-      details: (error as Error).message,
-    } as ApiError
+
+    if ((error as ApiErrorResponse).status) {
+      const apiError = error as ApiErrorResponse
+      switch (apiError.status) {
+        case 401:
+          throw new UnauthorizedError(apiError.message)
+        case 403:
+          throw new ForbiddenError(apiError.message)
+        case 404:
+          throw new NotFoundError(apiError.message)
+        default:
+          throw new ApiError(apiError)
+      }
+    }
+
+    throw new NetworkError(error as Error)
   }
 
-  protected buildApiError(status: number, message: string, details?: string): ApiError {
-    return {
+  protected buildApiError(status: number, message: string, details?: string, code?: string): ApiError {
+    return new ApiError({
       status,
       message,
       details,
-    }
-  }
-  protected parseResponseData(text: string): unknown {
-    if (!text) return {}
-
-    try {
-      return JSON.parse(text)
-    } catch (e) {
-      return { message: text }
-    }
+      code
+    })
   }
 }

@@ -157,11 +157,12 @@ state
   })
 
 const infrastructure = program.command('infrastructure').description('Manage motia infrastructure deployment services')
+.option('--verbose', 'Enable verbose logging')
 
 infrastructure
   .command('init')
   .description('Initialize a new Motia infrastructure deployment project')
-  .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)', process.env.MOTIA_API_KEY)
   .option('-n, --name <project name>', 'The name for your infrastructure deployment project')
   .option('-d, --description <description>', 'Description of the infrastructure deployment service')
   .action(async (arg) => {
@@ -173,10 +174,11 @@ infrastructure
         apiKey: arg.apiKey,
       })
     } catch (error) {
-      console.error(
-        '❌ Infrastructure initialization failed:',
-        error instanceof Error ? error.message : 'Unknown error',
-      )
+      if (infrastructure.opts().verbose) {
+        console.error('❌ Infrastructure initialization failed:', error)
+      } else {
+        console.error('❌ Infrastructure initialization failed')
+      }
       process.exit(1)
     }
   })
@@ -184,7 +186,7 @@ infrastructure
 infrastructure
   .command('deploy')
   .description('Deploy the project to the Motia deployment service')
-  .requiredOption('-k, --api-key <key>', 'The API key for authentication')
+  .requiredOption('-k, --api-key <key>', 'The API key for authentication', process.env.MOTIA_API_KEY)
   .option('-v, --version <version>', 'The version to deploy', 'latest')
   .option('-s, --stage <stage>', 'Override the selected stage')
   .option('-e, --env-file <path>', 'Path to environment file')
@@ -201,7 +203,11 @@ infrastructure
       })
       process.exit(0)
     } catch (error) {
-      console.error('❌ Deployment failed:', error)
+      if (infrastructure.opts().verbose) {
+        console.error('❌ Deployment failed:', error)
+      } else {
+        console.error('❌ Deployment failed')
+      }
       process.exit(1)
     }
   })
@@ -209,7 +215,7 @@ infrastructure
 infrastructure
   .command('list-projects')
   .description('List all projects')
-  .option('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)', process.env.MOTIA_API_KEY)
   .option(
     '-u, --api-base-url <url>',
     'Base URL for the API (defaults to MOTIA_API_URL env var or https://api.motia.io)',
@@ -222,7 +228,11 @@ infrastructure
         apiBaseUrl: arg.apiBaseUrl,
       })
     } catch (error) {
-      console.error('❌ Failed to list projects:', error instanceof Error ? error.message : 'Unknown error')
+      if (infrastructure.opts().verbose) {
+        console.error('❌ Failed to list projects:', error)
+      } else {
+        console.error('❌ Failed to list projects')
+      }
       process.exit(1)
     }
   })
@@ -230,7 +240,7 @@ infrastructure
 infrastructure
   .command('create-stage')
   .description('Create a new deployment stage')
-  .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication (not stored in config)', process.env.MOTIA_API_KEY)
   .option('-n, --name <stage name>', 'The name for your deployment stage')
   .option('-d, --description <description>', 'Description of the deployment stage')
   .action(async (arg) => {
@@ -242,7 +252,11 @@ infrastructure
         apiKey: arg.apiKey,
       })
     } catch (error) {
-      console.error('❌ Stage creation failed:', error instanceof Error ? error.message : 'Unknown error')
+      if (infrastructure.opts().verbose) {
+        console.error('❌ Stage creation failed:', error)
+      } else {
+        console.error('❌ Stage creation failed')
+      }
       process.exit(1)
     }
   })
@@ -258,7 +272,11 @@ infrastructure
         name: arg.name,
       })
     } catch (error) {
-      console.error('❌ Stage selection failed:', error instanceof Error ? error.message : 'Unknown error')
+      if (infrastructure.opts().verbose) {
+        console.error('❌ Stage selection failed:', error)
+      } else {
+        console.error('❌ Stage selection failed')
+      }
       process.exit(1)
     }
   })
@@ -266,7 +284,7 @@ infrastructure
 infrastructure
   .command('list-stages')
   .description('List all deployment stages')
-  .requiredOption('-k, --api-key <api key>', 'API key for authentication (when using API)')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication (when using API)', process.env.MOTIA_API_KEY)
   .option('-a, --api', 'Fetch stages from API instead of local config')
   .action(async (arg) => {
     try {
@@ -276,7 +294,11 @@ infrastructure
         apiKey: arg.apiKey,
       })
     } catch (error) {
-      console.error('❌ Failed to list stages:', error instanceof Error ? error.message : 'Unknown error')
+      if (infrastructure.opts().verbose) {
+        console.error('❌ Failed to list stages:', error)
+      } else {
+        console.error('❌ Failed to list stages')
+      }
       process.exit(1)
     }
   })
@@ -284,7 +306,7 @@ infrastructure
 infrastructure
   .command('update')
   .description('Update a stage to a specific version')
-  .requiredOption('-k, --api-key <api key>', 'API key for authentication')
+  .requiredOption('-k, --api-key <api key>', 'API key for authentication', process.env.MOTIA_API_KEY)
   .requiredOption('-s, --stage <stage>', 'The stage to update')
   .requiredOption('-v, --version <version>', 'The version to promote')
   .action(async (arg) => {
@@ -300,7 +322,11 @@ infrastructure
       console.log(`✅ Version ${arg.version} promoted successfully to ${arg.stage}`)
       process.exit(0)
     } catch (error) {
-      console.error('❌ Version promotion failed:', error instanceof Error ? error.message : 'Unknown error')
+      if (infrastructure.opts().verbose) {
+        console.error('❌ Version promotion failed:', error)
+      } else {
+        console.error('❌ Version promotion failed')
+      }
       process.exit(1)
     }
   })
