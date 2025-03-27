@@ -3,7 +3,7 @@
 import { program } from 'commander'
 import path from 'path'
 import fs from 'fs'
-import { getStage } from './infrastructure/config-utils'
+import { getStage, Stage } from './infrastructure/config-utils'
 
 const defaultPort = 3000
 
@@ -267,9 +267,37 @@ infrastructure
   .option('-n, --name <stage name>', 'The name of the stage to select')
   .action(async (arg) => {
     try {
+      const inquirer = require('inquirer')
       const { selectStage } = require('./infrastructure/stage')
+      const { readConfig } = require('./infrastructure/config-utils')
+
+      const config = readConfig()
+      if (!config || !config.stages || Object.keys(config.stages).length === 0) {
+        console.error('❌ No stages found. Create a stage first using create-stage command.')
+        process.exit(1)
+      }
+
+      let stageName = arg.name
+      if (!stageName) {
+        const stageChoices = Object.entries(config.stages as Record<string, Stage>).map(([name, stage]) => ({
+          name: `${name}${stage.description ? ` - ${stage.description}` : ''}`,
+          value: name
+        }))
+
+        const answer = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'stage',
+            message: 'Select a deployment stage:',
+            choices: stageChoices,
+            default: config.selectedStage,
+          }
+        ])
+        stageName = answer.stage
+      }
+
       await selectStage({
-        name: arg.name,
+        name: stageName,
       })
     } catch (error) {
       if (infrastructure.opts().verbose) {
