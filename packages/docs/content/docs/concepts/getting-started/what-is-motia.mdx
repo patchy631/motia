@@ -1,24 +1,335 @@
 ---
 title: "What is Motia?"
-description: "Information about what is motia?"
+description: "An introduction to Motia, a code-first framework for building intelligent event-driven workflows"
 ---
 
 # What is Motia?
 
-This page will contain information about what is motia?.
+<div className="beginner">
 
-## Overview
+## Simple Definition
 
-Placeholder content for the What is Motia? page. This section will provide an overview of the topic.
+Motia is a code-first framework that empowers developers to build intelligent, event-driven workflows without worrying about infrastructure complexities.
 
-## Key Concepts
+## Why It Matters
 
-- First key concept related to What is Motia?
-- Second key concept related to What is Motia?
-- Third key concept related to What is Motia?
+In today's fast-paced development environment, building complex, scalable workflows often requires juggling multiple technologies, setting up message queues, configuring event brokers, and managing infrastructure. Motia eliminates these headaches by providing:
 
-## Additional Resources
+- **Zero infrastructure setup** - No need to configure message queues or event brokers
+- **Multi-language support** - Write steps in JavaScript, TypeScript, Python, or Ruby
+- **Built-in observability** - Visualize and debug your workflows in real-time
+- **Instant APIs and scheduling** - Expose endpoints and schedule tasks without extra configuration
+- **Developer-friendly experience** - Intuitive APIs, comprehensive documentation, and visual tools
 
-- Resource 1
-- Resource 2
-- Resource 3
+This means you can focus on what matters most: your business logic and creating value for your users.
+
+## How It Works
+
+At its core, Motia is built around the concept of event-driven architecture. Here's a simplified view of how it works:
+
+1. You create **Steps** - self-contained units of logic that perform specific tasks
+2. Steps communicate with each other by emitting and subscribing to **Events**
+3. Events are categorized using **Topics**, which help route them to the right Steps
+4. Related Steps are organized into **Flows**, which represent complete workflows
+
+Motia handles all the underlying infrastructure, event routing, and execution, allowing you to focus solely on defining your business logic within Steps.
+
+</div>
+
+<div className="intermediate">
+
+## The Motia Architecture
+
+Motia's architecture is designed to be both simple to use and powerful enough for complex workflows:
+
+### Event-Driven Core
+
+The heart of Motia is its event system, which enables loose coupling between components. Steps don't directly call each other; instead, they communicate through events. This creates a flexible system where:
+
+- Components can be developed, tested, and deployed independently
+- New functionality can be added without modifying existing code
+- The system is naturally scalable and resilient
+
+### Multi-Language Runtime
+
+Motia supports multiple programming languages within the same workflow:
+
+- **JavaScript/TypeScript**: Great for web integrations and general-purpose logic
+- **Python**: Ideal for data processing, machine learning, and AI tasks
+- **Ruby**: Excellent for readable business logic and rapid development
+
+This flexibility allows you to use the best tool for each specific task within your workflow.
+
+### Workbench Visualization
+
+The Motia Workbench provides a real-time visual representation of your workflows:
+
+- See the connections between Steps and how events flow through your system
+- Monitor execution in real-time with live logs and state inspection
+- Test and debug your workflows interactively
+- Create custom UI components for specialized Steps
+
+</div>
+
+<div className="advanced">
+
+## Advanced Capabilities
+
+Motia goes beyond basic workflow automation with advanced features for sophisticated use cases:
+
+### State Management
+
+Motia provides robust state management capabilities:
+
+- Maintain state within Steps or share it across a Flow
+- Persist state between executions
+- Handle complex state transitions and transformations
+
+### Error Handling and Resilience
+
+Build reliable workflows with Motia's error handling features:
+
+- Define retry strategies for transient failures
+- Implement fallback paths for graceful degradation
+- Create comprehensive error monitoring and alerting
+
+### Extensibility
+
+Motia is designed to be extended and customized:
+
+- Create custom Step types for specialized functionality
+- Develop custom UI components for the Workbench
+- Integrate with external systems and services
+- Build plugins to enhance Motia's capabilities
+
+</div>
+
+## Visual Representation
+
+<div className="my-8">
+  <img 
+    src="/images/flow.png" 
+    alt="Simple Motia Flow Diagram showing Steps connected by Events" 
+    className="rounded-lg border border-gray-200"
+  />
+</div>
+
+## Code Example: A Simple Motia Workflow
+
+Here's a basic example of a Motia workflow that processes incoming data:
+
+<Tabs defaultValue="typescript">
+<Tab title="TypeScript" value="typescript">
+```typescript
+// api-step.ts - Receives data via an API endpoint
+export const config = {
+  name: 'receive-data',
+  type: 'api',
+  path: '/data',
+  method: 'POST',
+  emits: ['data.received']
+};
+
+export const handler = async (req, res, { emit }) => {
+  const data = req.body;
+  
+  // Emit an event with the received data
+  await emit('data.received', { data });
+  
+  return { success: true };
+};
+```
+
+```typescript
+// process-step.ts - Processes the received data
+export const config = {
+  name: 'process-data',
+  type: 'event',
+  subscriptions: ['data.received'],
+  emits: ['data.processed']
+};
+
+export const handler = async (event, { emit }) => {
+  const { data } = event;
+  
+  // Process the data (e.g., transform, validate, enrich)
+  const processedData = {
+    ...data,
+    processed: true,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Emit an event with the processed data
+  await emit('data.processed', { processedData });
+  
+  return { success: true };
+};
+```
+</Tab>
+
+<Tab title="JavaScript" value="javascript">
+```javascript
+// api-step.js - Receives data via an API endpoint
+export const config = {
+  name: 'receive-data',
+  type: 'api',
+  path: '/data',
+  method: 'POST',
+  emits: ['data.received']
+};
+
+export const handler = async (req, res, { emit }) => {
+  const data = req.body;
+  
+  // Emit an event with the received data
+  await emit('data.received', { data });
+  
+  return { success: true };
+};
+```
+
+```javascript
+// process-step.js - Processes the received data
+export const config = {
+  name: 'process-data',
+  type: 'event',
+  subscriptions: ['data.received'],
+  emits: ['data.processed']
+};
+
+export const handler = async (event, { emit }) => {
+  const { data } = event;
+  
+  // Process the data (e.g., transform, validate, enrich)
+  const processedData = {
+    ...data,
+    processed: true,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Emit an event with the processed data
+  await emit('data.processed', { processedData });
+  
+  return { success: true };
+};
+```
+</Tab>
+
+<Tab title="Python" value="python">
+```python
+# api_step.py - Receives data via an API endpoint
+config = {
+  "name": "receive-data",
+  "type": "api",
+  "path": "/data",
+  "method": "POST",
+  "emits": ["data.received"]
+}
+
+async def handler(req, res, context):
+  data = req.body
+  
+  # Emit an event with the received data
+  await context.emit("data.received", {"data": data})
+  
+  return {"success": True}
+```
+
+```python
+# process_step.py - Processes the received data
+from datetime import datetime
+
+config = {
+  "name": "process-data",
+  "type": "event",
+  "subscriptions": ["data.received"],
+  "emits": ["data.processed"]
+}
+
+async def handler(event, context):
+  data = event["data"]
+  
+  # Process the data (e.g., transform, validate, enrich)
+  processed_data = {
+    **data,
+    "processed": True,
+    "timestamp": datetime.now().isoformat()
+  }
+  
+  # Emit an event with the processed data
+  await context.emit("data.processed", {"processedData": processed_data})
+  
+  return {"success": True}
+```
+</Tab>
+
+<Tab title="Ruby" value="ruby">
+```ruby
+# api_step.rb - Receives data via an API endpoint
+CONFIG = {
+  name: 'receive-data',
+  type: 'api',
+  path: '/data',
+  method: 'POST',
+  emits: ['data.received']
+}
+
+def handler(req, res, context)
+  data = req.body
+  
+  # Emit an event with the received data
+  context.emit('data.received', { data: data })
+  
+  { success: true }
+end
+```
+
+```ruby
+# process_step.rb - Processes the received data
+CONFIG = {
+  name: 'process-data',
+  type: 'event',
+  subscriptions: ['data.received'],
+  emits: ['data.processed']
+}
+
+def handler(event, context)
+  data = event[:data]
+  
+  # Process the data (e.g., transform, validate, enrich)
+  processed_data = data.merge({
+    processed: true,
+    timestamp: Time.now.iso8601
+  })
+  
+  # Emit an event with the processed data
+  context.emit('data.processed', { processed_data: processed_data })
+  
+  { success: true }
+end
+```
+</Tab>
+</Tabs>
+
+In this example:
+1. The `receive-data` API Step exposes an HTTP endpoint that receives data
+2. When data is received, it emits a `data.received` event
+3. The `process-data` Event Step subscribes to `data.received` events
+4. When triggered, it processes the data and emits a `data.processed` event
+5. This simple flow could be extended with additional Steps that subscribe to `data.processed`
+
+## Related Concepts
+
+To deepen your understanding of Motia, explore these related concepts:
+
+- [Event-Driven Basics](/docs/concepts/getting-started/event-driven-basics) - Learn more about the event-driven architecture that powers Motia
+- [Steps Introduction](/docs/concepts/getting-started/steps-intro) - Dive deeper into Steps, the fundamental building blocks of Motia
+- [Flows Introduction](/docs/concepts/getting-started/flows-intro) - Understand how Steps are organized into Flows to create complete workflows
+
+## Next Steps
+
+Now that you understand what Motia is, you can:
+
+1. Follow the [Quickstart Guide](/docs/quickstart) to build your first Motia workflow
+2. Explore the [Core Concepts](/docs/concepts/core-components) to deepen your understanding
+3. Check out [Real-World Tutorials](/docs/real-world-tutorials) to see Motia in action
