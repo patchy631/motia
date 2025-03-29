@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "index",
+    "llms-context",
+    "cursor",
+    "windsurf",
+    "cline",
+    "claude-code"
+  ]
+}

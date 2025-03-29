@@ -1,0 +1,13 @@
+{
+  "title": "Motia",
+  "pages": [
+    "welcome",
+    "tldr-motia-in-3-minutes",
+    "getting-started",
+    "workbench",
+    "real-world-use-cases",
+    "examples",
+    "concepts",
+    "contribution"
+  ]
+}

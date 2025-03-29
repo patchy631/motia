@@ -1,0 +1,8 @@
+{
+  "pages": [
+    "overview",
+    "debugging",
+    "state-management",
+    "custom-ui"
+  ]
+}

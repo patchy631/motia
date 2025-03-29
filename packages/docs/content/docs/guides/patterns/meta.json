@@ -1,0 +1,9 @@
+{
+  "pages": [
+    "hello-world",
+    "parallel-processing",
+    "error-handling",
+    "state-management",
+    "testing-strategies"
+  ]
+}

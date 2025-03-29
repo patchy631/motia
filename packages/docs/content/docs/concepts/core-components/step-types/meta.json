@@ -1,0 +1,8 @@
+{
+  "pages": [
+    "api-steps",
+    "event-steps",
+    "cron-steps",
+    "noop-steps"
+  ]
+}

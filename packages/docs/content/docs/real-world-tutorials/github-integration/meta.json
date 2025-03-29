@@ -1,0 +1,9 @@
+{
+  "pages": [
+    "index",
+    "step-1-auth",
+    "step-2-webhooks",
+    "step-3-processing",
+    "step-4-actions"
+  ]
+}

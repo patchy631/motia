@@ -1,0 +1,12 @@
+{
+  "defaultOpen": true,
+  "pages": [
+    "steps",
+    "flows-and-visualization",
+    "logging-and-debugging",
+    "state-management",
+    "cli",
+    "deployment",
+    "testing"
+  ]
+}

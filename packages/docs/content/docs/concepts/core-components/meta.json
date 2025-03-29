@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "index",
+    "step-types",
+    "flows",
+    "topics-and-routing",
+    "state-management",
+    "logging",
+    "workbench"
+  ]
+}
