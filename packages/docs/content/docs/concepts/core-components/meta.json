@@ -1,7 +1,6 @@
 {
   "title": "Core Components",
   "pages": [
-    "!index",
     "step-types",
     "flows",
     "topics-and-routing",
