@@ -4,9 +4,28 @@
 
 The reimagined Motia documentation is designed around user journeys and learning paths rather than technical structure. This approach ensures that users of all skill levels can quickly find the information they need, whether they're just getting started or implementing advanced patterns.
 
-IMPORTANT: Your task is to do a complete rewrite of the docs. The old docs are in packages/docs/content-old. You need to refference these frequently while you create the new docs. The new docs should be a complete rewrite. Start by creating all of the files with placeholder data first then create each page one by one.
+IMPORTANT: Your task is to do a complete rewrite of the docs. The old docs are in packages/docs/content-old. You need to refference these frequently while you create the new docs. The new docs should be a complete rewrite. All of the files already exist with some placeholder data.
 
 DO NOT USE ORDER PROCESSING AS AN EXAMPLE. The examples must flow nicely into agentic workflows as you progress from beginner to imtermediate to advanced
+
+# Documentation Creation Plan
+
+## Rules
+
+1. Focus on creating content for the documentation pages one at a time
+2. DO NOT change directory structure unless explicitly asked to do so
+3. ALWAYS mark the page as done on the checklist after completing it
+4. Reference the old docs in packages/docs/content-old frequently while creating new docs
+5. The new docs should be a complete rewrite, not just a copy of the old docs
+6. DO NOT use order processing as an example - examples must flow nicely into agentic workflows as you progress from beginner to intermediate to advanced
+
+## Process
+
+1. Read the old docs for the current page to understand the content
+2. Create new content following the templates and guidelines in docs-redone.md
+3. Submit the new content for review
+4. Mark the page as done on the checklist after approval
+5. End task
 
 Our documentation will:
 
@@ -492,8 +511,8 @@ _Note: Each page will be created individually, referencing `packages/docs/conten
 
 **Concepts - Getting Started:**
 
-- [ ] `packages/docs/content/docs/concepts/getting-started/index.mdx`
-- [ ] `packages/docs/content/docs/concepts/getting-started/what-is-motia.mdx`
+- [✓] `packages/docs/content/docs/concepts/getting-started/index.mdx`
+- [✓] `packages/docs/content/docs/concepts/getting-started/what-is-motia.mdx`
 - [ ] `packages/docs/content/docs/concepts/getting-started/event-driven-basics.mdx`
 - [ ] `packages/docs/content/docs/concepts/getting-started/steps-intro.mdx`
 - [ ] `packages/docs/content/docs/concepts/getting-started/flows-intro.mdx`
