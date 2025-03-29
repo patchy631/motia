@@ -1,6 +1,6 @@
 {
   "pages": [
-    "index",
+    "!index",
     "basic-flow",
     "flow-control",
     "testing"

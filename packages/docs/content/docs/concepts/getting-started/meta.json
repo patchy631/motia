@@ -1,7 +1,7 @@
 {
   "title": "Getting Started",
   "pages": [
-    "index",
+    "!index",
     "what-is-motia",
     "event-driven-basics",
     "steps-intro",

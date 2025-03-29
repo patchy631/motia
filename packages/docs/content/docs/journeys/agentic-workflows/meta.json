@@ -1,6 +1,6 @@
 {
   "pages": [
-    "index",
+    "!index",
     "dynamic-emits",
     "dynamic-reasoning",
     "agent-orchestration"

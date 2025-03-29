@@ -1,6 +1,6 @@
 {
   "pages": [
-    "index",
+    "!index",
     "configuration",
     "core-functions",
     "utilities"
