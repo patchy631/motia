@@ -26,12 +26,12 @@
     "motia": "dist/cjs/cli.js"
   },
   "files": [
-    "dist",
-    "dot-files"
+    "dist"
   ],
   "scripts": {
     "move:templates": "sh scripts/move-templates.sh",
     "move:python": "sh scripts/move-python.sh",
+    "move:dot-files": "sh scripts/move-dot-files.sh",
     "build": "sh scripts/build.sh",
     "lint": "eslint --config ../../eslint.config.js"
   },

@@ -194,7 +194,7 @@ export const create = async ({ projectName, template, cursorEnabled }: Args): Pr
   }
 
   // Update the path to look in the package root
-  const cursorTemplateDir = path.join(__dirname, '../../../dot-files/.cursor')
+  const cursorTemplateDir = path.join(__dirname, '../dot-files/.cursor')
   const cursorTargetDir = path.join(rootDir, '.cursor')
 
   if (cursorEnabled && !checkIfDirectoryExists(cursorTargetDir)) {
