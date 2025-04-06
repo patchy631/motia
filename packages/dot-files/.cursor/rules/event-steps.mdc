@@ -1,0 +1,120 @@
+---
+description: What are Motia Event Steps and examples using Typescript, Python and Ruby
+globs: 
+alwaysApply: false
+---
+# Event Steps Guide
+
+Event Steps handle asynchronous message processing and event emission.
+This is where you should put most of the business logic.
+Calling generative LLMs, accessing files, python or ruby logic.
+
+## Examples
+```typescript
+import { EventConfig, StepHandler } from 'motia'
+import { z } from 'zod'
+ 
+const inputSchema = z.object({
+  message: z.string()
+})
+ 
+type Input = typeof inputSchema
+ 
+export const config: EventConfig<Input> = {
+  type: 'event',
+  name: 'stepA',
+  description: 'Hello from Step A',
+  subscribes: ['pms.start'],
+  emits: ['pms.stepA.done'],
+  input: inputSchema,
+  flows: ['parallel-merge'],
+}
+ 
+export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+  logger.info('Processing message:', input.message)
+ 
+  await emit({
+    topic: 'pms.stepA.done',
+    data: {
+      result: `Processed: ${input.message}`
+    }
+  })
+}
+```
+
+```python
+config = {
+    "type": "event",
+    "name": "Call OpenAI",
+    "subscribes": ["call-openai"], 
+    "emits": ["openai-response"],
+    "input": None,  # No schema validation in Python version
+    "flows": ["openai"]
+}
+ 
+async def handler(input, context):
+    context.logger.info('Processing input:', input)
+ 
+    await context.emit({
+        "topic": "openai-response",
+        "data": {
+            "result": f"Processed: {input.get('message', '')}"
+        }
+    })
+
+```
+
+```ruby
+class Config
+  attr_reader :type, :name, :subscribes, :emits, :input, :flows
+ 
+  def initialize
+    @type = "event"
+    @name = "Call OpenAI"
+    @subscribes = ["call-openai"]
+    @emits = ["openai-response"]
+    @input = nil # No schema validation
+    @flows = ["openai"]
+  end
+end
+ 
+config = Config.new
+ 
+def handler(input, context)
+  context.logger.info("Processing input: #{input}")
+ 
+  context.emit({
+    topic: "openai-response",
+    data: {
+      result: "Processed: #{input[:message]}"
+    }
+  })
+end
+```
+
+## Event Patterns
+
+### Sequential Processing
+```typescript
+export const handler: StepHandler<typeof config> = async (input, { emit }: FlowContext) => {
+  // Process input
+  const result = await processData(input);
+  
+  // Emit to next step
+  await emit({
+    topic: 'processing.complete',
+    data: result
+  });
+};
+```
+
+### Parallel Processing
+```typescript
+export const handler: StepHandler<typeof config> = async (input, { emit }) => {
+  // Emit multiple events
+  await Promise.all([
+    emit({ topic: 'branch1', data: input }),
+    emit({ topic: 'branch2', data: input })
+  ]);
+};
+```

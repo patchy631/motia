@@ -1,0 +1,79 @@
+---
+description: How to add step and flow tests
+globs: 
+alwaysApply: false
+---
+# Motia Testing Guide
+
+## Setup
+```bash
+pnpm add -D @motiadev/test jest @types/jest
+```
+
+## Core Testing Patterns
+
+### 1. Event Steps
+```typescript
+import { createMockContext } from '@motiadev/test';
+
+describe('ProcessDataStep', () => {
+  it('processes data correctly', async () => {
+    const { emit, state } = createMockContext();
+    
+    await handler({ message: 'test' }, { emit, state });
+    
+    expect(emit).toHaveBeenCalledWith({
+      topic: 'data.processed',
+      data: { result: 'TEST' }
+    });
+  });
+});
+```
+
+### 2. API Steps
+```typescript
+describe('APIEndpoint', () => {
+  it('handles requests', async () => {
+    const { emit } = createMockContext();
+    const req = {
+      method: 'POST',
+      body: { data: 'test' }
+    };
+
+    const res = await handler(req, { emit });
+    expect(res.status).toBe(200);
+  });
+});
+```
+
+## Best Practices
+
+1. Test Structure
+- Group related tests using `describe`
+- Test happy path and error cases
+- Mock external services
+- Test state management
+
+2. Common Patterns
+```typescript
+// Error handling
+it('handles errors', async () => {
+  const { emit, logger } = createMockContext();
+  await handler(null, { emit, logger });
+  expect(logger.error).toHaveBeenCalled();
+});
+
+// State management
+it('manages state', async () => {
+  const { state } = createMockContext();
+  await state.set('key', 'value');
+  expect(await state.get('key')).toBe('value');
+});
+```
+
+## Running Tests
+```bash
+pnpm test              # Run all tests
+pnpm test --watch     # Watch mode
+pnpm test --coverage  # With coverage
+```

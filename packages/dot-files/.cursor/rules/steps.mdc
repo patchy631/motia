@@ -1,0 +1,70 @@
+---
+description: What are motia steps and core concepts
+globs: 
+alwaysApply: false
+---
+# Motia Steps Reference
+
+Steps are self-contained units of business logic that process events and emit results.
+
+## Best Practices
+1. Keep steps atomic and focused
+2. Use meaningful topic names
+3. Handle errors gracefully
+4. Log important operations
+5. Maintain state carefully
+6. Only small data should be emitted
+
+
+
+## Common Patterns
+```typescript
+// Input validation
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  message: z.string()
+});
+
+export const config: EventConfig<typeof inputSchema> = {
+  type: 'event',
+  name: 'Minimal Step',
+  input: inputSchema,
+  subscribes: ['start'],
+  emits: ['done'],
+};
+
+// State management
+export const handler: StepHandler<typeof config> = async (input, { state }: FlowContext) => {
+  const currentCount = await state.get('counter') || 0;
+  await state.set('counter', currentCount + 1);
+};
+```
+
+```python
+config = {
+    'type': 'event',
+    'name': 'Minimal Step',
+    'subscribes': ['start'],
+    'emits': ['done'],
+}
+ 
+async def handler(args, ctx):
+  await ctx.emit({'topic': 'done', 'data': {}})
+```
+
+```ruby
+def config
+  {
+    type: 'event',
+    name: 'Minimal Step',
+    subscribes: ['start'],
+    emits: ['done'],
+  }
+end
+ 
+def handler(args, ctx)
+  ctx.emit({topic: 'done', data: {}})
+end
+```
+

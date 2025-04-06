@@ -1,0 +1,29 @@
+---
+description: UI Steps provide a powerful way to create custom, visually appealing representations of your workflow steps in the Workbench
+globs: 
+alwaysApply: false
+---
+# UI Steps Guide
+
+UI Steps provide custom step visualizations in the Motia Workbench.
+
+## Example
+
+```typescript
+import React from 'react'
+import { EventNode } from '@motiadev/workbench'
+import type { EventNodeProps } from '@motiadev/workbench'
+ 
+export default function CustomStep({ data }: EventNodeProps) {
+  return (
+    <EventNode
+      data={data}
+      variant="white"
+      shape="rounded"
+      className="py-2 px-4"
+    >
+      <div>Custom content</div>
+    </EventNode>
+  )
+}
+```

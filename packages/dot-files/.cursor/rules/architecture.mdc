@@ -1,0 +1,77 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Motia Framework Architecture
+
+Motia is a code-first framework for building event-driven workflows with zero infrastructure setup. The framework supports multiple languages (TypeScript, JavaScript, Python, Ruby) and provides built-in observability.
+
+## Core Components
+
+1. Steps: Fundamental building blocks that contain isolated business logic
+   - Event Steps: React to and emit events
+   - API Steps: HTTP endpoints as workflow entry points
+   - Cron Steps: Time-based workflow triggers
+   - UI Steps: Visual components in the Workbench
+   - NOOP Steps: Testing and development placeholders
+
+2. Flows: Logical groupings of related steps
+3. Events: Messages passed between steps
+4. Topics: Named channels for event routing
+
+## Project Structure
+```typescript
+my-motia-project/
+├── steps/
+│   ├── event-steps/
+│   ├── api-steps/
+│   └── cron-steps/
+├── services/
+├── middlewares/
+├── utils/
+```
+
+## Step Creation Guidelines
+
+1. Each step requires:
+   - config object: Defines step properties
+   - handler function: Contains business logic
+
+2. Basic step configuration:
+```typescript
+export const config = {
+  type: 'event|api|cron',
+  name: 'unique-step-name',
+  subscribes: ['topic1', 'topic2'],
+  emits: ['output-topic'],
+  flows: ['flow-name']
+}
+
+export const handler: StepHandler<typeof config> = async (input, context: FlowContext) => {
+  // Business logic here
+}
+```
+
+## General Guidelines
+- Always follow functional programming best practices
+- Avoid using `any`, use proper Typescript and prioritize using types from `@motiadev/core/dist/src/types.d.ts`
+- Make sure all steps belong to the same flow
+- Make sure the first step is an API step to only trigger the flow, all time-consuming tasks should belong to Event Steps to be processed in the background
+- Steps need to have a `.step` suffix, for instance, for TS would be `my-step.step.ts`
+- Make sure all step configurations have a `subscribe` and `emits` configurations so that they are all tied properly to a flow
+- Always add tests to test steps in isolation, also add a flow test that tests the whole workflow
+- Prioritize encapsulating business logic on services
+- Try to put a single service per file, for instance, the file `getUsers.ts` exports a function `getUsers`
+- Always check your code, make sure it builds (`npx motia build`) and runs properly (`npx motia dev`)
+
+
+## Related Documentation Files
+- types.mdc: Motia Types
+- steps.mdc: Detailed step types and configuration
+- api_steps.mdc: API endpoint creation and middleware
+- event_steps.mdc: Event handling and emission
+- cron_steps.mdc: Scheduled task configuration
+- ui_steps.mdc: Workbench visualization components
+- state-management.mdc: State management
+- testing.mdc: Unit Tests

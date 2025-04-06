@@ -1,0 +1,64 @@
+---
+description: What are Motia API Steps and a Typescript example
+globs: 
+alwaysApply: false
+---
+# API Steps Guide
+
+API Steps expose HTTP endpoints for external interaction with workflows.
+
+## Basic Configuration
+```typescript
+import { ApiMiddleware, ApiRouteConfig, ApiRequest, FlowContext } from 'motia'
+ 
+// Logging middleware
+const loggingMiddleware: ApiMiddleware = async (req, ctx, next) => {
+  ctx.logger.info('Request received', { path: req.pathParams })
+  const start = Date.now()
+  
+  // Call the next middleware and get its response
+  const response = await next()
+  
+  const duration = Date.now() - start
+  ctx.logger.info('Request completed', { duration, status: response.status })
+  
+  return response
+}
+ 
+// Authentication middleware
+const authMiddleware: ApiMiddleware = async (req, ctx, next) => {
+  const authHeader = req.headers.authorization
+  
+  if (!authHeader) {
+    // Return early without calling next()
+    return {
+      status: 401,
+      body: { error: 'Unauthorized' }
+    }
+  }
+  
+  // Continue to the next middleware
+  return next()
+}
+ 
+export const config = {
+  type: 'api',
+  name: 'protected-endpoint',
+  path: '/api/protected',
+  method: 'POST',
+  emits: ['USER_ACTION'],
+  middleware: [
+    loggingMiddleware,
+    authMiddleware
+  ]
+}
+ 
+export const handler: StepHandler<typeof config> = async (req: ApiRouteConfig, ctx: FlowContext) => {
+  // This handler will only be called if all middleware pass
+  return {
+    status: 200,
+    body: { message: 'Protected data accessed successfully' }
+  }
+}
+```
+

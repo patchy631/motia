@@ -1,0 +1,139 @@
+---
+description: What are Motia Cron Steps and examples using Typescript, Python and Ruby
+globs: 
+alwaysApply: false
+---
+# Cron Steps Guide
+
+Cron Steps enable scheduled task execution using cron expressions.
+
+## Configuration
+```typescript
+import { CronConfig } from 'motia'
+ 
+export const config: CronConfig = {
+  type: 'cron' as const,
+  name: 'PeriodicJob',
+  description: 'Runs every minute and emits a timestamp',
+  cron: '0 * * * *', // run every hour at minute 0
+  emits: ['cron-ticked'],
+  flows: ['cron-example'],
+}
+ 
+export const handler: StepHandler<typeof config> = async ({ emit }) => {
+  await emit({
+    topic: 'cron-ticked',
+    data: { message: 'Cron job executed' },
+  })
+}
+```
+
+```python
+config = {
+    "type": "cron",
+    "name": "PeriodicJob",
+    "description": "Runs every minute and emits a timestamp",
+    "cron": "0 * * * *",
+    "emits": ["cron-ticked"],
+    "flows": ["cron-example"]
+}
+
+ 
+async def handler(context):
+    await context.emit({
+        "topic": "cron-ticked",
+        "data": { "message": "Cron job executed" },
+    })
+```
+
+```ruby
+def config
+  {
+    type: 'cron',
+    name: 'PeriodicJob',
+    description: 'Runs every minute and emits a timestamp',
+    cron: '0 * * * *',
+    emits: ['cron-ticked'],
+    flows: ['cron-example'],
+  }
+end
+ 
+def handler(context)
+  context.emit({
+    topic: 'cron-ticked',
+    data: { message: 'Cron job executed' },
+  })
+end
+```
+
+## Schedule Patterns
+
+### Common Schedules
+```typescript
+// Every 5 minutes
+export const config: CronConfig = {
+  type: 'cron',
+  schedule: '*/5 * * * *',
+  // ...
+};
+
+// Daily at midnight
+export const config: CronConfig = {
+  type: 'cron',
+  schedule: '0 0 * * *',
+  timezone: 'UTC',
+  // ...
+};
+```
+
+### State Management
+```typescript
+export const handler: StepHandler<typeof config> = async (_, { state }: FlowContext) => {
+  // Get last run timestamp
+  const lastRun = await state.get('lastRunTime');
+  
+  // Update state
+  await state.set('lastRunTime', new Date().toISOString());
+};
+```
+
+```python
+async def handler(input, ctx): # ctx is the context object
+    trace_id = ctx.trace_id # Access traceId from context
+ 
+    # Store state (using traceId as scope)
+    await ctx.state.set(trace_id, 'booking', { 
+        'customer': input.customer,
+        'venue': input.venue
+    })
+ 
+    # Retrieve state (using traceId as scope)
+    booking = await ctx.state.get(trace_id, 'booking') 
+ 
+    # Delete specific state (using traceId as scope)
+    await ctx.state.delete(trace_id, 'booking') 
+ 
+    # Clear all state (using traceId as scope)
+    await ctx.state.clear(trace_id) 
+```
+
+```ruby
+def handler(input, context) # context is the context object
+  trace_id = context.trace_id # Access traceId from context
+ 
+  # Store state (using traceId as scope)
+  context.state.set(trace_id, 'booking', { 
+    customer: input.customer,
+    venue: input.venue
+  })
+ 
+  # Retrieve state (using traceId as scope)
+  booking = context.state.get(trace_id, 'booking') 
+ 
+  # Delete specific state
+  context.state.delete(trace_id, 'booking') 
+ 
+  # Clear all state (using traceId as scope)
+  context.state.clear(trace_id) 
+end
+```

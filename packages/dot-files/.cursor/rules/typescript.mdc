@@ -1,0 +1,116 @@
+---
+description: Motia Typescript Types
+globs: 
+alwaysApply: false
+---
+```typescript
+type FlowContext = {
+    emit: Emitter;
+    traceId: string;
+    state: InternalStateManager;
+    logger: Logger;
+};
+type Emit = string | {
+    topic: string;
+    label?: string;
+    conditional?: boolean;
+};
+type EventConfig<TInput extends ZodObject<any> = any> = {
+    type: 'event';
+    name: string;
+    description?: string;
+    subscribes: string[];
+    emits: Emit[];
+    virtualEmits?: Emit[];
+    input: TInput;
+    flows?: string[];
+    /**
+     * Files to include in the step bundle.
+     * Needs to be relative to the step file.
+     */
+    includeFiles?: string[];
+};
+type NoopConfig = {
+    type: 'noop';
+    name: string;
+    description?: string;
+    virtualEmits: Emit[];
+    virtualSubscribes: string[];
+    flows?: string[];
+};
+type ApiRouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+type ApiMiddleware = (req: ApiRequest, ctx: FlowContext, next: () => Promise<ApiResponse>) => Promise<ApiResponse>;
+type ApiRouteConfig = {
+    type: 'api';
+    name: string;
+    description?: string;
+    path: string;
+    method: ApiRouteMethod;
+    emits: Emit[];
+    virtualEmits?: Emit[];
+    virtualSubscribes?: string[];
+    flows?: string[];
+    middleware?: ApiMiddleware[];
+    bodySchema?: ZodObject<any>;
+    /**
+     * Files to include in the step bundle.
+     * Needs to be relative to the step file.
+     */
+    includeFiles?: string[];
+};
+type ApiRequest = {
+    pathParams: Record<string, string>;
+    queryParams: Record<string, string | string[]>;
+    body: Record<string, any>;
+    headers: Record<string, string | string[]>;
+    files?: Express.Multer.File[] | {
+        [fieldname: string]: Express.Multer.File[];
+    };
+};
+type ApiResponse = {
+    status: number;
+    headers?: Record<string, string>;
+    body: string | Buffer | Record<string, any>;
+};
+type ApiRouteHandler = (req: ApiRequest, ctx: FlowContext) => Promise<ApiResponse>;
+type CronConfig = {
+    type: 'cron';
+    name: string;
+    description?: string;
+    cron: string;
+    virtualEmits?: Emit[];
+    emits: Emit[];
+    flows?: string[];
+    /**
+     * Files to include in the step bundle.
+     * Needs to be relative to the step file.
+     */
+    includeFiles?: string[];
+};
+type CronHandler = (ctx: FlowContext) => Promise<void>;
+type StepHandler<T> = T extends EventConfig<any> ? EventHandler<T['input']> : T extends ApiRouteConfig ? ApiRouteHandler : T extends CronConfig ? CronHandler : never;
+type Event<TData = unknown> = {
+    topic: string;
+    data: TData;
+    traceId: string;
+    flows?: string[];
+    logger: BaseLogger;
+};
+type Handler<TData = unknown> = (event: Event<TData>) => Promise<void>;
+type SubscribeConfig<TData> = {
+    event: string;
+    handlerName: string;
+    filePath: string;
+    handler: Handler<TData>;
+};
+type UnsubscribeConfig = {
+    filePath: string;
+    event: string;
+};
+type StepConfig = EventConfig<ZodObject<any>> | NoopConfig | ApiRouteConfig | CronConfig;
+type Step<TConfig extends StepConfig = StepConfig> = {
+    filePath: string;
+    version: string;
+    config: TConfig;
+};
+```
