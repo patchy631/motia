@@ -43,7 +43,7 @@ Ready to get started in minutes? Follow these simple steps using **pnpm** and th
 1.  **Create a new project using the Motia CLI:**
 
     ```bash
-    npx motia create -n my-motia-project
+    npx motia create --name my-motia-project --cursor
     ```
     *(Replace `my-motia-project` with your desired project name)*
 
@@ -51,6 +51,7 @@ Ready to get started in minutes? Follow these simple steps using **pnpm** and th
     * Create a new folder `my-motia-project`
     * Set up a basic Motia project with example steps
     * Install dependencies using pnpm
+    * Include the `.cursor` folder for enhanced development experience (with `-c` flag)
 
 2.  **Navigate into your new project directory:**
 
@@ -110,7 +111,14 @@ motia build
 Initiates a dev environment for your project allowing you to use Motia Workbench (visualization tool for your flows).
 
 ```sh
-motia dev
+motia dev [options]
+
+Options:
+  -p, --port <port>     The port to run the server on (default: 3000)
+  -v, --verbose         Enable verbose logging
+  -d, --debug          Enable debug logging
+  -m, --mermaid        Enable mermaid diagram generation
+  -c, --cursor         Enable cursor support for enhanced development
 ```
 
 ## Visualizing Workflows
