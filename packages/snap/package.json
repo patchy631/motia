@@ -26,7 +26,8 @@
     "motia": "dist/cjs/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "dot-files"
   ],
   "scripts": {
     "move:templates": "sh scripts/move-templates.sh",
