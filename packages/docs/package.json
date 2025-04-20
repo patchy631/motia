@@ -6,7 +6,7 @@
     "prepare-docs": "node scripts/prepare-docs.js",
     "build": "fumadocs-mdx && next build  && npm run prepare-docs",
     "postbuild": "next-sitemap",
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
     "generate-images": "node scripts/generate-images.js"
