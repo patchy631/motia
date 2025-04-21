@@ -245,12 +245,10 @@ import { ComparisonTableModal } from '../../components/ComparisonTableModal';
 
 Motia stands apart from other solutions by being a **complete backend framework** that also happens to excel at managing AI agents—not just an agent framework with some workflow capabilities bolted on. 
 
-<div className="my-8">
-  ![Framework Comparison Chart](./img/framework-comparison.png)
-</div>
-
 <ComparisonTableModal 
   buttonText="View Full Framework Comparison (10 frameworks, 25+ capabilities)"
+  previewImage="/img/framework-comparison.png"
+  imageAlt="Framework Comparison Chart showing Motia's capabilities compared to other frameworks"
   fullTable={
     <div>
       <table>
@@ -288,7 +286,7 @@ Motia stands apart from other solutions by being a **complete backend framework*
           </tr>
           <tr>
             <td>Agent Abstractions</td>
-            <td>✅</td>
+            <td>⚠️</td>
             <td>✅</td>
             <td>✅</td>
             <td>✅</td>
@@ -301,7 +299,7 @@ Motia stands apart from other solutions by being a **complete backend framework*
           </tr>
           <tr>
             <td>Multi-Agent Abstractions</td>
-            <td>✅</td>
+            <td>⚠️</td>
             <td>✅</td>
             <td>✅</td>
             <td>✅</td>

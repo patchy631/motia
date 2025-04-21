@@ -3,24 +3,45 @@
 import React, { useState } from 'react';
 
 interface ComparisonTableModalProps {
-  previewTable: React.ReactNode;
+  previewImage?: string;
+  previewTable?: React.ReactNode;
   fullTable: React.ReactNode;
   buttonText?: string;
+  imageAlt?: string;
+  imageClickable?: boolean;
 }
 
 export function ComparisonTableModal({
+  previewImage,
   previewTable,
   fullTable,
   buttonText = 'View Full Comparison',
+  imageAlt = 'Framework Comparison Preview',
+  imageClickable = false,
 }: ComparisonTableModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
 
   return (
     <div>
-      {previewTable}
+      {previewImage ? (
+        <div className="cursor-pointer" onClick={openModal}>
+          <img 
+            src={previewImage} 
+            alt={imageAlt} 
+            className="rounded-md hover:opacity-90 transition-opacity max-w-full"
+          />
+        </div>
+      ) : previewTable ? (
+        imageClickable ? (
+          <div className="cursor-pointer" onClick={openModal}>
+            {previewTable}
+          </div>
+        ) : (
+          previewTable
+        )
+      ) : null}
       
       <div className="mt-4 mb-6">
         <button
