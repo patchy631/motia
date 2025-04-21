@@ -239,6 +239,420 @@ graph TD
     style F fill:#e6f7ff,stroke:#0066cc,stroke-width:2px
 ```
 
+import { ComparisonTableModal } from '../../components/ComparisonTableModal';
+
+## Motia vs. Other Frameworks: Beyond Just Agents
+
+Motia stands apart from other solutions by being a **complete backend framework** that also happens to excel at managing AI agents—not just an agent framework with some workflow capabilities bolted on. 
+
+<ComparisonTableModal 
+  buttonText="View Full Framework Comparison (10 frameworks, 25+ capabilities)"
+  previewTable={
+    <div>
+      <p className="mb-2">Here's a quick comparison of key capabilities:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Motia</th>
+            <th>LangGraph</th>
+            <th>Temporal</th>
+            <th>Agent SDKs</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Full Workflow Orchestration</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>⚠️</td>
+          </tr>
+          <tr>
+            <td>Agent Abstractions</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Backend Framework Features</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Cloud & Deployment</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>❌</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
+  fullTable={
+    <div>
+      <table>
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Motia</th>
+            <th>LangGraph</th>
+            <th>Agents SDK</th>
+            <th>AutoGen</th>
+            <th>CrewAI</th>
+            <th>Temporal</th>
+            <th>LlamaIndex</th>
+            <th>DSPy</th>
+            <th>Pydantic AI</th>
+            <th>Mastra</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colSpan={11}><strong>Framework Type</strong></td>
+          </tr>
+          <tr>
+            <td>Full Workflow Orchestration</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Agent Abstractions</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Multi-Agent Abstractions</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>⚠️</td>
+          </tr>
+          <tr>
+            <td colSpan={11}><strong>API Style</strong></td>
+          </tr>
+          <tr>
+            <td>Declarative API</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Imperative API</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td colSpan={11}><strong>Production Features</strong></td>
+          </tr>
+          <tr>
+            <td>Short-term Memory Storage</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Long-term Memory Storage</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Human-in-the-Loop</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Human-on-the-Loop</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Streaming</td>
+            <td>🔜</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Optimization / Auto-evals</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Code Interpreter</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Tracing</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Studio / Visual Workspace</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Low-code Builder</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Prescribed Project Setup</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td colSpan={11}><strong>Backend Framework Features</strong></td>
+          </tr>
+          <tr>
+            <td>API Endpoints</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>⚠️</td>
+          </tr>
+          <tr>
+            <td>Cron Jobs</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Event System / Pub-Sub</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Sockets (SSE/WS)</td>
+            <td>🔜</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td colSpan={11}><strong>Cloud & Deployment</strong></td>
+          </tr>
+          <tr>
+            <td>Cloud Hosting</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>⚠️</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td>Canary / Blue-Green Deploys</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Environments (dev/stage/prod)</td>
+            <td>✅</td>
+            <td>⚠️</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td>Versioning / Roll-back</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+        </tbody>
+      </table>
+      <div className="mt-4">
+        <p><small>⚠️ means it technically has the feature but it's limited or not the primary recommended approach</small><br />
+        <small>🔜 indicates features on Motia's roadmap</small></p>
+      </div>
+    </div>
+  }
+/>
+
+**The key insight**: While many frameworks excel at specific aspects of AI development, they typically focus on either agent abstractions OR workflow orchestration, but rarely both. Traditional workflow engines like Temporal provide robust orchestration but lack native AI capabilities, while agent frameworks offer sophisticated AI tools but often require additional infrastructure for production deployment.
+
+Motia uniquely bridges this gap by providing a unified system where agents, APIs, and background jobs all operate as first-class citizens with the same programming model, observability, and deployment patterns.
+
 ## New Protocols, Same Lesson — MCP & A2A
 
 ### MCP — A Universal Context Envelope
