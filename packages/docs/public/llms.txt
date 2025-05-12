@@ -3126,10 +3126,10 @@ Now, let's start Motia and see your workflow in action!
 2.  **Run the development server command:** Use the `dev` script that was set up in your `package.json`:
 
     <Tabs items={['pnpm', 'yarn', 'npm', 'bun']}>
-      <Tab value="pnpm">```bash pnpm run dev ```</Tab>
-      <Tab value="yarn">```bash yarn run dev ```</Tab>
-      <Tab value="npm">```bash npm run dev ```</Tab>
-      <Tab value="bun">```bash bun run dev ```</Tab>
+      <Tab value="pnpm">```pnpm run dev ```</Tab>
+      <Tab value="yarn">```yarn run dev ```</Tab>
+      <Tab value="npm">```npm run dev ```</Tab>
+      <Tab value="bun">```bun run dev ```</Tab>
     </Tabs>
 
     Motia will:
