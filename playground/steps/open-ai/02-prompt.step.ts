@@ -1,5 +1,5 @@
 import { OpenAI } from 'openai'
-import { EventConfig, StepHandler } from '@motiadev/core'
+import { EventConfig, StepHandler } from 'motia'
 import { z } from 'zod'
 
 type Input = typeof inputSchema
