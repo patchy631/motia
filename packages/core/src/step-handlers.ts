@@ -44,6 +44,7 @@ export const createStepHandlers = (
           try {
             await callStepFile({
               contextInFirstArg: false,
+              streamConfig: lockedData.getStreams(),
               step,
               printer,
               eventManager,

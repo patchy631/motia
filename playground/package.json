@@ -18,9 +18,9 @@
   "dependencies": {
     "@motiadev/core": "workspace:*",
     "@motiadev/workbench": "workspace:*",
-    "motia": "workspace:*",
     "deep-equal": "^2.2.3",
-    "openai": "^4.78.1",
+    "motia": "workspace:*",
+    "openai": "^4.96.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

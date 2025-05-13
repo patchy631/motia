@@ -8,7 +8,7 @@ export const config: ApiRouteConfig = {
   type: 'api',
   name: 'Call OpenAI',
   description: 'Call OpenAI',
-  path: '/openai',
+  path: '/open-ai',
   method: 'POST',
   emits: ['call-openai'],
   flows: ['openai'],
@@ -20,16 +20,18 @@ export const config: ApiRouteConfig = {
   responseBody: responseSchema,
 }
 
-export const handler: StepHandler<typeof config> = async (req, { logger, emit }) => {
-  logger.info('[Call OpenAI] Received callOpenAi event', req)
+export const handler: StepHandler<typeof config> = async (req, { traceId, logger, emit, streams }) => {
+  logger.info('[Call OpenAI] Received callOpenAi event', { message: req.body.message })
+
+  const result = await streams.openai.create(traceId, { message: '' })
 
   await emit({
-    topic: 'call-openai',
+    topic: 'openai-prompt',
     data: { message: req.body.message },
   })
 
   return {
     status: 200,
-    body: { message: 'OpenAI response sent' },
+    body: result,
   }
 }

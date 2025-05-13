@@ -9,7 +9,15 @@ import { flowsEndpoint } from './flows-endpoint'
 import { isApiStep } from './guards'
 import { globalLogger } from './logger'
 import { StateAdapter } from './state/state-adapter'
-import { ApiRequest, ApiResponse, ApiRouteConfig, ApiRouteMethod, EventManager, Step } from './types'
+import {
+  ApiRequest,
+  ApiResponse,
+  ApiRouteConfig,
+  ApiRouteMethod,
+  EventManager,
+  InternalStateManager,
+  Step,
+} from './types'
 import { systemSteps } from './steps'
 import { LockedData } from './locked-data'
 import { callStepFile } from './call-step-file'
@@ -48,6 +56,57 @@ export const createServer = async (
   const allSteps = [...systemSteps, ...lockedData.activeSteps]
   const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory)
 
+  const streams = (lockedData as any).streams
+
+  Object.keys(streams).forEach((streamName) => {
+    const stream = streams[streamName]
+
+    streams[streamName] = (state: InternalStateManager) => {
+      const originalStream = stream(state)
+      const wrapObject = (id: string, object: any) => ({
+        ...object,
+        __motia: { type: 'durable-object', streamName, id },
+      })
+      const updateDurableObject = (id: string, data: any) => {
+        const result = wrapObject(id, data)
+        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'update', data: result })
+        return result
+      }
+
+      const deleteDurableObject = (id: string) => {
+        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'delete', id })
+        return originalStream.delete(id)
+      }
+
+      return {
+        get: (id: string) => originalStream.get(id).then((object: any) => wrapObject(id, object)),
+        update: (id: string, data: any) =>
+          originalStream.update(id, data).then((object: any) => updateDurableObject(id, object)),
+        delete: (id: string) => deleteDurableObject(id),
+        create: (id: string, data: any) =>
+          originalStream.create(id, data).then((object: any) => updateDurableObject(id, object)),
+      }
+    }
+  })
+
+  io.on('connection', (socket) => {
+    socket.on('join', ({ id, streamName }: { streamName: string; id: string }) => {
+      console.log(`Joining ${streamName}-${id}`)
+      socket.join(`${streamName}-${id}`)
+
+      const item = streams[streamName]
+      if (item) {
+        item(state)
+          .get(id)
+          .then((object: any) => socket.emit('update', object))
+      }
+    })
+
+    socket.on('leave', ({ id, streamName }: { streamName: string; id: string }) => {
+      socket.leave(`${streamName}-${id}`)
+    })
+  })
+
   const asyncHandler = (step: Step<ApiRouteConfig>) => {
     return async (req: Request, res: Response) => {
       const traceId = generateTraceId()
@@ -75,6 +134,7 @@ export const createServer = async (
           eventManager,
           state,
           traceId,
+          streamConfig: lockedData.getStreams(),
         })
 
         if (!result) {

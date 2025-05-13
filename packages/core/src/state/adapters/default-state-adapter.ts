@@ -42,6 +42,8 @@ export class FileStateAdapter implements StateAdapter {
     data[fullKey] = JSON.stringify(value)
 
     this._writeFile(data)
+
+    return value
   }
 
   async delete(traceId: string, key: string) {

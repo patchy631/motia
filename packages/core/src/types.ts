@@ -1,21 +1,40 @@
 import { z, ZodObject } from 'zod'
-import type { Express } from 'express'
 import { BaseLogger, Logger } from './logger'
 
 export type InternalStateManager = {
   get<T>(traceId: string, key: string): Promise<T | null>
-  set<T>(traceId: string, key: string, value: T): Promise<void>
+  set<T>(traceId: string, key: string, value: T): Promise<T>
   delete(traceId: string, key: string): Promise<void>
   clear(traceId: string): Promise<void>
 }
 
 export type EmitData = { topic: string; data: Record<string, unknown> }
 export type Emitter = (event: EmitData) => Promise<void>
-export type FlowContext = {
+
+export interface FlowContextStreams {}
+
+export interface StreamConfig {
+  name: string
+  type: 'object' | 'list'
+  schema: ZodObject<any>
+}
+
+export interface FlowContext {
   emit: Emitter
   traceId: string
   state: InternalStateManager
   logger: Logger
+  streams: FlowContextStreams
+}
+
+export interface ObjectStream<TData extends object> {
+  get(id: string): Promise<TData | null>
+  update(id: string, data: TData): Promise<TData>
+  delete(id: string): Promise<void>
+  create(id: string, data: TData): Promise<TData>
+
+  getGroupId(data: TData): string | null
+  getList(groupId: string): Promise<TData[]>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

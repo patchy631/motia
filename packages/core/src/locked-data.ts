@@ -1,8 +1,9 @@
 import { ZodObject } from 'zod'
-import { ApiRouteConfig, CronConfig, EventConfig, Flow, Step } from './types'
 import { isApiStep, isCronStep, isEventStep } from './guards'
-import { validateStep } from './step-validator'
 import { Printer } from './printer'
+import { validateStep } from './step-validator'
+import { StreamFactory, UngroupedObjectStream } from './stream'
+import { ApiRouteConfig, CronConfig, EventConfig, Flow, InternalStateManager, Step } from './types'
 
 type FlowEvent = 'flow-created' | 'flow-removed' | 'flow-updated'
 type StepEvent = 'step-created' | 'step-removed' | 'step-updated'
@@ -16,6 +17,7 @@ export class LockedData {
   private stepsMap: Record<string, Step>
   private handlers: Record<FlowEvent, ((flowName: string) => void)[]>
   private stepHandlers: Record<StepEvent, ((step: Step) => void)[]>
+  private streams: Record<string, StreamFactory>
 
   constructor(public readonly baseDir: string) {
     this.flows = {}
@@ -34,6 +36,10 @@ export class LockedData {
       'step-created': [],
       'step-removed': [],
       'step-updated': [],
+    }
+
+    this.streams = {
+      openai: (state: InternalStateManager) => new UngroupedObjectStream(state, 'message'),
     }
   }
 
@@ -56,6 +62,10 @@ export class LockedData {
 
   cronSteps(): Step<CronConfig>[] {
     return this.activeSteps.filter(isCronStep)
+  }
+
+  getStreams(): Record<string, StreamFactory> {
+    return { ...this.streams }
   }
 
   updateStep(oldStep: Step, newStep: Step): boolean {

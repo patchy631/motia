@@ -30,6 +30,8 @@ export class RedisStateAdapter implements StateAdapter {
   async set<T>(traceId: string, key: string, value: T) {
     const fullKey = this._makeKey(traceId, key)
     await this.client.set(fullKey, JSON.stringify(value), 'EX', this.ttl)
+
+    return value
   }
 
   async delete(traceId: string, key: string) {
