@@ -1,4 +1,4 @@
-import { LockedData, Step, getStepConfig } from '@motiadev/core'
+import { LockedData, Step, getStepConfig, Telemetry } from '@motiadev/core'
 import { randomUUID } from 'crypto'
 import fs from 'fs'
 import path from 'path'
@@ -30,18 +30,31 @@ export const collectFlows = async (baseDir: string, lockedData: LockedData): Pro
   return steps
 }
 
-export const generateLockedData = async (projectDir: string): Promise<LockedData> => {
+/**
+ * Generates locked data by scanning the project directory for steps
+ * @param projectDir Directory of the Motia project
+ * @param telemetry Optional telemetry instance to track steps and flows
+ * @returns LockedData instance with loaded steps and flows
+ */
+export const generateLockedData = async (projectDir: string, telemetry?: Telemetry): Promise<LockedData> => {
   try {
     /*
      * NOTE: right now for performance and simplicity let's enforce a folder,
      * but we might want to remove this and scan the entire current directory
      */
-    const lockedData = new LockedData(projectDir)
+    const lockedData = new LockedData(projectDir, telemetry)
 
     await collectFlows(path.join(projectDir, 'steps'), lockedData)
 
     return lockedData
   } catch (error) {
+    if (telemetry) {
+      telemetry.metrics.incrementCounter('project.initialization.error', 1)
+      if (error instanceof Error) {
+        telemetry.tracer.recordException(error)
+      }
+    }
+    
     console.error(error)
     throw Error('Failed to parse the project, generating locked data step failed')
   }

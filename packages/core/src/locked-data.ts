@@ -3,6 +3,7 @@ import { ApiRouteConfig, CronConfig, EventConfig, Flow, Step } from './types'
 import { isApiStep, isCronStep, isEventStep } from './guards'
 import { validateStep } from './step-validator'
 import { Printer } from './printer'
+import { Telemetry } from './telemetry'
 
 type FlowEvent = 'flow-created' | 'flow-removed' | 'flow-updated'
 type StepEvent = 'step-created' | 'step-removed' | 'step-updated'
@@ -12,17 +13,19 @@ export class LockedData {
   public activeSteps: Step[]
   public devSteps: Step[]
   public printer: Printer
+  public telemetry?: Telemetry
 
   private stepsMap: Record<string, Step>
   private handlers: Record<FlowEvent, ((flowName: string) => void)[]>
   private stepHandlers: Record<StepEvent, ((step: Step) => void)[]>
 
-  constructor(public readonly baseDir: string) {
+  constructor(public readonly baseDir: string, telemetry?: Telemetry) {
     this.flows = {}
     this.activeSteps = []
     this.devSteps = []
     this.stepsMap = {}
     this.printer = new Printer(baseDir)
+    this.telemetry = telemetry
 
     this.handlers = {
       'flow-created': [],
@@ -59,8 +62,20 @@ export class LockedData {
   }
 
   updateStep(oldStep: Step, newStep: Step): boolean {
+    this.telemetry?.metrics.incrementCounter('steps.management', 1, {
+      operation: 'update',
+      step_type: newStep.config.type,
+      step_name: newStep.config.name,
+    })
+    
     if (!this.isValidStep(newStep)) {
       this.deleteStep(oldStep)
+      
+      this.telemetry?.metrics.incrementCounter('steps.management.errors', 1, {
+        operation: 'update',
+        reason: 'validation_failed',
+        step_type: newStep.config.type,
+      })
 
       return false
     }
@@ -74,6 +89,11 @@ export class LockedData {
       } else {
         this.activeSteps.push(newStep)
       }
+      
+      this.telemetry?.metrics.incrementCounter('steps.type_changed', 1, {
+        from_type: oldStep.config.type,
+        to_type: newStep.config.type,
+      })
     }
 
     const savedStep = this.stepsMap[newStep.filePath]
@@ -91,6 +111,11 @@ export class LockedData {
         this.flows[flowName].steps.push(savedStep)
         this.onFlowUpdated(flowName)
       }
+      
+      this.telemetry?.metrics.incrementCounter('flows.step_added', 1, {
+        flow_name: flowName,
+        step_type: newStep.config.type,
+      })
     }
 
     for (const flowName of removedFlows) {
@@ -102,6 +127,11 @@ export class LockedData {
       } else {
         this.onFlowUpdated(flowName)
       }
+      
+      this.telemetry?.metrics.incrementCounter('flows.step_removed', 1, {
+        flow_name: flowName,
+        step_type: oldStep.config.type,
+      })
     }
 
     savedStep.config = newStep.config
@@ -113,7 +143,18 @@ export class LockedData {
   }
 
   createStep(step: Step): boolean {
+    this.telemetry?.metrics.incrementCounter('steps.management', 1, {
+      operation: 'create',
+      step_type: step.config.type,
+      step_name: step.config.name,
+    })
+    
     if (!this.isValidStep(step)) {
+      this.telemetry?.metrics.incrementCounter('steps.management.errors', 1, {
+        operation: 'create',
+        reason: 'validation_failed',
+        step_type: step.config.type,
+      })
       return false
     }
 
@@ -121,8 +162,14 @@ export class LockedData {
 
     if (step.config.type === 'noop') {
       this.devSteps.push(step)
+      this.telemetry?.metrics.incrementCounter('steps.dev.added', 1, {
+        step_type: step.config.type,
+      })
     } else {
       this.activeSteps.push(step)
+      this.telemetry?.metrics.incrementCounter('steps.active.added', 1, {
+        step_type: step.config.type,
+      })
     }
 
     for (const flowName of step.config.flows ?? []) {
@@ -133,6 +180,11 @@ export class LockedData {
         this.flows[flowName].steps.push(step)
         this.onFlowUpdated(flowName)
       }
+      
+      this.telemetry?.metrics.incrementCounter('flows.step_added', 1, {
+        flow_name: flowName,
+        step_type: step.config.type,
+      })
     }
 
     this.stepHandlers['step-created'].forEach((handler) => handler(step))
@@ -142,6 +194,12 @@ export class LockedData {
   }
 
   deleteStep(step: Step): void {
+    this.telemetry?.metrics.incrementCounter('steps.management', 1, {
+      operation: 'delete',
+      step_type: step.config.type,
+      step_name: step.config.name,
+    })
+    
     // Remove step from active and dev steps
     this.activeSteps = this.activeSteps.filter(({ filePath }) => filePath !== step.filePath)
     this.devSteps = this.devSteps.filter(({ filePath }) => filePath !== step.filePath)
@@ -160,6 +218,11 @@ export class LockedData {
       } else {
         this.onFlowUpdated(flowName)
       }
+      
+      this.telemetry?.metrics.incrementCounter('flows.step_removed', 1, {
+        flow_name: flowName,
+        step_type: step.config.type,
+      })
     }
 
     this.stepHandlers['step-removed'].forEach((handler) => handler(step))
@@ -167,6 +230,11 @@ export class LockedData {
   }
 
   private createFlow(flowName: string): Flow {
+    this.telemetry?.metrics.incrementCounter('flows.management', 1, {
+      operation: 'create',
+      flow_name: flowName,
+    })
+    
     const flow = { name: flowName, description: '', steps: [] }
     this.flows[flowName] = flow
     this.handlers['flow-created'].forEach((handler) => handler(flowName))
@@ -176,17 +244,32 @@ export class LockedData {
   }
 
   private removeFlow(flowName: string): void {
+    this.telemetry?.metrics.incrementCounter('flows.management', 1, {
+      operation: 'delete',
+      flow_name: flowName,
+    })
+    
     delete this.flows[flowName]
     this.handlers['flow-removed'].forEach((handler) => handler(flowName))
     this.printer.printFlowRemoved(flowName)
   }
 
   private onFlowUpdated(flowName: string): void {
+    this.telemetry?.metrics.incrementCounter('flows.management', 1, {
+      operation: 'update',
+      flow_name: flowName,
+    })
+    
     this.handlers['flow-updated'].forEach((handler) => handler(flowName))
   }
 
   private isValidStep(step: Step): boolean {
     const validationResult = validateStep(step)
+    
+    this.telemetry?.metrics.incrementCounter('steps.validation', 1, {
+      step_type: step.config.type,
+      success: validationResult.success ? 'true' : 'false',
+    })
 
     if (!validationResult.success) {
       this.printer.printValidationError(step.filePath, validationResult)

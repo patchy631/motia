@@ -10,3 +10,9 @@ export { LockedData } from './src/locked-data'
 export { getStepConfig } from './src/get-step-config'
 export { StateAdapter } from './src/state/state-adapter'
 export { createMermaidGenerator } from './src/mermaid-generator'
+
+// Telemetry exports
+export { createTelemetry, getTelemetryIdentityAttributes } from './src/telemetry'
+export type { Telemetry, TelemetryOptions } from './src/telemetry/telemetry'
+export type { MotiaTracer } from './src/telemetry/tracer'
+export type { MotiaMetrics } from './src/telemetry/metrics'
