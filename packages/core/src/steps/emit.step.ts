@@ -1,4 +1,4 @@
-import { ApiRouteConfig, StepHandler } from '../types'
+import { ApiRouteConfig, ApiRouteHandler } from '../types'
 import { z } from 'zod'
 
 export const config: ApiRouteConfig = {
@@ -15,7 +15,9 @@ export const config: ApiRouteConfig = {
   }),
 }
 
-export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
+type EmitData = { topic: string; data: Record<string, unknown> }
+
+export const handler: ApiRouteHandler<EmitData, {}, EmitData> = async (req, { emit, logger }) => {
   const { topic, data } = req.body
 
   logger.info('[Event Emitter] Emitting event', { topic, data })

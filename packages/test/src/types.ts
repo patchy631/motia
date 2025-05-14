@@ -26,7 +26,7 @@ export type CapturedEvent<TData = unknown> = Omit<Event<TData>, 'logger'>
 
 export type MockFlowContext = {
   logger: jest.Mocked<Logger>
-  emit: jest.Mock | FlowContext['emit']
+  emit: jest.Mock | FlowContext<unknown>['emit']
   traceId: string
   state: jest.Mocked<InternalStateManager>
 }

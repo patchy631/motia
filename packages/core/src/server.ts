@@ -115,7 +115,8 @@ export const createServer = async (
 
       logger.debug('[API] Received request, processing step', { path: req.path })
 
-      const request: ApiRequest = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const request: ApiRequest<any> = {
         body: req.body,
         headers: req.headers as Record<string, string | string[]>,
         pathParams: req.params,

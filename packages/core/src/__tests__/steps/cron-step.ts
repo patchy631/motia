@@ -7,6 +7,8 @@ export const config: CronConfig = {
   cron: '* * * * *', // Run every minute
 }
 
-export const handler: CronHandler = async (ctx: FlowContext) => {
+type EmitData = { topic: 'TEST_EVENT'; data: { test: string } }
+
+export const handler: CronHandler<EmitData> = async (ctx: FlowContext<EmitData>) => {
   await ctx.emit({ data: { test: 'data' }, topic: 'TEST_EVENT' })
 }

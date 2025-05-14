@@ -18,12 +18,12 @@ jest.mock('../call-step-file', () => ({
 describe('Middleware Management', () => {
   let server: ReturnType<typeof createServer> extends Promise<infer T> ? T : never
 
-  const testMiddleware: ApiMiddleware = async (req, _, next) => {
+  const testMiddleware: ApiMiddleware<{ middlewareApplied: boolean }, {}, {}> = async (req, _, next) => {
     req.body.middlewareApplied = true
     return next()
   }
 
-  const blockingMiddleware: ApiMiddleware = async () => {
+  const blockingMiddleware: ApiMiddleware<{}, {}, { error: string }> = async () => {
     return {
       status: 403,
       body: { error: 'Access denied by middleware' },

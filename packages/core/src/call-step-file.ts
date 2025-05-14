@@ -81,7 +81,7 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
     }
 
     const rpcProcessor = new RpcProcessor(child)
-    const context: FlowContext = { traceId, logger, state, emit, streams: {} }
+    const context: FlowContext<EmitData> = { traceId, logger, state, emit, streams: {} }
 
     Object.entries(streamConfig).forEach(([name, streamFactory]) => {
       const stream = streamFactory(state)

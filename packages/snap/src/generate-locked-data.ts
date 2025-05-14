@@ -23,7 +23,7 @@ export const collectFlows = async (baseDir: string, lockedData: LockedData): Pro
         continue
       }
 
-      lockedData.createStep({ filePath, version, config })
+      lockedData.createStep({ filePath, version, config }, { disableTypeCreation: true })
     }
   }
 
@@ -39,6 +39,7 @@ export const generateLockedData = async (projectDir: string): Promise<LockedData
     const lockedData = new LockedData(projectDir)
 
     await collectFlows(path.join(projectDir, 'steps'), lockedData)
+    lockedData.saveTypes()
 
     return lockedData
   } catch (error) {

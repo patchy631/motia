@@ -8,7 +8,9 @@ export const config: ApiRouteConfig = {
   method: 'POST',
 }
 
-export const handler: ApiRouteHandler = async (_, ctx: FlowContext) => {
+type EmitData = { topic: 'TEST_EVENT'; data: { test: string } }
+
+export const handler: ApiRouteHandler<{}, {}, EmitData> = async (_, ctx: FlowContext<EmitData>) => {
   await ctx.emit({ data: { test: 'data' }, topic: 'TEST_EVENT' })
 
   return { status: 200, body: { traceId: ctx.traceId } }

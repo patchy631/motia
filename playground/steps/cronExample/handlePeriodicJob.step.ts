@@ -1,5 +1,4 @@
-import { z } from 'zod'
-import { FlowContext } from '@motiadev/core'
+import { CronHandler } from '@motiadev/core'
 
 export const config = {
   type: 'event',
@@ -8,12 +7,8 @@ export const config = {
   subscribes: ['cron-ticked'],
   emits: [],
   flows: ['cron-example'],
-  input: z.object({
-    timestamp: z.number(),
-    message: z.string(),
-  }),
 }
 
-export const handler = async (input: z.infer<typeof config.input>, { logger }: FlowContext) => {
-  logger.info('Periodic job executed', { timestamp: input.timestamp, message: input.message })
+export const handler: CronHandler = async ({ logger }) => {
+  logger.info('Periodic job executed')
 }

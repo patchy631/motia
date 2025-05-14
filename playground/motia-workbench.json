@@ -41,6 +41,18 @@
     "steps/openAi/openAiResponse.step.ts": {
       "x": 310.42824074074076,
       "y": 396.9939814814815
+    },
+    "steps/open-ai/01-prompt-api.step.ts": {
+      "x": 0,
+      "y": 20
+    },
+    "steps/open-ai/getOpenAiApi.step.py": {
+      "x": 243,
+      "y": 0
+    },
+    "steps/open-ai/getOpenAiApi.step.ts": {
+      "x": 653,
+      "y": 0
     }
   },
   "cron-example": {
@@ -51,6 +63,42 @@
     "steps/cronExample/periodicJob.step.ts": {
       "x": 0,
       "y": 0
+    }
+  },
+  "open-ai": {
+    "steps/open-ai/02-prompt.step.ts": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  "parallel-merge": {
+    "steps/parallelMergeState/joinComplete.step.ts": {
+      "x": 242.5,
+      "y": 914
+    },
+    "steps/parallelMergeState/joinStep.step.ts": {
+      "x": 198.5,
+      "y": 704
+    },
+    "steps/parallelMergeState/noopStartButton.step.ts": {
+      "x": 262.5,
+      "y": 0
+    },
+    "steps/parallelMergeState/startParallelMerge.step.ts": {
+      "x": 155,
+      "y": 188
+    },
+    "steps/parallelMergeState/stepA.step.ts": {
+      "x": 0,
+      "y": 470
+    },
+    "steps/parallelMergeState/stepB.step.py": {
+      "x": 210,
+      "y": 446
+    },
+    "steps/parallelMergeState/stepC.step.rb": {
+      "x": 510,
+      "y": 470
     }
   }
 }

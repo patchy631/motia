@@ -55,6 +55,13 @@ export class Printer {
     console.log(`${removed} ${flowTag} ${colors.bold(colors.cyan(flowName))} removed`)
   }
 
+  printInvalidSchema(topic: string, step: Step[]) {
+    console.log(`${error} Topic ${colors.bold(colors.blue(topic))} has incompatible schemas in the following steps:`)
+    step.forEach((step) => {
+      console.log(`${colors.red('  ✖')} ${this.getStepPath(step)}`)
+    })
+  }
+
   printValidationError(stepPath: string, validationError: ValidationError) {
     const relativePath = this.getRelativePath(stepPath)
 

@@ -88,7 +88,10 @@ export const config: ApiRouteConfig = {
   middleware: [loggerMiddleware, corsMiddleware(['*']), jsonValidatorMiddleware, rateLimiterMiddleware],
 }
 
-export const handler: ApiRouteHandler = async (req: ApiRequest, ctx: FlowContext): Promise<ApiResponse> => {
+export const handler: ApiRouteHandler<{}, {}, {}> = async (
+  req: ApiRequest<{}>,
+  ctx: FlowContext<{}>,
+): Promise<ApiResponse<{}>> => {
   ctx.logger.info('Processing api-with-middleware', req)
 
   return {
