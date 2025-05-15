@@ -8,6 +8,11 @@ import { getTelemetryIdentityAttributes } from './identity';
 import { handleError, isTelemetryEnabled } from './utils';
 import type { TelemetryOptions, Telemetry, TracingOptions, MetricsOptions } from './types';
 
+interface TelemetryProviders {
+  tracerSdk: NodeSDK | undefined;
+  systemMetricsInterval: NodeJS.Timeout | undefined;
+}
+
 /**
  * Creates and initializes the telemetry system for Motia
  */
@@ -30,7 +35,7 @@ export const createTelemetry = (options: TelemetryOptions): Telemetry => {
   logTelemetryStatus(debug, isEnabled, serviceName, serviceVersion);
   
   const combinedAttributes = {
-    ...getTelemetryIdentityAttributes(),
+    ...getTelemetryIdentityAttributes(instrumentationName),
     ...customAttributes
   };
 
@@ -58,11 +63,6 @@ export const createTelemetry = (options: TelemetryOptions): Telemetry => {
       return shutdownTelemetry(tracerSdk, systemMetricsInterval, debug);
     },
   };
-}
-
-interface TelemetryProviders {
-  tracerSdk: NodeSDK | undefined;
-  systemMetricsInterval: NodeJS.Timeout | undefined;
 }
 
 const setupDebugLogging = (debug: boolean): void => {
