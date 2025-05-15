@@ -12,7 +12,7 @@ export { StateAdapter } from './src/state/state-adapter'
 export { createMermaidGenerator } from './src/mermaid-generator'
 
 // Telemetry exports
-export { createTelemetry, getTelemetryIdentityAttributes } from './src/telemetry'
-export type { Telemetry, TelemetryOptions } from './src/telemetry/telemetry'
-export type { MotiaTracer } from './src/telemetry/tracer'
-export type { MotiaMetrics } from './src/telemetry/metrics'
+export { createTelemetry } from './src/telemetry/telemetry'
+export { getTelemetryIdentityAttributes } from './src/telemetry/identity'
+export { isTelemetryEnabled, handleError, sanitizeAttributes, getActiveHandlesCount, getActiveRequestsCount, findPackageJson } from './src/telemetry/utils'
+export type { Telemetry, TelemetryOptions, MotiaTracer, MotiaMetrics } from './src/telemetry/types'

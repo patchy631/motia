@@ -5,7 +5,7 @@ import path from 'path'
 import { isAllowedToEmit } from './utils'
 import { BaseLogger } from './logger'
 import { Printer } from './printer'
-import { Telemetry } from './telemetry'
+import type { Telemetry } from './telemetry/types'
 
 type StateGetInput = { traceId: string; key: string }
 type StateSetInput = { traceId: string; key: string; value: unknown }
@@ -104,8 +104,19 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
     })
     rpcProcessor.handler<Event>('emit', async (input) => {
       if (!isAllowedToEmit(step, input.topic)) {
+        telemetry?.metrics.incrementCounter('steps.invalid_emit', 1, {
+          step_type: step.config.type,
+          step_name: step.config.name,
+          topic: input.topic,
+        })
         return printer.printInvalidEmit(step, input.topic)
       }
+
+      telemetry?.metrics.incrementCounter('steps.emit', 1, {
+        step_type: step.config.type,
+        step_name: step.config.name,
+        topic: input.topic,
+      })
 
       return eventManager.emit({ ...input, traceId, flows: step.config.flows, logger }, step.filePath)
     })

@@ -3,7 +3,7 @@ import { ApiRouteConfig, CronConfig, EventConfig, Flow, Step } from './types'
 import { isApiStep, isCronStep, isEventStep } from './guards'
 import { validateStep } from './step-validator'
 import { Printer } from './printer'
-import { Telemetry } from './telemetry'
+import type { Telemetry } from './telemetry/types'
 
 type FlowEvent = 'flow-created' | 'flow-removed' | 'flow-updated'
 type StepEvent = 'step-created' | 'step-removed' | 'step-updated'

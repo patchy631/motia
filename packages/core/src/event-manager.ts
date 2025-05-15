@@ -1,6 +1,6 @@
 import { globalLogger } from './logger'
 import { Event, EventManager, Handler, SubscribeConfig, UnsubscribeConfig } from './types'
-import { Telemetry } from './telemetry/telemetry'
+import type { Telemetry } from './telemetry/types'
 
 type EventHandler = {
   filePath: string
@@ -16,12 +16,11 @@ export const createEventManager = (telemetry?: Telemetry): EventManager => {
 
     // Record event emission in telemetry
     const spanName = `event.emit.${event.topic}`
-    return telemetry?.tracer.startActiveSpan<void>(spanName, (span) => {
+    return telemetry?.tracer.startActiveSpan<void>(spanName, () => {
       telemetry?.tracer.setAttributes({
         'event.topic': event.topic,
         'event.handlers.count': eventHandlers.length,
         'event.trace_id': event.traceId || '',
-        'event.source_file': file || '',
       });
 
       // Record metric for event emission
@@ -35,7 +34,7 @@ export const createEventManager = (telemetry?: Telemetry): EventManager => {
         const handlersPromises = eventHandlers.map((eventHandler) => {
           return Promise.resolve().then(() => {
             const handlerSpanName = `event.handle.${event.topic}`
-            return telemetry?.tracer.startActiveSpan(handlerSpanName, (handlerSpan) => {
+            return telemetry?.tracer.startActiveSpan(handlerSpanName, () => {
               telemetry?.tracer.setAttributes({
                 'event.handler.file': eventHandler.filePath,
                 'event.topic': event.topic,

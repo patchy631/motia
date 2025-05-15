@@ -6,6 +6,7 @@ import {
   globalLogger,
   createStateAdapter,
   createMermaidGenerator,
+  getTelemetryIdentityAttributes,
 } from '@motiadev/core'
 import { generateLockedData } from './generate-locked-data'
 import path from 'path'
@@ -23,14 +24,8 @@ require('ts-node').register({
 
 export const dev = async (port: number, isVerbose: boolean, enableMermaid: boolean): Promise<void> => {
   const baseDir = process.cwd()
-  
-  // Configure telemetry with anonymized project and user attributes
-  const telemetryConfig = {
-    ...getTelemetryConfigFromEnv(),
-    debug: isVerbose,
-  }
-  
-  const telemetry = initializeSnapTelemetry(telemetryConfig)
+
+  const telemetry = initializeSnapTelemetry(isVerbose)
 
   activatePythonVenv({ baseDir, isVerbose })
 
@@ -42,18 +37,7 @@ export const dev = async (port: number, isVerbose: boolean, enableMermaid: boole
   })
   await (state as FileStateAdapter).init()
 
-  const config = { 
-    isVerbose,
-    telemetry: {
-      enabled: telemetryConfig.enabled,
-      environment: telemetryConfig.environment,
-      endpoint: telemetryConfig.endpoint,
-      debug: telemetryConfig.debug,
-      customAttributes: telemetryConfig.attributes,
-    } 
-  }
-  
-  const motiaServer = await createServer(lockedData, eventManager, state, config)
+  const motiaServer = await createServer(lockedData, eventManager, state, { isVerbose })
   const motiaEventManager = createStepHandlers(lockedData, eventManager, state)
   const watcher = createDevWatchers(lockedData, motiaServer, motiaEventManager, motiaServer.cronManager)
 
@@ -76,6 +60,8 @@ export const dev = async (port: number, isVerbose: boolean, enableMermaid: boole
     : // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('@motiadev/workbench/dist/middleware')
   await applyMiddleware(motiaServer.app)
+
+  lockedData.telemetry?.metrics.incrementCounter('motia.startup', 1, getTelemetryIdentityAttributes())
 
   // 6) Gracefully shut down on SIGTERM
   process.on('SIGTERM', async () => {

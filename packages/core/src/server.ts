@@ -16,8 +16,8 @@ import { callStepFile } from './call-step-file'
 import { LoggerFactory } from './LoggerFactory'
 import { generateTraceId } from './generate-trace-id'
 import { flowsConfigEndpoint } from './flows-config-endpoint'
-import { createTelemetry, Telemetry } from './telemetry'
 import { apiEndpoints } from './api-endpoints'
+import type { Telemetry } from './telemetry/types'
 
 export type MotiaServer = {
   app: Express
@@ -32,15 +32,6 @@ export type MotiaServer = {
 
 type MotiaServerConfig = {
   isVerbose: boolean
-  telemetry?: {
-    enabled?: boolean
-    serviceName?: string
-    serviceVersion?: string
-    environment?: string
-    endpoint?: string
-    debug?: boolean
-    customAttributes?: Record<string, string>
-  }
 }
 
 export const createServer = async (
@@ -49,21 +40,6 @@ export const createServer = async (
   state: StateAdapter,
   config: MotiaServerConfig,
 ): Promise<MotiaServer> => {
-  // Pass telemetry to lockedData if it wasn't already set
-  if (lockedData.telemetry === undefined && config.telemetry?.enabled !== false) {
-    lockedData.telemetry = createTelemetry({
-      serviceName: config.telemetry?.serviceName || 'motia-core',
-      serviceVersion: process.env.npm_package_version || '0.0.0',
-      environment: config.telemetry?.environment || process.env.NODE_ENV || 'development',
-      instrumentationName: 'motia-core',
-      tracing: {
-        endpoint: config.telemetry?.endpoint,
-        debug: config.telemetry?.debug || false,
-      },
-      customAttributes: config.telemetry?.customAttributes,
-      enableGlobalErrorHandlers: true,
-    });
-  }
 
   const printer = lockedData.printer
   const app = express()
@@ -90,8 +66,6 @@ export const createServer = async (
         // Set span attributes for the API request
         lockedData.telemetry?.tracer.setAttributes({
           'http.method': req.method,
-          'http.url': req.url,
-          'http.route': step.config.path,
           'step.name': stepName,
           'step.type': 'api',
           'trace.id': traceId,
@@ -138,12 +112,11 @@ export const createServer = async (
 
           if (!result) {
             lockedData.telemetry?.tracer.addEvent('api.response.error', {
-              error: 'Internal server error',
+              method: req.method,
               status: 500
             });
             lockedData.telemetry?.metrics.incrementCounter('api.errors', 1, {
               method: req.method,
-              path: req.path,
               status: '500',
               error: 'Internal server error'
             });
@@ -161,7 +134,6 @@ export const createServer = async (
           });
           lockedData.telemetry?.metrics.incrementCounter('api.responses', 1, {
             method: req.method,
-            path: req.path,
             status: result.status.toString()
           });
 
@@ -173,7 +145,6 @@ export const createServer = async (
           lockedData.telemetry?.tracer.recordException(error instanceof Error ? error : new Error(errorMessage))
           lockedData.telemetry?.metrics.incrementCounter('api.errors', 1, {
             method: req.method,
-            path: req.path,
             status: '500',
             error: errorMessage
           });
@@ -212,7 +183,6 @@ export const createServer = async (
 
     lockedData.telemetry?.metrics.incrementCounter('api.routes.added', 1, {
       method: step.config.method,
-      path: step.config.path,
       step_name: step.config.name,
     });
 
@@ -234,7 +204,6 @@ export const createServer = async (
 
     lockedData.telemetry?.metrics.incrementCounter('api.routes.removed', 1, {
       method: step.config.method,
-      path: step.config.path,
       step_name: step.config.name,
     });
 

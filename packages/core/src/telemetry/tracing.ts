@@ -2,31 +2,22 @@ import { NodeSDK } from '@opentelemetry/sdk-node'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
-import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrumentation-express'
+import { ExpressLayerType } from '@opentelemetry/instrumentation-express'
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
+import { handleError } from './utils'
+import type { TracingOptions } from './types'
 
-export interface TracingOptions {
-  serviceName: string
-  serviceVersion: string
-  environment: string
-  endpoint?: string
-  debug?: boolean
-  headers?: Record<string, string>
-  samplingRatio?: number
-  customAttributes?: Record<string, string>
-}
 
-export function initializeTracing(options: TracingOptions): NodeSDK {
+export const initializeTracing = (options: TracingOptions): NodeSDK => {
   const {
     serviceName,
     serviceVersion,
     environment,
-    endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+    endpoint = process.env.MOTIA_OTEL_EXPORTER_OTLP_ENDPOINT,
     debug = false,
     headers = {},
-    samplingRatio = 1.0,
     customAttributes = {}
   } = options
 
@@ -42,11 +33,19 @@ export function initializeTracing(options: TracingOptions): NodeSDK {
   })
 
   const traceExporter = new OTLPTraceExporter({
-    url: endpoint,
+    url: `${endpoint}/v1/traces`,
     headers,
   })
 
-  const instrumentations = [
+  const instrumentations = createInstrumentations()
+  const sdk = createTracingSdk(resource, traceExporter, instrumentations)
+  setupShutdownHandler(sdk, debug)
+
+  return sdk
+}
+
+const createInstrumentations = (): any[] => {
+  return [
     getNodeAutoInstrumentations({
       '@opentelemetry/instrumentation-fs': { enabled: false },
       '@opentelemetry/instrumentation-express': {
@@ -60,13 +59,6 @@ export function initializeTracing(options: TracingOptions): NodeSDK {
         },
       },
     }),
-    new ExpressInstrumentation({
-      requestHook: (span, info) => {
-        if (info.request?.route?.path) {
-          span.setAttribute('http.route', info.request.route.path)
-        }
-      },
-    }),
     new HttpInstrumentation({
       responseHook: (span, response) => {
         if (response.statusCode && response.statusCode >= 400) {
@@ -75,20 +67,22 @@ export function initializeTracing(options: TracingOptions): NodeSDK {
       },
     }),
   ]
+}
 
-  const sdk = new NodeSDK({
+const createTracingSdk = (resource: any, traceExporter: OTLPTraceExporter, instrumentations: any[]): NodeSDK => {
+  return new NodeSDK({
     resource,
     traceExporter,
     instrumentations,
   })
+}
 
+const setupShutdownHandler = (sdk: NodeSDK, debug: boolean): void => {
   process.on('SIGTERM', () => {
     sdk
       .shutdown()
-      .then(() => console.log('Tracing terminated'))
-      .catch((error) => console.log('Error terminating tracing', error))
+      .then(() => debug && console.log('Tracing terminated'))
+      .catch((error) => handleError(error, 'terminating tracing', debug))
       .finally(() => process.exit(0))
   })
-
-  return sdk
 }

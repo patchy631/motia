@@ -6,7 +6,7 @@ import { StateAdapter } from './state/state-adapter'
 import { CronConfig, EventManager, Step } from './types'
 import { LoggerFactory } from './LoggerFactory'
 import { generateTraceId } from './generate-trace-id'
-import { Telemetry } from './telemetry'
+import type { Telemetry } from './telemetry/types'
 
 export type CronManager = {
   createCronJob: (step: Step<CronConfig>) => void
@@ -97,6 +97,8 @@ export const setupCronHandlers = (
           error_type: error.name || 'unknown',
           error_message: error.message || '',
         })
+
+        telemetry?.tracer.recordException(error)
         
         logger.error('[cron handler] error executing cron job', {
           error: error.message,

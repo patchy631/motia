@@ -23,6 +23,104 @@ pnpm add @motiadev/core
 - API route handling
 - Logging infrastructure
 
+## Telemetry and Monitoring
+
+Motia Core includes OpenTelemetry integration for monitoring and tracking your application's performance, errors, and metrics. This is particularly useful when deploying your Motia application to production, as it allows you to monitor what's happening in your users' environments.
+
+### Enabling Telemetry
+
+Telemetry is enabled by default but can be disabled by setting the environment variable `MOTIA_TELEMETRY_ENABLED=false`.
+
+### Configuration
+
+The telemetry system can be configured with the following options:
+
+```typescript
+interface TelemetryOptions {
+  serviceName: string;
+  serviceVersion: string;
+  environment: string;
+  instrumentationName: string;
+  tracing?: {
+    endpoint?: string;
+    debug?: boolean;
+    headers?: Record<string, string>;
+  };
+  metrics?: {
+    endpoint?: string;
+    headers?: Record<string, string>;
+    exportIntervalMillis?: number;
+  };
+  enableGlobalErrorHandlers?: boolean;
+}
+```
+
+### Environment Variables
+
+You can configure telemetry using the following environment variables:
+
+- `MOTIA_TELEMETRY_ENABLED`: Set to 'false' to disable telemetry (default: 'true')
+- `MOTIA_SERVICE_NAME`: Name of your service (default: 'motia-core' or 'motia-user-app')
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: URL of your OpenTelemetry collector (default: 'http://localhost:4318')
+- `MOTIA_TELEMETRY_DEBUG`: Set to 'true' to enable debug logging for telemetry (default: 'false')
+- `NODE_ENV`: Environment name (default: 'development')
+
+### Example Usage
+
+Here's how to initialize telemetry when creating a server:
+
+```typescript
+import { createServer, createEventManager, createStateAdapter, LockedData } from '@motiadev/core';
+
+// Initialize server with telemetry
+const server = await createServer(lockedData, eventManager, state, {
+  isVerbose: true,
+  telemetry: {
+    enabled: true,
+    serviceName: 'my-motia-app',
+    environment: 'production',
+    endpoint: 'https://otel-collector.example.com:4318',
+  }
+});
+```
+
+### Using the Telemetry API
+
+Once initialized, you can access the telemetry object to create custom spans, record metrics, and track errors:
+
+```typescript
+const { telemetry } = server;
+
+// Create a custom span
+telemetry?.tracer.startActiveSpan('custom-operation', async (span) => {
+  try {
+    // Your code here
+    
+    // Add attributes to the span
+    telemetry.tracer.setAttributes({
+      'custom.attribute': 'value'
+    });
+    
+    // Record a metric
+    telemetry.metrics.incrementCounter('custom.counter', 1, {
+      category: 'my-category'
+    });
+    
+    // Start a timer
+    const endTimer = telemetry.metrics.startTimer('operation.duration');
+    
+    // ... do some work ...
+    
+    // End timer
+    endTimer();
+  } catch (error) {
+    // Record exception
+    telemetry.tracer.recordException(error);
+    throw error;
+  }
+});
+```
+
 ## Key Components
 
 ### Server

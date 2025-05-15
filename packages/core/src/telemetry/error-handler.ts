@@ -1,6 +1,6 @@
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 
-export function recordException(error: Error, metadata?: Record<string, unknown>): void {
+export const recordException = (error: Error, metadata?: Record<string, unknown>): void => {
   const span = trace.getSpan(context.active());
   if (!span || !span.isRecording()) {
     return;
@@ -16,10 +16,14 @@ export function recordException(error: Error, metadata?: Record<string, unknown>
       }
     });
   }
-}
+};
 
-export function setupGlobalErrorHandlers(): void {
-  // Handle uncaught exceptions
+export const setupGlobalErrorHandlers = (): void => {
+  setupUncaughtExceptionHandler();
+  setupUnhandledRejectionHandler();
+};
+
+const setupUncaughtExceptionHandler = (): void => {
   process.on('uncaughtException', (error) => {
     recordException(error, { 
       type: 'uncaughtException',
@@ -28,24 +32,11 @@ export function setupGlobalErrorHandlers(): void {
     });
     console.error('Uncaught Exception:', error);
   });
+};
 
-  // Handle unhandled promise rejections
+const setupUnhandledRejectionHandler = (): void => {
   process.on('unhandledRejection', (reason, promise) => {
-    let error: Error;
-    if (reason instanceof Error) {
-      error = reason;
-    } else {
-      error = new Error(String(reason));
-      error.name = 'UnhandledRejection';
-      
-      // Capture the original non-Error reason
-      if (reason !== null && reason !== undefined) {
-        Object.defineProperty(error, 'originalReason', {
-          value: reason,
-          enumerable: false,
-        });
-      }
-    }
+    const error = createErrorFromRejection(reason);
     
     recordException(error, { 
       type: 'unhandledRejection',
@@ -56,4 +47,22 @@ export function setupGlobalErrorHandlers(): void {
     
     console.error('Unhandled Rejection:', reason);
   });
-} 
+};
+
+const createErrorFromRejection = (reason: unknown): Error => {
+  if (reason instanceof Error) {
+    return reason;
+  }
+  
+  const error = new Error(String(reason));
+  error.name = 'UnhandledRejection';
+  
+  if (reason !== null && reason !== undefined) {
+    Object.defineProperty(error, 'originalReason', {
+      value: reason,
+      enumerable: false,
+    });
+  }
+  
+  return error;
+}; 

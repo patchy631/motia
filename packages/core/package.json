@@ -27,6 +27,7 @@
     "@opentelemetry/sdk-trace-base": "^2.0.0",
     "@opentelemetry/sdk-trace-node": "^2.0.0",
     "@opentelemetry/semantic-conventions": "^1.33.0",
+    "@opentelemetry/host-metrics": "^0.36.0",
     "body-parser": "^1.20.3",
     "colors": "^1.4.0",
     "cors": "^2.8.5",

@@ -1,103 +1,113 @@
-import { createTelemetry, Telemetry, TelemetryOptions, getTelemetryIdentityAttributes } from '@motiadev/core';
+import { createTelemetry, Telemetry, TelemetryOptions, findPackageJson } from '@motiadev/core';
 import fs from 'fs';
-import path from 'path';
-
-export interface SnapTelemetryOptions {
-  enabled?: boolean;
-  environment?: string;
-  endpoint?: string;
-  debug?: boolean;
-  attributes?: Record<string, string>;
-}
+import crypto from 'crypto';
 
 /**
  * Initialize telemetry for the Snap package with privacy-focused identification
  * All identifying information is anonymized through one-way hashing
  */
-export function initializeSnapTelemetry(options: SnapTelemetryOptions = {}): Telemetry {
-  // Try to detect package version from closest package.json
-  let serviceVersion = '0.0.0';
-  let serviceName = 'motia-user-app';
+export const initializeSnapTelemetry = (): Telemetry => {
+  // Get configuration from environment
+  const {
+    enabled,
+    environment,
+    endpoint,
+    debug,
+    apiKey
+  } = getTelemetryConfigFromEnv();
   
-  try {
-    // Look for the user's package.json, starting from the current directory
-    const packageJsonPath = findPackageJson(process.cwd());
-    
-    if (packageJsonPath) {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-      serviceVersion = packageJson.version || '0.0.0';
-      serviceName = require('crypto').createHash('sha1').update(packageJson.name).digest('hex');
-    }
-  } catch (error) {
-    console.warn('Failed to detect service version:', error);
+  if (!enabled) {
+    return createDisabledTelemetry();
   }
 
-  // Get privacy-safe identity attributes
-  const identityAttributes = getTelemetryIdentityAttributes();
+  const { name, version } = getPackageDetails();
   
-  // Combine with user-provided attributes
-  const combinedAttributes = {
-    ...identityAttributes,
-    ...(options.attributes || {}),
-  };
+  const instrumentationName = generateInstrumentationName(name);
+  
+  const headers = apiKey ? { 'api-key': apiKey } : undefined;
 
   const telemetryOptions: TelemetryOptions = {
-    serviceName,
-    serviceVersion,
-    environment: options.environment || process.env.NODE_ENV || 'development',
-    instrumentationName: 'motia-snap',
+    serviceName: 'motia-framework',
+    serviceVersion: version,
+    environment,
+    instrumentationName,
     tracing: {
-      endpoint: options.endpoint || process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
-      debug: options.debug || process.env.MOTIA_TELEMETRY_DEBUG === 'true',
+      endpoint,
+      debug,
+      headers,
     },
     metrics: {
-      endpoint: options.endpoint || process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+      endpoint,
+      headers,
     },
-    customAttributes: combinedAttributes,
     enableGlobalErrorHandlers: true,
-    debug: options.debug || process.env.MOTIA_TELEMETRY_DEBUG === 'true',
+    debug,
   };
 
   return createTelemetry(telemetryOptions);
-}
+};
 
 /**
- * Find the closest package.json file by walking up the directory tree
- * @param startDir The directory to start searching from
- * @param maxDepth Maximum number of parent directories to check
- * @returns Path to package.json or null if not found
+ * Create a disabled telemetry instance when telemetry is turned off
  */
-function findPackageJson(startDir: string, maxDepth = 3): string | null {
-  let currentDir = startDir;
+const createDisabledTelemetry = (): Telemetry => {
+  const noopTelemetry: Telemetry = {
+    tracer: {} as any,
+    metrics: {
+      incrementCounter: () => {},
+      recordValue: () => {},
+      startTimer: () => () => 0,
+      recordHistogram: () => {},
+      isEnabled: () => false,
+    },
+    isEnabled: false,
+    shutdown: async () => Promise.resolve(),
+  };
   
-  for (let i = 0; i < maxDepth; i++) {
-    const packageJsonPath = path.join(currentDir, 'package.json');
-    
-    if (fs.existsSync(packageJsonPath)) {
-      return packageJsonPath;
-    }
-    
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) {
-      // We've reached the root directory
-      break;
-    }
-    
-    currentDir = parentDir;
-  }
-  
-  return null;
-}
+  return noopTelemetry;
+};
 
 /**
- * Get telemetry configuration from environment variables
- * @returns Configuration object with values from environment variables
+ * Extract telemetry configuration from environment variables
  */
-export function getTelemetryConfigFromEnv(): SnapTelemetryOptions {
+const getTelemetryConfigFromEnv = () => {
   return {
     enabled: process.env.MOTIA_TELEMETRY_ENABLED !== 'false',
-    environment: process.env.NODE_ENV,
-    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    environment: process.env.NODE_ENV || 'development',
+    endpoint: process.env.MOTIA_OTEL_EXPORTER_OTLP_ENDPOINT,
     debug: process.env.MOTIA_TELEMETRY_DEBUG === 'true',
+    apiKey: process.env.NEW_RELIC_LICENSE_KEY || process.env.MOTIA_TELEMETRY_API_KEY,
   };
-} 
+};
+
+/**
+ * Extract package information from package.json
+ */
+const getPackageDetails = () => {
+  try {
+    const packageJsonPath = findPackageJson(process.cwd());
+    
+    if (packageJsonPath && fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      return {
+        name: packageJson.name || 'unknown-package',
+        version: packageJson.version || '0.0.0'
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to detect package details:', error);
+  }
+  
+  return {
+    name: 'unknown-package',
+    version: '0.0.0'
+  };
+};
+
+/**
+ * Generate a hashed instrumentation name from the package name
+ * for privacy and consistency
+ */
+const generateInstrumentationName = (packageName: string): string => {
+  return crypto.createHash('sha1').update(packageName).digest('hex').substring(0, 16);
+}; 
