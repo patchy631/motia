@@ -5,6 +5,7 @@ import path from 'path'
 import tailwindcss from 'tailwindcss'
 import { createServer as createViteServer } from 'vite'
 import tailwindcssConfig from './tailwind.config'
+import react from '@vitejs/plugin-react'
 
 export const applyMiddleware = async (app: Express) => {
   const vite = await createViteServer({
@@ -20,6 +21,7 @@ export const applyMiddleware = async (app: Express) => {
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },
     },
+    plugins: [react()],
     css: {
       postcss: {
         plugins: [autoprefixer(), tailwindcss(tailwindcssConfig)],

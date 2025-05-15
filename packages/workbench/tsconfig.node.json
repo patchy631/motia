@@ -20,5 +20,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "middleware.ts", "tailwind.config.ts"]
+  "include": ["middleware.ts", "tailwind.config.ts"]
 }
