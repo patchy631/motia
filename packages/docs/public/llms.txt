@@ -362,7 +362,7 @@ exports.config = {
   name: 'AddNumbers',
   subscribes: ['add-numbers'],
   emits: ['numbers-added'],
-  flows: ['calculator-flow'] // <-- Flow association
+  flows: ['calculator-flow'], // <-- Flow association
 }
 
 // ... handler definition
@@ -377,17 +377,16 @@ exports.config = {
   name: 'ValidateNumbers',
   subscribes: ['numbers-added'],
   emits: ['numbers-validated'],
-  flows: ['calculator-flow'] // <-- Same flow name connects the steps
+  flows: ['calculator-flow'], // <-- Same flow name connects the steps
 }
 
 // ... handler definition
 ```
 
 <Callout type="info">
-  💡 Best Practices:
-  - Use descriptive flow names that reflect their purpose (e.g., 'user-registration-flow', 'payment-processing-flow')
-  - A [step](/docs/concepts/steps/defining-steps) can belong to multiple flows: `flows: ['billing-flow', 'analytics-flow']`
-  - Keep flows focused on specific business processes for better organization
+  💡 Best Practices: - Use descriptive flow names that reflect their purpose (e.g., 'user-registration-flow',
+  'payment-processing-flow') - A [step](/docs/concepts/steps/defining-steps) can belong to multiple flows: `flows:
+  ['billing-flow', 'analytics-flow']` - Keep flows focused on specific business processes for better organization
 </Callout>
 
 ### Visualizing Your Flows
@@ -404,6 +403,7 @@ After you've defined your flows, you can visualize them in [Motia Workbench](/do
       <Tab value="pnpm">```pnpm run dev ```</Tab>
       <Tab value="bun">```bun run dev ```</Tab>
     </Tabs>
+
   </Step>
   <Step>
     [Open](http://localhost:3000) Motia Workbench in your browser (typically at `http://localhost:3000` or `http://127.0.0.1:3000`).
@@ -419,9 +419,8 @@ After you've defined your flows, you can visualize them in [Motia Workbench](/do
 
 Checkout the [Motia Workbench](/docs/workbench/overview) docs for more information.
 
-<Callout>
-New to Motia? Follow the **[quick start](/docs/getting-started/quick-start)** guide to get set up.
-</Callout>
+<Callout>New to Motia? Follow the **[quick start](/docs/getting-started/quick-start)** guide to get set up.</Callout>
+
 
 -   [Logging & Debugging](/docs/concepts/logging-and-debugging.md): Documentation for Logging & Debugging.
 ---
@@ -441,19 +440,19 @@ Motia provides an out of the box logging and debugging system that works across 
 
 Motia supports four standard log levels:
 
-| Log Type | Description |
-| -------- | ----------- |
+| Log Type | Description                                                                        |
+| -------- | ---------------------------------------------------------------------------------- |
 | info     | General information about step execution, flow progress, and successful operations |
-| error    | Critical issues, exceptions, failed operations, and system errors |
-| debug    | Detailed debugging information and diagnostic data for troubleshooting |
-| warn     | Potential issues, edge cases, or situations requiring attention |
+| error    | Critical issues, exceptions, failed operations, and system errors                  |
+| debug    | Detailed debugging information and diagnostic data for troubleshooting             |
+| warn     | Potential issues, edge cases, or situations requiring attention                    |
 
 ### Example Usage
 
-<Tabs items={['TS', 'JS', 'Python', 'Ruby']}>
+<Tabs items={['TS', 'JS', 'Python']}>
   <Tab value='TS'>
     ```typescript
-    export const handler: StepHandler<typeof config> = async (input, { logger }) => {
+    export const handler: Handlers['StepName'] = async (input, { logger }) => {
       // Basic logging
       logger.info('Starting process')
 
@@ -488,6 +487,7 @@ Motia supports four standard log levels:
       }
     }
     ```
+
   </Tab>
   <Tab value='JS'>
     ```javascript
@@ -526,6 +526,7 @@ Motia supports four standard log levels:
       }
     }
     ```
+
   </Tab>
   <Tab value='Python'>
     ```python
@@ -555,49 +556,11 @@ Motia supports four standard log levels:
         })
 
         # Warning logging
-        if input.get("amount") > 1000:
+        if input.amount > 1000:
             ctx.logger.warn('Large operation detected', {
                 'amount': input.get("amount"),
                 'threshold': 1000
             })
-    ```
-  </Tab>
-  <Tab value='Ruby'>
-    ```ruby
-    def handler(input, ctx)
-      # Basic logging
-      ctx.logger.info('Starting process')
-
-      # Logging with context
-      ctx.logger.info('Operation completed', {
-        operation_id: input.id,
-        duration: 1500
-      })
-
-      # Error handling
-      begin
-        risky_operation()
-      rescue StandardError => error
-        ctx.logger.error('Operation failed', {
-          error: error.message,
-          stack: error.backtrace.join("\n")
-        })
-      end
-
-      # Debug logging
-      ctx.logger.debug('Operation details', {
-        raw_input: input.to_h,
-        timestamp: Time.now.to_i
-      })
-
-      # Warning logging
-      if input.amount > 1000
-        ctx.logger.warn('Large operation detected', {
-          amount: input.amount,
-          threshold: 1000
-        })
-      end
-    end
     ```
   </Tab>
 </Tabs>
@@ -622,8 +585,9 @@ Motia supports four standard log levels:
       - Open [Motia Workbench](http://localhost:3000), select your flow, and expand the logs container
       - View logs directly in the terminal where you ran the dev command
   </Step>
+  
   <Step>
-  ### Trigger and Monitor Flows
+    ### Trigger and Monitor Flows
 
     You can trigger flows using either the CLI or an [API step](/docs/concepts/steps/api):
 
@@ -642,22 +606,23 @@ Motia supports four standard log levels:
       </Tab>
     </Tabs>
   </Step>
+  
   <Step>
-  ### Debug Using Logs
+    ### Debug Using Logs
 
-  Each log entry automatically includes:
+    Each log entry automatically includes:
 
-  - `timestamp`: When the log was generated
-  - `traceId`: Unique identifier for the flow execution
-  - `flows`: Array of flow names this step belongs to
-  - `file`: Source file generating the log
-  - `level`: Log level
-  - `msg`: Log message
+    - `timestamp`: When the log was generated
+    - `traceId`: Unique identifier for the flow execution
+    - `flows`: Array of flow names this step belongs to
+    - `file`: Source file generating the log
+    - `level`: Log level
+    - `msg`: Log message
   </Step>
+  
   <Step>
-  ### Stopping the development server
-
-  Press **Ctrl + C** (or **Cmd + C** on macOS) in your terminal. That's it!
+    ### Stopping the development server
+    Press **Ctrl + C** (or **Cmd + C** on macOS) in your terminal. That's it!
   </Step>
 </Steps>
 
@@ -670,7 +635,7 @@ Motia supports four standard log levels:
 logger.info('Payment processed', {
   paymentId: '123',
   amount: 100,
-  status: 'success'
+  status: 'success',
 })
 
 // Avoid - Harder to parse and search
@@ -680,50 +645,46 @@ logger.info(`Payment ${paymentId} processed: amount=${amount}`)
 ### Performance Monitoring
 
 ```typescript
-export const handler: StepHandler<typeof config> = async (input, { logger }) => {
+export const handler: Handlers['StepName'] = async (input, { logger }) => {
   const startTime = performance.now()
-  
+
   // Process operation
   const result = await processOperation(input)
 
   logger.info('Operation completed', {
     duration: performance.now() - startTime,
-    memoryUsage: process.memoryUsage().heapUsed
+    memoryUsage: process.memoryUsage().heapUsed,
   })
 }
 ```
 
 ### Debugging Tips
 
-{/* TODO: Add Motia Workbench filter logs guide when the feature is implemented*/}
-{/* 1. Use Motia Workbench to filter logs by:
-   - Log level
-   - Flow
-   - Time range
-   - Content search */}
-
 1. Add detailed context to error logs:
+
 ```typescript
 logger.error('Operation failed', {
   error: error.message,
   code: error.code,
   input: JSON.stringify(input),
-  stack: error.stack
+  stack: error.stack,
 })
 ```
 
 2. Use debug logs for detailed troubleshooting:
+
 ```typescript
 logger.debug('Operation details', {
   rawInput: input,
   timestamp: Date.now(),
-  state: currentState
+  state: currentState,
 })
 ```
 
 <Callout>
-Remember to stop your development server with Ctrl + C (or Cmd + C on macOS) when you're done debugging.
-</Callout> 
+  Remember to stop your development server with Ctrl + C (or Cmd + C on macOS) when you're done debugging.
+</Callout>
+
 
 -   [state-management](/docs/concepts/state-management.md): Documentation for state-management.
 ---
@@ -733,38 +694,38 @@ description: Learn how to manage state within your Motia.dev workflows for persi
 
 State management is fundamental to building robust and dynamic workflows in Motia.dev. Our system is designed to be powerful yet simple, providing you with everything you need to maintain state across your flows and steps:
 
-✨ **Zero Configuration (Default):**  In-memory storage out of the box for quick setup. <br />
-🔌 **Flexible Storage Options:**  Choose from Memory, File, and Redis adapters to suit your persistence needs. <br />
-🧹 **Automatic State Cleanup:**  Optional Time-To-Live (TTL) support for automatic state expiration (Redis). <br />
-🔒 **Built-in Isolation:**  Each flow execution can use its own isolated state, ensuring data separation and security. <br />
+✨ **Zero Configuration (Default):** In-memory storage out of the box for quick setup. <br />
+🔌 **Flexible Storage Options:** Choose from Memory, File, and Redis adapters to suit your persistence needs. <br />
+🧹 **Automatic State Cleanup:** Optional Time-To-Live (TTL) support for automatic state expiration (Redis). <br />
+🔒 **Built-in Isolation:** Each flow execution can use its own isolated state, ensuring data separation and security. <br />
 
 ## Core Concepts: State Manager Methods
 
 The `state` object, accessible within your step handlers via the `ctx` context, provides the following methods for state management:
 
-| Method   | Parameters                                 | Return Type        | Description                                                                                                                                                                                              |
-| -------- | ------------------------------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get`    | `scope: string, key: string`             | `Promise<T \| null>` | Retrieves a value associated with the given `key` and `scope` from the state store. Returns `null` if the key is not found. The type `T` is inferred based on how you use the returned value. |
-| `set`    | `scope: string, key: string, value: T`    | `Promise<void>`    | Stores a `value` associated with the given `key` and `scope` in the state store. The type `T` can be any serializable JavaScript/JSON value.                                                        |
-| `delete` | `scope: string, key: string`             | `Promise<void>`    | Removes the key-value pair associated with the given `key` and `scope` from the state store.                                                                                                          |
-| `clear`  | `scope: string`                             | `Promise<void>`    | Removes **all** state data associated with the provided `scope`. This is useful for cleaning up state for a specific scope.                                        |
-| `cleanup`| *(None)*                                   | `Promise<void>`    | Performs periodic maintenance tasks, such as removing expired state data (TTL cleanup). The actual implementation depends on the configured state adapter.                                                 |
+| Method    | Parameters                             | Return Type          | Description                                                                                                                                                                                   |
+| --------- | -------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get`     | `scope: string, key: string`           | `Promise<T \| null>` | Retrieves a value associated with the given `key` and `scope` from the state store. Returns `null` if the key is not found. The type `T` is inferred based on how you use the returned value. |
+| `set`     | `scope: string, key: string, value: T` | `Promise<void>`      | Stores a `value` associated with the given `key` and `scope` in the state store. The type `T` can be any serializable JavaScript/JSON value.                                                  |
+| `delete`  | `scope: string, key: string`           | `Promise<void>`      | Removes the key-value pair associated with the given `key` and `scope` from the state store.                                                                                                  |
+| `clear`   | `scope: string`                        | `Promise<void>`      | Removes **all** state data associated with the provided `scope`. This is useful for cleaning up state for a specific scope.                                                                   |
+| `cleanup` | _(None)_                               | `Promise<void>`      | Performs periodic maintenance tasks, such as removing expired state data (TTL cleanup). The actual implementation depends on the configured state adapter.                                    |
 
 **Important:** State manager methods (`get`, `set`, `delete`, `clear`) **require a `scope` string as the first parameter.** While in most cases, you will use the `traceId` (automatically provided in `ctx.traceId`) as the scope to ensure flow-level isolation, **you can technically use any string value as the scope** to group and manage state data as needed. Using `traceId` is the recommended and most common practice for flow-isolated state.
 
 ### State Scope and Isolation
 
-Each flow execution in Motia.dev is assigned a unique `traceId` (a UUID).  Using this `traceId` as the **scope** for state management provides automatic isolation, ensuring: *(Revised to clarify `traceId` as scope)*
+Each flow execution in Motia.dev is assigned a unique `traceId` (a UUID). Using this `traceId` as the **scope** for state management provides automatic isolation, ensuring: _(Revised to clarify `traceId` as scope)_
 
-| Feature     | Description                                                                        |
-| ----------- | ---------------------------------------------------------------------------------- |
-| **Isolation** | Each flow execution operates within its own isolated state space when using `traceId` as the scope.                   |
+| Feature        | Description                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Isolation**  | Each flow execution operates within its own isolated state space when using `traceId` as the scope.                 |
 | **Boundaries** | Clear separation of state data between different flow executions when scoped by `traceId`, preventing interference. |
-| **Cleanup**   | State data scoped by `traceId` can be easily cleared using `state.clear(traceId)`. |
+| **Cleanup**    | State data scoped by `traceId` can be easily cleared using `state.clear(traceId)`.                                  |
 
 ### State Structure Example
 
-State data is stored as key-value pairs, namespaced under a scope string.  When using `traceId` as the scope, the internal structure might look like this:
+State data is stored as key-value pairs, namespaced under a scope string. When using `traceId` as the scope, the internal structure might look like this:
 
 ```typescript
 // Example state structure (internal representation) - using traceId as scope
@@ -789,17 +750,17 @@ State data is stored as key-value pairs, namespaced under a scope string.  When 
 
 ## Using State in Steps
 
-<Tabs items={['TypeScript', 'JavaScript', 'Python', 'Ruby']}>
+<Tabs items={['TypeScript', 'JavaScript', 'Python']}>
   <Tab label="TypeScript">
     ```typescript
-    import { StepHandler } from 'motia'
+    import { Handlers } from 'motia'
 
     interface BookingData {
       customer: { name: string; email: string };
       venue: { id: string; name: string };
     }
 
-    export const handler: StepHandler<typeof config> = async (input, { state, traceId }) => { // Get traceId from context
+    export const handler: Handlers['StepName'] = async (input, { state, traceId }) => { // Get traceId from context
       // Store state (using traceId as scope)
       await state.set<BookingData>(traceId, 'booking', {
         customer: input.customer,
@@ -816,13 +777,14 @@ State data is stored as key-value pairs, namespaced under a scope string.  When 
       await state.clear(traceId);
     }
     ```
+
   </Tab>
 
   <Tab label="JavaScript">
     ```javascript
-    import { StepHandler } from 'motia'
+    import { Handlers } from 'motia'
 
-    export const handler = async (input, { state, traceId }) => { // Get traceId from context
+    export const handler: Handlers['StepName'] = async (input, { state, traceId }) => { // Get traceId from context
       // Store state (using traceId as scope)
       await state.set(traceId, 'booking', {
         customer: input.customer,
@@ -839,6 +801,7 @@ State data is stored as key-value pairs, namespaced under a scope string.  When 
       await state.clear(traceId);
     }
     ```
+
   </Tab>
 
   <Tab label="Python">
@@ -847,42 +810,19 @@ State data is stored as key-value pairs, namespaced under a scope string.  When 
         trace_id = ctx.trace_id # Access traceId from context
 
         # Store state (using traceId as scope)
-        await ctx.state.set(trace_id, 'booking', { 
+        await ctx.state.set(trace_id, 'booking', {
             'customer': input.get("customer"),
             'venue': input.get("venue")
         })
 
         # Retrieve state (using traceId as scope)
-        booking = await ctx.state.get(trace_id, 'booking') 
+        booking = await ctx.state.get(trace_id, 'booking')
 
         # Delete specific state (using traceId as scope)
-        await ctx.state.delete(trace_id, 'booking') 
+        await ctx.state.delete(trace_id, 'booking')
 
         # Clear all state (using traceId as scope)
-        await ctx.state.clear(trace_id) 
-    ```
-  </Tab>
-
-  <Tab label="Ruby">
-    ```ruby
-    def handler(input, context) # context is the context object
-      trace_id = context.trace_id # Access traceId from context
-
-      # Store state (using traceId as scope)
-      context.state.set(trace_id, 'booking', { 
-        customer: input.customer,
-        venue: input.venue
-      })
-
-      # Retrieve state (using traceId as scope)
-      booking = context.state.get(trace_id, 'booking') 
-
-      # Delete specific state
-      context.state.delete(trace_id, 'booking') 
-
-      # Clear all state (using traceId as scope)
-      context.state.clear(trace_id) 
-    end
+        await ctx.state.clear(trace_id)
     ```
   </Tab>
 </Tabs>
@@ -904,6 +844,7 @@ State data is stored as key-value pairs, namespaced under a scope string.  When 
     ```
 
     This command will output the entire state file (motia.state.json) content in JSON format to your console, allowing you to examine the stored state data.
+
   </Tab>
   <Tab label="Redis">
     To inspect state stored in **Redis Adapter**, you can use the `redis-cli` command-line tool to interact with your Redis server:
@@ -913,9 +854,10 @@ State data is stored as key-value pairs, namespaced under a scope string.  When 
     redis-cli KEYS "motia:state:*"
 
     # Get specific state for a given traceId and key
-    redis-cli GET "motia:state:{traceId}:booking" 
+    redis-cli GET "motia:state:{traceId}:booking"
     ```
     **Note:** Replace `{traceId}` in the `redis-cli GET` command with the actual `traceId` of the flow execution you are debugging. Replace `booking` with the specific `key` you want to inspect.
+
   </Tab>
 </Tabs>
 
@@ -925,7 +867,7 @@ State data is stored as key-value pairs, namespaced under a scope string.  When 
 
 Use dot notation to organize related state data hierarchically:
 
-<Tabs items={['TypeScript', 'JavaScript', 'Python', 'Ruby']}>
+<Tabs items={['TypeScript', 'JavaScript', 'Python']}>
   <Tab label="TypeScript">
     ```typescript
     // Good - Organized hierarchically (using traceId scope)
@@ -938,6 +880,7 @@ Use dot notation to organize related state data hierarchically:
     await state.set(traceId, 'venue', venueData)
     await state.set(traceId, 'paymentStatus', 'pending')
     ```
+
   </Tab>
 
   <Tab label="JavaScript">
@@ -952,6 +895,7 @@ Use dot notation to organize related state data hierarchically:
     await state.set(traceId, 'venue', venueData)
     await state.set(traceId, 'paymentStatus', 'pending')
     ```
+
   </Tab>
 
   <Tab label="Python">
@@ -966,20 +910,7 @@ Use dot notation to organize related state data hierarchically:
     await ctx.state.set(trace_id, 'venue', venue_data)
     await ctx.state.set(trace_id, 'payment_status', 'pending')
     ```
-  </Tab>
 
-  <Tab label="Ruby">
-    ```ruby
-    # Good - Organized hierarchically (using traceId scope)
-    state.set(trace_id, 'booking.customer', customer_data)
-    state.set(trace_id, 'booking.venue', venue_data)
-    state.set(trace_id, 'payment.status', 'pending')
-
-    # Avoid - Flat structure
-    state.set(trace_id, 'customer', customer_data)
-    state.set(trace_id, 'venue', venue_data)
-    state.set('payment_status', 'pending')
-    ```
   </Tab>
 </Tabs>
 
@@ -987,7 +918,7 @@ Use dot notation to organize related state data hierarchically:
 
 Define types for your state data to ensure consistency:
 
-<Tabs items={['TypeScript', 'JavaScript', 'Python', 'Ruby']}>
+<Tabs items={['TypeScript', 'JavaScript', 'Python']}>
   <Tab label="TypeScript">
     ```typescript
     interface CustomerData {
@@ -1008,14 +939,14 @@ Define types for your state data to ensure consistency:
 
     const booking = await state.get<BookingState>(traceId, 'booking')
     ```
+
   </Tab>
 
-  <Tab label="JavaScript">
-    ```javascript
-    // Define types or interfaces as needed for documentation clarity (optional in JS)
-    const booking = await state.get(traceId, 'booking') // No type casting in JS example
-    ```
-  </Tab>
+{' '}
+<Tab label="JavaScript">
+  ```javascript // Define types or interfaces as needed for documentation clarity (optional in JS) const booking = await
+  state.get(traceId, 'booking') // No type casting in JS example ```
+</Tab>
 
   <Tab label="Python">
     ```python
@@ -1040,29 +971,7 @@ Define types for your state data to ensure consistency:
 
     booking = await state.get(traceId, 'booking')
     ```
-  </Tab>
 
-  <Tab label="Ruby">
-    ```ruby
-    # Using Sorbet for type checking
-    class CustomerData < T::Struct
-      const :name, String
-      const :email, String
-    end
-
-    class VenueData < T::Struct
-      const :id, String
-      const :capacity, Integer
-    end
-
-    class BookingState < T::Struct
-      const :customer, CustomerData
-      const :venue, VenueData
-      const :status, T.enum([:pending, :confirmed])
-    end
-
-    booking = state.get(traceId, 'booking')
-    ```
   </Tab>
 </Tabs>
 
@@ -1070,10 +979,10 @@ Define types for your state data to ensure consistency:
 
 Always clean up state when you're done with it:
 
-<Tabs items={['TypeScript', 'JavaScript', 'Python', 'Ruby']}>
+<Tabs items={['TypeScript', 'JavaScript', 'Python']}>
     <Tab label="TypeScript">
       ```typescript
-      export const handler: StepHandler<typeof config> = async (input, { state, traceId }) => {
+      export const handler: Handlers['StepName'] = async (input, { state, traceId }) => {
         try {
           await processBooking(input)
           // Clean up specific keys
@@ -1118,33 +1027,15 @@ Always clean up state when you're done with it:
               pass
       ```
     </Tab>
-
-    <Tab label="Ruby">
-      ```ruby
-      def handler(input, ctx)
-        trace_id = ctx.trace_id
-        begin
-          process_booking(input)
-          # Clean up specific keys
-          ctx.state.delete(trace_id, 'booking.customer')
-          # Or clean everything
-          ctx.state.clear(trace_id)
-        rescue => error
-          # Handle errors
-        end
-      end
-      ```
-      </Tab>
 </Tabs>
 
 ### Performance Considerations
 
-| Consideration     | Description                                                                     |
-| ----------------- | ------------------------------------------------------------------------------- |
-| Batch Operations  | Group related state updates and use atomic operations when possible              |
-| State Size        | Keep state data minimal and consider access patterns                             |
-| TTL Management    | Set appropriate TTLs based on flow duration and error recovery needs             |
-
+| Consideration    | Description                                                          |
+| ---------------- | -------------------------------------------------------------------- |
+| Batch Operations | Group related state updates and use atomic operations when possible  |
+| State Size       | Keep state data minimal and consider access patterns                 |
+| TTL Management   | Set appropriate TTLs based on flow duration and error recovery needs |
 
 ### Custom State Adapters
 
@@ -1152,20 +1043,20 @@ Always clean up state when you're done with it:
 import { StateAdapter } from 'motia'
 
 class CustomStateAdapter extends StateAdapter {
-  async get<T>(traceId: string, key: string): Promise<T | null> { 
+  async get<T>(traceId: string, key: string): Promise<T | null> {
     // Implementation
     return null
   }
 
-  async set<T>(traceId: string, key: string, value: T): Promise<void> { 
+  async set<T>(traceId: string, key: string, value: T): Promise<void> {
     // Implementation
   }
 
-  async delete(traceId: string, key: string): Promise<void> { 
+  async delete(traceId: string, key: string): Promise<void> {
     // Implementation
   }
 
-  async clear(traceId: string): Promise<void> { 
+  async clear(traceId: string): Promise<void> {
     // Implementation
   }
 
@@ -1179,9 +1070,9 @@ class CustomStateAdapter extends StateAdapter {
 
 Motia.dev offers three built-in storage adapters:
 
-- 📁 **File (Default):**  Persists state to a JSON file in your project (`.motia/motia.state.json`). No configuration needed for basic use.
+- 📁 **File (Default):** Persists state to a JSON file in your project (`.motia/motia.state.json`). No configuration needed for basic use.
 - 💾 **Memory:** Stores state in-memory. Fastest option, but state is not persistent across server restarts. Useful for development and non-critical data.
-- ⚡ **Redis:**  Leverages Redis for persistent and scalable state storage. Ideal for production environments and flows requiring high availability and data durability.
+- ⚡ **Redis:** Leverages Redis for persistent and scalable state storage. Ideal for production environments and flows requiring high availability and data durability.
 
 To configure a different state adapter, modify the `config.yml` file in your project root:
 
@@ -1212,23 +1103,23 @@ state:
 ```yaml title="config.yml"
 state:
   adapter: redis
-  host: localhost        # Redis server host (e.g., 'localhost' or IP address)
-  port: 6379           # Redis server port (default: 6379)
-  password: optional    # Redis password (if required)
-  ttl: 3600            # Optional: State Time-To-Live in seconds (e.g., 3600 seconds = 1 hour)
+  host: localhost # Redis server host (e.g., 'localhost' or IP address)
+  port: 6379 # Redis server port (default: 6379)
+  password: optional # Redis password (if required)
+  ttl: 3600 # Optional: State Time-To-Live in seconds (e.g., 3600 seconds = 1 hour)
 ```
 
 > **Info: Redis Adapter**
-> Recommended for production environments. Requires a running Redis server.  The `ttl` (Time-To-Live) option is available to automatically expire state data after a specified number of seconds, helping to manage Redis storage.
-
+> Recommended for production environments. Requires a running Redis server. The `ttl` (Time-To-Live) option is available to automatically expire state data after a specified number of seconds, helping to manage Redis storage.
 
 ### Common Issues
 
-| Issue           | Troubleshooting Steps                                                                                                                                                                                                                                                           |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| State Not Found | - Verify state adapter configuration\n- Check TTL expiration (Redis)\n- Ensure file permissions (File adapter)\n- **Ensure correct `traceId` is being used in `state.get(traceId, key)` calls.**                                      |
-| Persistence     | - Memory adapter: State is lost on process restart\n- File adapter: Check file write permissions\n- Redis: Verify connection and persistence settings                                                                                                                    |
-| Concurrent Access | - Memory/File: Limited concurrent flow support\n- Redis: Use atomic operations and implement retry logic                                                                                                                                                                  |
+| Issue             | Troubleshooting Steps                                                                                                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| State Not Found   | - Verify state adapter configuration\n- Check TTL expiration (Redis)\n- Ensure file permissions (File adapter)\n- **Ensure correct `traceId` is being used in `state.get(traceId, key)` calls.** |
+| Persistence       | - Memory adapter: State is lost on process restart\n- File adapter: Check file write permissions\n- Redis: Verify connection and persistence settings                                            |
+| Concurrent Access | - Memory/File: Limited concurrent flow support\n- Redis: Use atomic operations and implement retry logic                                                                                         |
+
 
 -   [API Step](/docs/concepts/steps/api.md): Documentation for API Step.
 ---
@@ -1252,8 +1143,18 @@ The following properties are specific to the API Step, in addition to the [commo
       type: 'string',
     },
     bodySchema: {
-      description: 'Schema for validating the request body. For TypeScript/JavaScript steps, it uses zod schemas. For Python steps, it uses Pydantic models.',
+      description:
+        'Schema for validating the request body. For TypeScript/JavaScript steps, it uses zod schemas. For Python steps, it uses Pydantic models.',
       type: 'object',
+    },
+    responseSchema: {
+      description:
+        'Mostly used for documentation, the expected output of an API endpoint. For TypeScript/JavaScript steps, it uses zod schemas. For Python steps, it uses Pydantic models or Dict Json Schema.',
+      type: 'object',
+    },
+    queryParams: {
+      description: 'Mostly for documentation, the expected query params',
+      type: 'array',
     },
     middleware: {
       description: 'Optional middleware functions to run before the handler',
@@ -1261,6 +1162,127 @@ The following properties are specific to the API Step, in addition to the [commo
     },
   }}
 />
+
+## Defining an API Step
+
+<Tabs items={['TypeScript', 'JavaScript', 'Python']}>
+  <Tab value="TypeScript">
+    ```typescript
+    import { ApiRouteConfig, Handlers } from 'motia'
+    import { z } from 'zod'
+
+    export const config: ApiRouteConfig = {
+      type: 'api',
+      name: 'GetMessage',
+      description: 'Retrieves a generated message from OpenAI based on the Trace ID returned by the POST /openai endpoint',
+      path: '/openai/:traceId',
+      method: 'GET',
+      emits: ['call-openai'],
+      flows: ['openai'],
+      responseSchema: {
+        // When response code is 200
+        200: z.object({ message: z.string({ description: 'The message from OpenAI' }) }),
+        // When response code is 400
+        400: z.object({ message: z.string({ description: 'The error message' }) })
+      },
+      queryParams: [
+        {
+          name: 'includeProps',
+          description: 'Whether to include the properties of the message',
+        },
+      ],
+    }
+
+    export const handler: Handlers['GetMessage'] = async (req, { logger }) => {
+      logger.info('[Call OpenAI] Received callOpenAi event', req)
+
+      return {
+        status: 200,
+        body: { message: 'OpenAI response sent' },
+      }
+    }
+    ```
+
+  </Tab>
+  <Tab value="JavaScript">
+    ```typescript
+    const { z } = require('zod')
+
+    export const config = {
+      type: 'api',
+      name: 'Get Message by Trace ID',
+      description: 'Retrieves a generated message from OpenAI based on the Trace ID returned by the POST /openai endpoint',
+      path: '/openai/:traceId',
+      method: 'GET',
+      emits: ['call-openai'],
+      flows: ['openai'],
+      responseSchema: {
+        // When response code is 200
+        200: z.object({ message: z.string({ description: 'The message from OpenAI' }) }),
+        // When response code is 400
+        400: z.object({ message: z.string({ description: 'The error message' }) })
+      },
+      queryParams: [
+        {
+          name: 'includeProps',
+          description: 'Whether to include the properties of the message',
+        },
+      ],
+    }
+
+    export const handler = async (req, { logger }) => {
+      logger.info('[Call OpenAI] Received callOpenAi event', req)
+
+      return {
+        status: 200,
+        body: { message: 'OpenAI response sent' },
+      }
+    }
+    ```
+
+  </Tab>
+  <Tab value="Python">
+    ```python
+    from pydantic import BaseModel
+    
+    # Define a Pydantic model for request body validation
+    class RequestBody(BaseModel):
+        message: str
+
+    config = {
+      "type": "api",
+      "name": "Get Message by Trace ID",
+      "description": "Retrieves a generated message from OpenAI based on the Trace ID returned by the POST /openai endpoint",
+      "path": "/openai/:traceId",
+      "method": "GET",
+      "emits": ["call-openai"],
+      "flows": ["openai"],
+      "responseSchema": {
+        "200": RequestBody.model_json_schema()
+      },
+      "queryParams": [
+        {
+          "name": "includeProps",
+          "description": "Whether to include the properties of the message",
+        },
+      ],
+    }
+
+    async def handler(req, context):
+      context.logger.info("[Call OpenAI] Received callOpenAi event", {"body": req.get("body")})
+
+      return {
+        "status": 200,
+        "body": { "message": "OpenAI response sent" },
+      }
+    ```
+
+  </Tab>
+</Tabs>
+
+This should create an endpoint that can be viewed and requested from Workbench UI.
+
+![Endpoint Visualization in Workbench](../../img/endpoints.png)
 
 The following examples showcase how to configure an **API Step**
 
@@ -1278,11 +1300,7 @@ API Steps support middleware functions that can be applied to requests before th
 ### Middleware Function Signature
 
 ```typescript
-type ApiMiddleware = (
-  req: ApiRequest, 
-  ctx: FlowContext, 
-  next: () => Promise<ApiResponse>
-) => Promise<ApiResponse>
+type ApiMiddleware = (req: ApiRequest, ctx: FlowContext, next: () => Promise<ApiResponse>) => Promise<ApiResponse>
 ```
 
 Middleware functions receive:
@@ -1303,28 +1321,28 @@ import { ApiMiddleware } from 'motia'
 const loggingMiddleware: ApiMiddleware = async (req, ctx, next) => {
   ctx.logger.info('Request received', { path: req.pathParams })
   const start = Date.now()
-  
+
   // Call the next middleware and get its response
   const response = await next()
-  
+
   const duration = Date.now() - start
   ctx.logger.info('Request completed', { duration, status: response.status })
-  
+
   return response
 }
 
 // Authentication middleware
 const authMiddleware: ApiMiddleware = async (req, ctx, next) => {
   const authHeader = req.headers.authorization
-  
+
   if (!authHeader) {
     // Return early without calling next()
     return {
       status: 401,
-      body: { error: 'Unauthorized' }
+      body: { error: 'Unauthorized' },
     }
   }
-  
+
   // Continue to the next middleware
   return next()
 }
@@ -1335,17 +1353,14 @@ export const config = {
   path: '/api/protected',
   method: 'POST',
   emits: ['USER_ACTION'],
-  middleware: [
-    loggingMiddleware,
-    authMiddleware
-  ]
+  middleware: [loggingMiddleware, authMiddleware],
 }
 
 export const handler = async (req, ctx) => {
   // This handler will only be called if all middleware pass
   return {
     status: 200,
-    body: { message: 'Protected data accessed successfully' }
+    body: { message: 'Protected data accessed successfully' },
   }
 }
 ```
@@ -1362,7 +1377,7 @@ const requestModifierMiddleware: ApiMiddleware = async (req, ctx, next) => {
   // Modify the request before passing it to the next middleware
   req.headers['x-modified-by'] = 'middleware'
   req.body.timestamp = Date.now()
-  
+
   // Call the next middleware in the chain
   return next()
 }
@@ -1371,13 +1386,13 @@ const requestModifierMiddleware: ApiMiddleware = async (req, ctx, next) => {
 const responseModifierMiddleware: ApiMiddleware = async (req, ctx, next) => {
   // Call the next middleware in the chain
   const response = await next()
-  
+
   // Modify the response before returning it
   response.headers = {
     ...response.headers,
     'x-powered-by': 'Motia',
   }
-  
+
   return response
 }
 
@@ -1390,7 +1405,7 @@ const errorHandlingMiddleware: ApiMiddleware = async (req, ctx, next) => {
     ctx.logger.error('Error in handler', { error })
     return {
       status: 500,
-      body: { error: 'Internal server error' }
+      body: { error: 'Internal server error' },
     }
   }
 }
@@ -1401,43 +1416,43 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
   const requests: Record<string, number[]> = {}
   const limit = 100
   const windowMs = 60000 // 1 minute
-  
+
   return async (req, ctx, next) => {
     const ip = req.headers['x-forwarded-for'] || 'unknown-ip'
     const ipStr = Array.isArray(ip) ? ip[0] : ip
-    
+
     const now = Date.now()
     if (!requests[ipStr]) {
       requests[ipStr] = []
     }
-    
+
     // Remove old requests outside the time window
-    requests[ipStr] = requests[ipStr].filter(time => now - time < windowMs)
-    
+    requests[ipStr] = requests[ipStr].filter((time) => now - time < windowMs)
+
     if (requests[ipStr].length >= limit) {
       return {
         status: 429,
-        body: { error: 'Too many requests, please try again later' }
+        body: { error: 'Too many requests, please try again later' },
       }
     }
-    
+
     // Add current request
     requests[ipStr].push(now)
-    
+
     return next()
   }
 })()
 ```
 
-<Tabs items={['TypeScript', 'JavaScript', 'Python', 'Ruby']}>
+<Tabs items={['TypeScript', 'JavaScript', 'Python']}>
   <Tab value="TypeScript">
     ```typescript
-      import { ApiRouteConfig, StepHandler } from 'motia'
+      import { ApiRouteConfig, Handlers } from 'motia'
       import { z } from 'zod'
 
       export const config: ApiRouteConfig = {
         type: 'api',
-        name: 'Test state api trigger',
+        name: 'TestStateApiTrigger',
         description: 'test state',
         path: '/test-state',
         method: 'POST',
@@ -1446,7 +1461,7 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
         flows: ['test-state'],
       }
 
-      export const handler: StepHandler<typeof config> = async (req, { logger, emit }) => {
+      export const handler: Handlers['TestStateApiTrigger'] = async (req, { logger, emit }) => {
         logger.info('[Test State] Received request', req)
 
         await emit({
@@ -1502,7 +1517,7 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
     import time
 
     from pydantic import BaseModel
-    
+
     # Define a Pydantic model for request body validation
     class RequestBody(BaseModel):
         message: str
@@ -1512,7 +1527,7 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
         # Modify the request before passing it to the next middleware
         data['headers']['x-modified-by'] = 'middleware'
         data['body']['timestamp'] = int(time.time() * 1000)
-        
+
         # Call the next middleware in the chain
         return await next_fn()
 
@@ -1520,13 +1535,13 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
     async def response_modifier_middleware(data: Dict[str, Any], ctx: Any, next_fn: Callable):
         # Call the next middleware in the chain
         response = await next_fn()
-        
+
         # Modify the response before returning it
         response['headers'] = {
             **response.get('headers', {}),
             'x-powered-by': 'Motia'
         }
-        
+
         return response
 
     # Error handling middleware
@@ -1547,29 +1562,29 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
         requests: Dict[str, list] = {}
         limit = 100
         window_ms = 60000  # 1 minute
-        
+
         async def rate_limiter_middleware(data: Dict[str, Any], ctx: Any, next_fn: Callable):
             ip = data['headers'].get('x-forwarded-for', ['unknown-ip'])
             ip_str = ip[0] if isinstance(ip, list) else ip
-            
+
             now = int(time.time() * 1000)
             if ip_str not in requests:
                 requests[ip_str] = []
-            
+
             # Remove old requests outside the time window
             requests[ip_str] = [t for t in requests[ip_str] if now - t < window_ms]
-            
+
             if len(requests[ip_str]) >= limit:
                 return {
                     'status': 429,
                     'body': {'error': 'Too many requests, please try again later'}
                 }
-            
+
             # Add current request
             requests[ip_str].append(now)
-            
+
             return await next_fn()
-        
+
         return rate_limiter_middleware
 
     config = {
@@ -1590,7 +1605,7 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
     }
 
     async def handler(req, context):
-        context.logger.info('[Test State] Received request', {'body': req.body})
+        context.logger.info('[Test State] Received request', {'body': req.get("body")})
 
         await context.emit({
             'topic': 'test-state',
@@ -1601,34 +1616,6 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
             'status': 200,
             'body': {'message': 'Success'}
         }
-    ```
-
-  </Tab>
-  <Tab value="Ruby">
-    ```ruby
-    def config
-      {
-        type: 'api',
-        name: 'Test state api trigger',
-        description: 'test state',
-        path: '/test-state',
-        method: 'POST',
-        emits: ['test-state'],
-        flows: ['test-state']
-      }
-    end
-
-    def handler(req, ctx)
-      ctx.emit({
-        "topic" => "test-state",
-        "data" => req.body
-      })
-
-      {
-        "status" => 200,
-        "body" => { "message" => "Success" }
-      }
-    end
     ```
 
   </Tab>
@@ -1657,10 +1644,10 @@ The following properties are specific to the Cron Step, in addition to the [comm
 
 The following examples showcase how to configure an **CRON Step**
 
-<Tabs  items={['TS', 'JS', 'Python', 'Ruby']}>
+<Tabs  items={['TS', 'JS', 'Python']}>
   <Tab value="TS">
     ```typescript
-    import { CronConfig } from 'motia'
+    import { CronConfig, Handlers } from 'motia'
 
     export const config: CronConfig = {
       type: 'cron' as const,
@@ -1671,7 +1658,7 @@ The following examples showcase how to configure an **CRON Step**
       flows: ['cron-example'],
     }
 
-    export const handler: StepHandler<typeof config> = async ({ emit }) => {
+    export const handler: Handlers['PeriodicJob'] = async ({ emit }) => {
       await emit({
         topic: 'cron-ticked',
         data: { message: 'Cron job executed' },
@@ -1719,29 +1706,6 @@ The following examples showcase how to configure an **CRON Step**
         })
 
     ```
-
-  </Tab>
-  <Tab value="Ruby">
-    ```ruby
-    def config
-      {
-        type: 'cron',
-        name: 'PeriodicJob',
-        description: 'Runs every minute and emits a timestamp',
-        cron: '0 * * * *',
-        emits: ['cron-ticked'],
-        flows: ['cron-example'],
-      }
-    end
-
-    def handler(context)
-      context.emit({
-        topic: 'cron-ticked',
-        data: { message: 'Cron job executed' },
-      })
-    end
-    ```
-
   </Tab>
 </Tabs>
 
@@ -1768,7 +1732,7 @@ This modular approach allows you to:
 - Maintain clear separation of concerns
 - Scale and modify parts of your system independently
 
-Steps can be defined in any language that Motia supports, such as TypeScript, JavaScript, Python, and Ruby. Steps can be of type [`event`](/docs/concepts/steps/event), [`api`](/docs/concepts/steps/api), or [`cron`](/docs/concepts/steps/cron). Steps are composed of a `config` object and a `handler` function.
+Steps can be defined in any language that Motia supports, such as TypeScript, JavaScript, and Python. Steps can be of type [`event`](/docs/concepts/steps/event), [`api`](/docs/concepts/steps/api), or [`cron`](/docs/concepts/steps/cron). Steps are composed of a `config` object and a `handler` function.
 
 ## Config
 
@@ -1830,19 +1794,19 @@ A handler holds the business logic of a step. When an event occurs that matches 
 
 Here're examples of how to define a handler in the Motia supported languages:
 
-<Tabs items={['TS', 'JS', 'Python', 'Ruby']}>
+<Tabs items={['TS', 'JS', 'Python']}>
   <Tab value="TS">
     ```typescript
-    import { EventConfig, StepHandler } from 'motia'
+    import { EventConfig, Handlers } from 'motia'
 
     export const config: EventConfig = {
       type: 'event',
-      name: 'Minimal Step',
+      name: 'MinimalStep',
       subscribes: ['start'],
       emits: ['done'],
     }
 
-    export const handler: StepHandler<typeof config> = async (input, { emit, traceId, state, logger }) => {
+    export const handler: Handlers['MinimalStep'] = async (input, { emit, traceId, state, logger }) => {
       await emit({ topic: 'done', data: {} })
     }
     ```
@@ -1872,22 +1836,6 @@ Here're examples of how to define a handler in the Motia supported languages:
 
     async def handler(args, ctx):
       await ctx.emit({'topic': 'done', 'data': {}})
-    ```
-  </Tab>
-  <Tab value="Ruby">
-    ```ruby
-    def config
-      {
-        type: 'event',
-        name: 'Minimal Step',
-        subscribes: ['start'],
-        emits: ['done'],
-      }
-    end
-
-    def handler(args, ctx)
-      ctx.emit({topic: 'done', data: {}})
-    end
     ```
   </Tab>
 </Tabs>
@@ -1920,29 +1868,23 @@ The following properties are specific to the Event Step, in addition to the [com
 
 The following examples showcase how to configure an **Event Step**
 
-<Tabs  items={['TS', 'JS', 'Python', 'Ruby']}>
+<Tabs  items={['TS', 'JS', 'Python']}>
   <Tab value="TS">
     ```typescript
-    import { EventConfig, StepHandler } from 'motia'
+    import { EventConfig, Handlers } from 'motia'
     import { z } from 'zod'
 
-    const inputSchema = z.object({
-      message: z.string()
-    })
-
-    type Input = typeof inputSchema
-
-    export const config: EventConfig<Input> = {
+    export const config: EventConfig = {
       type: 'event',
       name: 'stepA',
       description: 'Hello from Step A',
       subscribes: ['pms.start'],
       emits: ['pms.stepA.done'],
-      input: inputSchema,
+      input: z.object({ message: z.string() }),
       flows: ['parallel-merge'],
     }
 
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+    export const handler: Handlers['stepA'] = async (input, { emit, logger }) => {
       logger.info('Processing message:', input.message)
 
       await emit({
@@ -1953,15 +1895,10 @@ The following examples showcase how to configure an **Event Step**
       })
     }
     ```
-
   </Tab>
   <Tab value="JS">
     ```javascript
     const z = require('zod');
-
-    const inputSchema = z.object({
-      message: z.string()
-    });
 
     const config = {
       type: 'event',
@@ -1969,7 +1906,7 @@ The following examples showcase how to configure an **Event Step**
       description: 'Hello from Step A',
       subscribes: ['pms.start'],
       emits: ['pms.stepA.done'],
-      input: inputSchema,
+      input: z.object({ message: z.string() });,
       flows: ['parallel-merge'],
     };
 
@@ -1986,66 +1923,31 @@ The following examples showcase how to configure an **Event Step**
 
     module.exports = { config, handler };
     ```
-
   </Tab>
   <Tab value="Python">
     ```python
-    from pydantic import BaseModel
-    
-    # Define a Pydantic model for input validation
-    class InputModel(BaseModel):
-        message: str
-    
     config = {
-        "type": "event",
-        "name": "Call OpenAI",
-        "subscribes": ["call-openai"], 
-        "emits": ["openai-response"],
-        "input": InputModel.model_json_schema(), # We use jsonschema to validate
-        "flows": ["openai"]
+      "type": "event",
+      "name": "Call OpenAI",
+      "subscribes": ["call-openai"], 
+      "emits": ["openai-response"],
+      "input": {
+        "type": "object",
+        "properties": { "type": "string" },
+      },
+      "flows": ["openai"]
     }
 
     async def handler(input, context):
-        context.logger.info('Processing input:', input)
+      context.logger.info("Processing input:", { "input": input })
 
-        await context.emit({
-            "topic": "openai-response",
-            "data": {
-                "result": f"Processed: {input.get('message', '')}"
-            }
-        })
-    ```
-
-  </Tab>
-  <Tab value="Ruby">
-    ```ruby
-    class Config
-      attr_reader :type, :name, :subscribes, :emits, :input, :flows
-
-      def initialize
-        @type = "event"
-        @name = "Call OpenAI"
-        @subscribes = ["call-openai"]
-        @emits = ["openai-response"]
-        @input = nil # No schema validation
-        @flows = ["openai"]
-      end
-    end
-
-    config = Config.new
-
-    def handler(input, context)
-      context.logger.info("Processing input: #{input}")
-
-      context.emit({
-        topic: "openai-response",
-        data: {
-          result: "Processed: #{input[:message]}"
+      await context.emit({
+        "topic": "openai-response",
+        "data": {
+          "result": f"Processed: {input.get("message", "")}"
         }
       })
-    end
     ```
-
   </Tab>
 </Tabs>
 
@@ -2310,18 +2212,13 @@ Sometimes you don't just want a **simple** "prompt => response." Instead, you wa
     // 1) Create an OpenAI client (newer syntax)
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 2) Define the input schema for your step
-    const inputSchema = z.object({
-      text: z.string(),
-    })
-
-    export const config: EventConfig<typeof inputSchema> = {
+    export const config: EventConfig = {
       type: 'event',
       name: 'OpenAI Sentiment Analyzer',
       subscribes: ['openai.analyzeSentimentRequest'],
       // We'll emit different events: "openai.positiveSentiment" or "openai.negativeSentiment"
       emits: ['openai.positiveSentiment', 'openai.negativeSentiment'],
-      input: inputSchema,
+      input: z.object({ text: z.string() }),
       flows: ['sentiment-demo'],
     }
 
@@ -2383,17 +2280,15 @@ Sometimes you don't just want a **simple** "prompt => response." Instead, you wa
     import { EventConfig, StepHandler } from 'motia'
     import { z } from 'zod'
 
-    const positiveSchema = z.object({
-      sentiment: z.string(),
-      analysis: z.string().optional(),
-    })
-
-    export const config: EventConfig<typeof positiveSchema> = {
+    export const config: EventConfig = {
       type: 'event',
       name: 'Positive Sentiment Responder',
       subscribes: ['openai.positiveSentiment'],
       emits: [],
-      input: positiveSchema,
+      input: z.object({
+        sentiment: z.string(),
+        analysis: z.string().optional(),
+      }),
       flows: ['sentiment-demo'],
     }
 
@@ -2410,17 +2305,15 @@ Sometimes you don't just want a **simple** "prompt => response." Instead, you wa
     import { EventConfig, StepHandler } from 'motia'
     import { z } from 'zod'
 
-    const negativeSchema = z.object({
-      sentiment: z.string(),
-      analysis: z.string().optional(),
-    })
-
-    export const config: EventConfig<typeof negativeSchema> = {
+    export const config: EventConfig = {
       type: 'event',
       name: 'Negative Sentiment Responder',
       subscribes: ['openai.negativeSentiment'],
       emits: [],
-      input: negativeSchema,
+      input: z.object({
+        sentiment: z.string(),
+        analysis: z.string().optional(),
+      }),
       flows: ['sentiment-demo'],
     }
 
@@ -2577,18 +2470,13 @@ Sometimes you don't just want a **simple** "prompt => response." Instead, you wa
     // 1) Create an OpenAI client (newer syntax)
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 2) Define the input schema for your step
-    const inputSchema = z.object({
-      text: z.string(),
-    })
-
-    export const config: EventConfig<typeof inputSchema> = {
+    export const config: EventConfig = {
       type: 'event',
       name: 'OpenAI Sentiment Analyzer',
       subscribes: ['openai.analyzeSentimentRequest'],
       // We'll emit different events: "openai.positiveSentiment" or "openai.negativeSentiment"
       emits: ['openai.positiveSentiment', 'openai.negativeSentiment'],
-      input: inputSchema,
+      input: z.object({ text: z.string() }),
       flows: ['sentiment-demo'],
     }
 
@@ -2650,17 +2538,15 @@ Sometimes you don't just want a **simple** "prompt => response." Instead, you wa
     import { EventConfig, StepHandler } from 'motia'
     import { z } from 'zod'
 
-    const positiveSchema = z.object({
-      sentiment: z.string(),
-      analysis: z.string().optional(),
-    })
-
-    export const config: EventConfig<typeof positiveSchema> = {
+    export const config: EventConfig = {
       type: 'event',
       name: 'Positive Sentiment Responder',
       subscribes: ['openai.positiveSentiment'],
       emits: [],
-      input: positiveSchema,
+      input: z.object({
+        sentiment: z.string(),
+        analysis: z.string().optional(),
+      }),
       flows: ['sentiment-demo'],
     }
 
@@ -2677,17 +2563,15 @@ Sometimes you don't just want a **simple** "prompt => response." Instead, you wa
     import { EventConfig, StepHandler } from 'motia'
     import { z } from 'zod'
 
-    const negativeSchema = z.object({
-      sentiment: z.string(),
-      analysis: z.string().optional(),
-    })
-
-    export const config: EventConfig<typeof negativeSchema> = {
+    export const config: EventConfig = {
       type: 'event',
       name: 'Negative Sentiment Responder',
       subscribes: ['openai.negativeSentiment'],
       emits: [],
-      input: negativeSchema,
+      input: z.object({
+        sentiment: z.string(),
+        analysis: z.string().optional(),
+      }),
       flows: ['sentiment-demo'],
     }
 
@@ -2773,110 +2657,83 @@ Try it out, see the branching logic in action, and enjoy skipping all the boring
 -   [core-concepts](/docs/getting-started/core-concepts.md): Documentation for core-concepts.
 ---
 title: Core Concepts
-description: Understand the fundamental concepts behind Motia - Steps, Flows, Events, and Topics.
+description: Understand the fundamental concepts behind Motia.
 ---
 
-# Core Concepts: Building Blocks of Motia
+# Building Blocks of Motia
 
-To effectively build and utilize Motia, it's essential to grasp its foundational concepts. Motia workflows are built upon four key building blocks that work together to create powerful and flexible automation solutions: **Steps**, **Flows**, **Events**, and **Topics**.
+To effectively build and utilize Motia, it's essential to grasp its foundational concepts. Motia workflows are built upon three building blocks that work together to create powerful and flexible automation solutions: **API**, **Event**, **Cron**, **Noop**. They're all represented as **Steps**.
 
-This section provides a high-level overview of each concept. For a more in-depth understanding, follow the "Learn More" links provided for each section.
+## Everything is a Step
 
-## The Four Pillars of Motia Workflows
+As mentioned above, Motia has four primitives, API Step, Event Step, Cron Step, Noop Steps. They're all steps on a Workflow and can be connected.
 
-At its heart, Motia is designed around an event-driven architecture, allowing you to compose complex workflows from simple, independent units.  These core concepts are the foundation:
+## What is a Step?
 
-| Concept     | Description                                                                                                                                | Key Function                                                                                                                               |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Steps**   | Self-contained, reusable units of business logic. Steps are the workhorses of Motia, performing specific tasks within a workflow.         | Process data, interact with external systems, perform computations, manage state, and emit events to trigger subsequent actions.        |
-| **Flows**   | Logical containers that group related Steps together. Flows define the context and scope for a specific automation process.                | Organize and visualize workflows, provide a namespace for events, and enable flow-specific logging and state management.                 |
-| **Events**  | Lightweight messages that carry data and signal occurrences within the system. Events are the communication mechanism between Steps.      | Trigger Step execution, carry data between Steps, enable asynchronous and loosely coupled interactions.                               |
-| **Topics**  | Named channels or categories to which Events are published and Steps subscribe. Topics enable event routing and decouple Steps from each other. | Define event types, enable Steps to listen for specific events, and allow for flexible and dynamic workflow orchestration.        |
+Steps are arbitraty executable functions that run based on a certain criteria.
 
-## 🧱 Steps: The Units of Logic
+1. **API Steps**: Run whenever an HTTP endpoint defined in your workflow is called. These steps allow external systems or clients to trigger automated processes within Motia.
+2. **Event Steps**: Run whenever an event is emitted to a subscribed topic. These steps allow your workflow to react to changes or actions occurring within the Motia system.
+3. **Cron Steps**: Run automatically based on a defined schedule, such as "every day at 1pm", according to a cron expression. These steps are ideal for automating recurring tasks.
+4. **Noop Steps**: "Noop" stands for "No operation." These steps contain no logic and are used to represent actions that occur outside the Motia ecosystem, such as manual tasks or external processes.
 
-**Steps** are the fundamental building blocks in Motia. They are self-contained units of code that perform a specific action or task within your workflow.  Think of them as individual functions or micro-services within your automation.
+## Example Step Types
 
-**Key Characteristics of Steps:**
-
-*   **Encapsulated Logic:** Each Step encapsulates a distinct piece of business logic, making your workflows modular and maintainable.  Steps are designed to be self-contained units, promoting code organization and reusability.
-*   **Handler Function:**  At the heart of every Step is a simple `handler` function. This function is where you write the core logic of your step, defining how it processes events, interacts with external services, manages state, and emits new events.
-*   **Leverage External Code:** Steps are not isolated silos! Within your `handler` function, you can import any necessary code – whether it's from local files within your project or external packages installed via package managers like npm, pip, or RubyGems. This allows you to leverage existing libraries and tools to enhance your step's functionality.
-*   **Reusability:** Steps are designed to be reusable across different flows and scenarios. Once you've created a Step, you can easily incorporate it into multiple workflows, saving development time and ensuring consistency.
-*   **Event-Driven:** Steps react to specific events (through subscriptions) and trigger further actions by emitting new events. This event-driven nature enables asynchronous, loosely coupled, and highly responsive workflows.
-*   **Multi-Language Support:** You can write Steps in TypeScript/JavaScript, Python, or Ruby, choosing the best language for the task at hand and even combining languages within the same workflow.
-*   **Configurable:** Each Step has a configuration (`config` object) that must be exported. This object defines its type, name, event subscriptions, emissions, and other relevant properties, allowing you to customize the Step's behavior and metadata.
-
-**Example Step Types:**
-
-*   **API Step:** Exposes an HTTP endpoint to trigger a flow from external systems.
-*   **Event Step:** Executes logic in response to a specific event within the Motia system.
-*   **Cron Step:** Schedules tasks to run at specific intervals based on cron expressions.
-*   **Noop Step:** Represents a placeholder for external processes or manual tasks, useful for visualization and workflow modeling.
+- **API Step:** Exposes an HTTP endpoint to trigger a flow from external systems.
+- **Event Step:** Executes logic in response to a specific event within the Motia system.
+- **Cron Step:** Schedules tasks to run at specific intervals based on cron expressions.
+- **Noop Step:** Represents a placeholder for external processes or manual tasks, useful for visualization and workflow modeling.
 
 **➡️ [Learn More about Defining Steps](/docs/concepts/steps/defining-steps)**
 
-## 🌊 Flows: Orchestrating Your Workflows
+## Flows: Orchestrating Your Workflows
 
-**Flows** provide a logical structure for organizing and managing your Steps.  A Flow represents a complete automation process, grouping together the Steps that work together to achieve a specific goal.
+Steps are connected through topics. For example, an API Step can emit a message to a topic, which an Event Step subscribes to and reacts upon. By chaining these connections, you create a flow—where step A triggers step B, which then triggers step C, and so on.
 
-**Key Aspects of Flows:**
+**Flows** provide a logical structure for organizing and managing your Steps. A Flow represents a complete automation process, grouping together the Steps that work together to achieve a specific goal.
 
-*   **Organization:** Flows help you structure complex automations by grouping related Steps, making your workflows easier to understand and manage.
-*   **Visualization:** Motia Workbench uses Flows to visually represent your workflows as interactive diagrams, showing the connections and event flow between Steps.
-*   **Context and Scope:** Flows define a context for Steps, allowing for flow-specific configurations, logging, and state management.
-*   **Event Namespacing:** Events are often scoped within a Flow, ensuring that events emitted in one flow are less likely to interfere with events in another.
+### Key Aspects of Flows
 
-**Example Flow Scenarios:**
+- **Organization:** Flows help you structure complex automations by grouping related Steps, making your workflows easier to understand and manage.
+- **Visualization:** Motia Workbench uses Flows to visually represent your workflows as interactive diagrams, showing the connections and event flow between Steps.
+- **Context and Scope:** Flows define a context for Steps, allowing for flow-specific configurations, logging, and state management.
+- **Event Namespacing:** Events are often scoped within a Flow, ensuring that events emitted in one flow are less likely to interfere with events in another.
 
-*   **Order Processing Flow:** Steps for order validation, payment processing, inventory updates, and shipping notifications.
-*   **User Onboarding Flow:** Steps for account creation, email verification, welcome messages, and initial setup tasks.
-*   **Data Synchronization Flow:** Steps for fetching data from an external source, transforming it, and updating a database.
+### Example Flow Scenarios
 
-**➡️ [Learn More about Flows and Visualization](/docs/concepts/flows-and-visualization)**
+- **Order Processing Flow:** Steps for order validation, payment processing, inventory updates, and shipping notifications.
+- **User Onboarding Flow:** Steps for account creation, email verification, welcome messages, and initial setup tasks.
+- **Data Synchronization Flow:** Steps for fetching data from an external source, transforming it, and updating a database.
 
-## ✉️ Events: The Language of Motia
+### Virtually connecting steps
 
-**Events** are the lifeblood of Motia workflows. They are lightweight messages that are emitted by Steps to signal that something has happened or that a certain stage in a process has been reached.  Other Steps can then react to these events, creating a dynamic and responsive system.
+Sometimes, a workflow needs to represent actions that occur outside the Motia ecosystem—such as manual tasks or
+external processes—to make the flow comprehensive and easy to understand. In these cases, you can use Noop Steps
+to create virtual connections between steps, ensuring your flow remains visually and logically complete.
 
-**Key Characteristics of Events:**
+**Example: Content Creation Workflow**
 
-*   **Asynchronous Communication:** Events enable Steps to communicate asynchronously and in a loosely coupled manner. Steps don't need to know about each other directly; they communicate through events.
-*   **Data Carriers:** Events can carry data payloads, allowing Steps to pass information to each other as the workflow progresses.
-*   **Typed Events:** Events have a `type` (or topic), which is a string identifier that indicates the kind of event that has occurred (e.g., `"order.created"`, `"payment.processed"`, `"data.transformed"`).
-*   **Emission and Subscription:** Steps `emit` events to signal actions and `subscribe` to events to react to actions triggered by other Steps.
+1. Article is created by a user
+2. Article needs to be reviewed by a moderator
+3. The moderator approves it, making the article public and listed somewhere.
 
-**Example Event Types:**
+In this example, step 2 (moderator review) is a virtual connection between steps 1 and 3.
+This can be represented by a Noop Step:
 
-*   `order.created`:  Signals that a new order has been placed.
-*   `payment.processed`: Indicates that a payment has been successfully processed.
-*   `data.transformed`:  Signals that data transformation step has completed.
-*   `email.sent`:  Indicates that an email notification has been sent.
+```
+┌──────────────────┐      ┌─────────────────────┐      ┌────────────────────────────┐
+│  POST /article   │ ───► │  Moderator review   │ ───► │  POST /article/:id/review  │
+└──────────────────┘      └─────────────────────┘      └────────────────────────────┘
+```
 
-TODO:
-**➡️ [Learn More about Event-Driven Architecture (external resource - consider linking to a good article on event-driven systems)]**
-
-## 🏷️ Topics: Routing and Filtering Events
-
-**Topics** are used to categorize and route events within Motia.  When a Step emits an event, it emits it with a specific topic. Steps that are interested in handling that type of event `subscribe` to that topic.
-
-**Key Roles of Topics:**
-
-*   **Event Routing:** Topics act as channels, ensuring that events are delivered only to Steps that have subscribed to the relevant topic.
-*   **Decoupling:** Topics further decouple Steps, as Steps only need to know about event topics, not about the specific Steps that might emit or handle those events.
-*   **Flexibility and Scalability:** Topics enable flexible and scalable workflow designs. You can easily add new Steps that subscribe to existing topics or introduce new topics to extend your workflows.
-
-**Example Topic Usage:**
-
-*   A Step emitting an order confirmation event might use the topic `"order.confirmed"`.
-*   Steps that need to handle order confirmations (e.g., sending email notifications, updating inventory) would subscribe to the `"order.confirmed"` topic.
-
-TODO:
-**➡️ [Learn More about Topics and Event Routing (link to internal docs section on event manager or routing if you create one, otherwise, leave as external resource link to pub/sub patterns)]**
+Without a Noop Step, the other two steps would appear disconnected, which could lead to confusion in the flow diagram.
+By including a Noop Step, you maintain clarity and accurately represent the entire process, even when some actions
+happen outside of Motia.
 
 ---
 
-By understanding these four core concepts – Steps, Flows, Events, and Topics – you'll have a solid foundation for building powerful and maintainable automation workflows with Motia. Continue exploring the documentation to delve deeper into each concept and start building your own amazing automations!
+By understanding these core concepts – you'll have a solid foundation for building powerful and maintainable automation workflows with Motia. Continue exploring the documentation to delve deeper into each concept and start building your own amazing automations!
+
 
 -   [index](/docs/getting-started/index.md): Documentation for index.
 ---
@@ -2900,7 +2757,7 @@ Welcome to Motia!  Ready to build your first event-driven workflow? This guide w
 Before you begin, ensure you have the following installed:
 
 - **Node.js (v16.0 or later):** Motia runs on Node.js, so this is essential for running the development server and your workflows.
-- **Basic Understanding of programming:**  motia steps are written in Javascript, Typescript, Python and/or Ruby.
+- **Basic Understanding of programming:**  motia steps are written in Javascript, Typescript, and/or Python.
 - **Basic Understanding of React:**  While you don't need to be a React expert, a basic familiarity will be helpful for understanding the UI Workbench and customizing UI steps.
 
 ## Your Next Steps:
@@ -2990,11 +2847,15 @@ You should see a new folder created with the following files inside:
 
   <Files>
     <Folder name="steps" defaultOpen>
-      <File name="one.step.ts" />
-      <File name="two.step.ts" />
-      <File name="api.step.ts" />
+      <File name="00-noop.step.ts" />
+      <File name="00-noop.step.tsx" />
+      <File name="01-api.step.ts" />
+      <File name="02-test-state.step.ts" />
+      <File name="03-check-state-change.step.ts" />
     </Folder>
     <File name="package.json" />
+    <File name="tsconfig.json" />
+    <File name="types.d.ts" />
   </Files>
 </Tab>
     <Tab value="Manual">
@@ -3041,51 +2902,48 @@ You should see a new folder created with the following files inside:
 
   </Step>
   <Step>
-  ### Minimal Step Example (Already Included!)
+  ### Minimal Step Example
 
-✨ **Good News!** If you used the automated project setup with the `default` template (as recommended above), you can **skip this step!**
+**The initial project comes with sample steps, but in this step we're going to walk you through on creating a new one**
 
-The `default` template already includes example steps in the `steps` folder, including `addNumbers.step.js` (or similar, depending on the template). These pre-built steps are ready for you to explore and run.
-
----
-
-**If you chose not to use the template or want to create a step from scratch manually,** follow these steps:
-
-1.  **Create a `steps` folder** in your project's root directory (if you haven't already).
-
-2.  **Create a new file** named `addNumbers.step.js` (or `addNumbers.step.ts` for TypeScript) inside the `steps` folder.
+1.  **Create a new file** named `hello-world.step.js` (or `hello-world.step.ts` for TypeScript) inside the `steps` folder.
 
     <Files>
       <Folder name="steps" defaultOpen>
-        <File name="addNumbers.step.js" />
+        <File name="hello-world.step.js" />
       </Folder>
     </Files>
 
-3.  **Paste the following code** into your `addNumbers.step.js` file:
+2.  **Paste the following code** into your `hello-world.step.js` file:
 
-    ```javascript
-    exports.config = {
-      type: 'event', // "event", "api", or "cron"
-      name: 'AddNumbers',
-      subscribes: ['add-numbers'],
-      emits: ['numbers-added'],
-      flows: ['numbers'],
-    }
+        ```javascript
+        exports.config = {
+          type: 'api', // "event", "api", or "cron"
+          path: '/hello-world',
+          method: 'GET',
+          name: 'HelloWorld',
+          emits: [],
+          flows: ['HelloWorld'],
+        }
 
-    exports.handler = async (input, { emit }) => {
-      const sum = (input.a || 0) + (input.b || 0)
-      await emit({
-        topic: 'numbers-added',
-        data: { result: sum },
-      })
-    }
-    ```
+        exports.handler = async () => {
+          return {
+            status: 200,
+            body: { message: 'Hello World' },
+          }
+        }
+        ```
+        This minimal API step creates a **GET** endpoint on `/hello-world` that returns a JSON
 
-    This minimal step **listens** for the event `"add-numbers"` and **emits** `"numbers-added"`. It's a basic example to get you started.
+        ```json
+        { "message": "Hello World" }
+        ```
 
   </Step>
-  <Step>
-  ### Start Motia Development Server & Workbench
+
+   <Step>
+
+### Start Motia Development Server & Workbench
 
 Now, let's start Motia and see your workflow in action!
 
@@ -3120,13 +2978,13 @@ Now, let's start Motia and see your workflow in action!
     2.  **Locate your Flow in the Sidebar:** On the left sidebar of the Workbench UI, you should see a list of Flows.
 
         *   **For the default template:**  You'll find a flow named "**default**".
-        *   **For the `addNumbers.step.js` example:** You'll find a flow named "**numbers**".
+        *   **For the `hello-world.step.js` example:** You'll find a flow named "**HelloWorld**".
 
     3.  **Select your Flow:** Click on the flow name in the sidebar.
 
     4.  **Observe the Visual Flow:** You should now see a visual representation of your flow in the main panel. This is the Motia Workbench visualizing the steps and event flow within your application!
 
-        ![Flow Visualization in Workbench](./../img/workbench-example.png)
+        ![Flow Visualization in Workbench](./../img/hello-world-workbench.png)
 
         <Callout type="info">
             You can click and drag the nodes in the visual editor to rearrange them for better clarity. Explore the UI to familiarize yourself with the Workbench!
@@ -3136,42 +2994,32 @@ Now, let's start Motia and see your workflow in action!
     <Step>
     ### Test your step
 
-    You can test your step using the **Motia** CLI:
+    Now you created the step `hello-world.js`, which creates a **GET** `/hello-world` endpoint, you can test by either opening http://localhost:3000/hello-world or
 
-    <Tabs items={['cli', 'curl']}>
-      <Tab value='cli'>
-      If you used the automated project setup with the default template, you can test your step by emitting the following event:
-      ```bash
-      npx motia emit --topic test-state --message '{}'
-      ```
+    ```bash
+    curl http://localhost:3000/hello-world
+    ```
 
-      If you used the add number example, you can test your step by emitting the following event:
+    This is a really simple example where you can have your first step running.
 
-      ```bash
-      npx motia emit --topic add-numbers --message '{"a": 5, "b": 3}'
-      ```
+    </Step>
 
-      </Tab>
-      <Tab value='curl'>
-        If you used the automated project setup with the default template, you can test your step by emitting the following event:
-        ```bash
-        curl -X POST http://localhost:3000/default \
-        -H "Content-Type: application/json" \
-        -d '{}'
-        ```
-        <Callout type="warn">You can't test the add number example using curl, you will need to use the CLI, using an api endpoint requires an api step.</Callout>
-      </Tab>
-    </Tabs>
+    <Step>
+    ### Understanding a flow with events
 
-    Motia will:
+    Now you already created an API Steps, let's check the flow that's already in the project, click on `default` flow on Workbench sidebar on the left. (Or navigate to http://localhost:3000/flow/default)
 
-    Emit a new event with the provided topic and message
+    You should see the page below
 
-    The event manager will detect the new event and match it against your registered step
+    ![Flow Visualization in Workbench](./../img/getting-started-workbench.png)
 
-    Execute your step with the provided input
+    This flow is a little bit more advanced, it has Noop steps (which we are going to talk about later), API steps, and Event steps.
 
-    Log the journey of the event, including the emitted numbers-added event
+    Event steps are code that can take some time to finish and can have errors (like LLM calls which are non-deterministic), in case they fail, they can rerun later.
+
+    In the flow represented by the image above you should see a node with a button to start it, go ahead an click it and check the logs that are generated.
+
+    Now let's dive deep on the flow you already executed. Let's jump in to [Core concepts](/docs/getting-started/core-concepts)
 
     </Step>
 
@@ -3193,55 +3041,37 @@ Motia is a **code-first framework** designed to empower developers to build robu
 Motia is built with the developer in mind, offering a unique blend of simplicity and power. Here's why Motia stands out:
 
 - 🚀 **Zero Infrastructure Setup:** Say goodbye to the complexities of message queues and event brokers! Motia handles the underlying infrastructure, allowing you to focus solely on building your workflows.
-
-- 🔌 **Plug-and-Play Steps in Your Language:**  Develop your workflow logic using the languages you love: JavaScript, TypeScript, Python, and Ruby. Mix and match languages within the same flow for ultimate flexibility.
-
+- 🔌 **Plug-and-Play Steps in Your Language:** Develop your workflow logic using the languages you love: JavaScript, TypeScript, and Python. Mix and match languages within the same flow for ultimate flexibility.
 - 📊 **Built-in Observability:** Gain deep insights into your workflows with real-time logs, traces, and interactive flow visualizations right in the Motia Workbench. Debugging and monitoring have never been easier.
-
-- ⚡ **Out-of-the-Box API & Scheduling:**  Instantly expose your workflows as HTTP endpoints and schedule tasks with cron expressions – no extra configuration needed.
-
-- ✨ **Flexible and Extensible Architecture:**  Motia is designed to be easily extended and customized. Create custom steps, UI components, and adapt the framework to your specific needs.
-
-- 🧑‍💻 **Developer-First Experience:**  From intuitive APIs and a powerful CLI to comprehensive documentation and a visual workbench, Motia prioritizes developer productivity and a smooth, enjoyable development experience.
+- ⚡ **Out-of-the-Box API & Scheduling:** Instantly expose your workflows as HTTP endpoints and schedule tasks with cron expressions – no extra configuration needed.
+- ✨ **Flexible and Extensible Architecture:** Motia is designed to be easily extended and customized. Create custom steps, UI components, and adapt the framework to your specific needs.
+- 🧑‍💻 **Developer-First Experience:** From intuitive APIs and a powerful CLI to comprehensive documentation and a visual workbench, Motia prioritizes developer productivity and a smooth, enjoyable development experience.
 
 ## Motia Workbench: Your Development Control Center
 
 Motia Workbench is a built-in, browser-based development platform that acts as your central hub for building, testing, and debugging Motia flows. Key features include:
 
-- **Interactive Flow Visualization:**  See your workflows come to life as dynamic diagrams, making it easy to understand complex event flows and step interactions.
+- **Interactive Flow Visualization:** See your workflows come to life as dynamic diagrams, making it easy to understand complex event flows and step interactions.
 
-- **Real-time Flow Testing:**  Trigger API endpoints and monitor event propagation through your steps, all within the Workbench UI. Inspect data at each stage to ensure your flows are behaving as expected.
+- **Real-time Flow Testing:** Trigger API endpoints and monitor event propagation through your steps, all within the Workbench UI. Inspect data at each stage to ensure your flows are behaving as expected.
 
-- **Live Log Streaming:**  Access detailed, real-time logs directly in the Workbench. Filter and search logs to quickly pinpoint issues and monitor workflow execution.
+- **Live Log Streaming:** Access detailed, real-time logs directly in the Workbench. Filter and search logs to quickly pinpoint issues and monitor workflow execution.
 
-- **Step-Level Customization:**  Create custom UI components for your steps to enhance visualization and provide context-specific information directly within the flow diagram.
+- **Step-Level Customization:** Create custom UI components for your steps to enhance visualization and provide context-specific information directly within the flow diagram.
 
-<div className="my-8">
-  ![Motia Workbench Interface](./img/workbench-presentation.png)
-</div>
-
-## Core Concepts: Building Blocks of Motia
-
-Motia workflows are built using a few core concepts that work together harmoniously:
-
-| Concept    | Description                                                                                                |
-| ---------- | ---------------------------------------------------------------------------------------------------------- |
-| **Steps**  | Self-contained, reusable units of business logic. Steps subscribe to events, process data, and emit events. |
-| **Flows**  | Logical groupings of related steps that together accomplish a specific task or process.                     |
-| **Events** | Messages that are emitted by steps and trigger other steps that subscribe to them.                          |
-| **Topics** | Named channels or categories for events, enabling event routing and decoupling between steps.              |
+<div className="my-8">![Motia Workbench Interface](./img/workbench-presentation.png)</div>
 
 ## Unlock Powerful Use Cases
 
 Motia empowers you to build a wide range of sophisticated applications, including:
 
-- 🌐 **API Integrations & Microservices:**  Effortlessly connect disparate systems, create event-driven microservices, and build real-time API-powered applications.
+- 🌐 **API Integrations & Microservices:** Effortlessly connect disparate systems, create event-driven microservices, and build real-time API-powered applications.
 
-- 🤖 **Intelligent & Agentic Workflows:**  Design complex, AI-driven workflows, orchestrate intricate business processes, and build advanced data pipelines.
+- 🤖 **Intelligent & Agentic Workflows:** Design complex, AI-driven workflows, orchestrate intricate business processes, and build advanced data pipelines.
 
-- 📊 **Data Transformation & Processing:**  Build scalable ETL/ELT pipelines, implement real-time data streaming, and transform data with ease.
+- 📊 **Data Transformation & Processing:** Build scalable ETL/ELT pipelines, implement real-time data streaming, and transform data with ease.
 
-- 🚀 **Rapid Prototyping & Iteration:**  Quickly bring your ideas to life, test new workflows, and iterate rapidly with Motia's visual design and development tools.
+- 🚀 **Rapid Prototyping & Iteration:** Quickly bring your ideas to life, test new workflows, and iterate rapidly with Motia's visual design and development tools.
 
 ### Real-World Industry Applications
 
@@ -3259,13 +3089,13 @@ Embark on your Motia journey and start building powerful workflows today:
 
 1.  **Quick Start Guide:** Follow our [Quick Start](/docs/getting-started/quick-start) to set up your first Motia project and create a minimal workflow.
 2.  **Explore Examples:** Dive into practical [Examples](/docs/examples) to understand common patterns and real-world use cases.
-3.  **Dive into Concepts:**  Delve deeper into Motia's [Core Concepts](/docs/getting-started/core-concepts) to gain a solid understanding of the framework's architecture and principles.
+3.  **Dive into Concepts:** Delve deeper into Motia's [Core Concepts](/docs/getting-started/core-concepts) to gain a solid understanding of the framework's architecture and principles.
 
 ## Join the Motia Community
 
 Become part of a growing community of developers and automation enthusiasts!
 
-- 💬 **Join our Discord:**  Connect with the Motia team and fellow developers, ask questions, share ideas, and get real-time help: [Discord Community](https://discord.gg/nJFfsH5d6v)
+- 💬 **Join our Discord:** Connect with the Motia team and fellow developers, ask questions, share ideas, and get real-time help: [Discord Community](https://discord.gg/nJFfsH5d6v)
 - 🐙 **Star us on GitHub:** Show your support, contribute to the project, and report issues on our [GitHub Repository](https://github.com/motiadev/motia).
 - 🐦 **Follow us on Twitter:** Stay up-to-date with the latest news, announcements, and community updates: [Twitter (@motiadev)](https://twitter.com/motiadev)
 
@@ -3353,7 +3183,7 @@ import { CodeFetcher } from '../../../components/CodeFetcher'
    ```
 
    Update `.env` with your API keys:
-   ```env
+   ```bash
    # Required
    OPENAI_API_KEY=your-openai-api-key-here
    FIRECRAWL_API_KEY=your-firecrawl-api-key-here
@@ -3564,7 +3394,7 @@ import { CodeFetcher } from '../../../components/CodeFetcher'
    ```
 
    Update `.env` with your API keys:
-   ```env
+   ```bash
    # Required
    OPENAI_API_KEY=your-openai-api-key-here
    FIRECRAWL_API_KEY=your-firecrawl-api-key-here
@@ -3769,10 +3599,15 @@ import { CodeFetcher } from '../../../components/CodeFetcher'
    ```
 
    Update `.env` with your API keys:
-   ```env
-   ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key_here
-   SERPER_API_KEY=your_serper_api_key_here
-   OPENAI_API_KEY=your_openai_api_key_here
+   ```bash
+   # OpenAI API Key
+   OPENAI_API_KEY=your-openai-api-key-here
+   
+   # Polygon.io API Key (for stock data)
+   POLYGON_API_KEY=your-polygon-api-key-here
+   
+   # Optional: Yahoo Finance API Key (if using)
+   YAHOO_FINANCE_API_KEY=your-yahoo-finance-api-key-here
    ```
 
 ## 🏗️ Architecture
@@ -3928,10 +3763,15 @@ import { CodeFetcher } from '../../../components/CodeFetcher'
    ```
 
    Update `.env` with your API keys:
-   ```env
-   ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key_here
-   SERPER_API_KEY=your_serper_api_key_here
-   OPENAI_API_KEY=your_openai_api_key_here
+   ```bash
+   # OpenAI API Key
+   OPENAI_API_KEY=your-openai-api-key-here
+   
+   # Polygon.io API Key (for stock data)
+   POLYGON_API_KEY=your-polygon-api-key-here
+   
+   # Optional: Yahoo Finance API Key (if using)
+   YAHOO_FINANCE_API_KEY=your-yahoo-finance-api-key-here
    ```
 
 ## 🏗️ Architecture
@@ -4112,9 +3952,12 @@ cp .env.example .env
 
 Update your `.env` with the following credentials:
 
-```env
-GITHUB_TOKEN=your_github_token_here
-OPENAI_API_KEY=your_openai_api_key
+```bash
+# GitHub API
+GITHUB_TOKEN=your-github-token-here
+
+# Application config
+APP_HOST=https://your-app-hostname.com
 ```
 
 ### Set Up GitHub Webhook
@@ -4252,9 +4095,12 @@ cp .env.example .env
 
 Update your `.env` with the following credentials:
 
-```env
-GITHUB_TOKEN=your_github_token_here
-OPENAI_API_KEY=your_openai_api_key
+```bash
+# GitHub API
+GITHUB_TOKEN=your-github-token-here
+
+# Application config
+APP_HOST=https://your-app-hostname.com
 ```
 
 ### Set Up GitHub Webhook
@@ -5073,11 +4919,13 @@ import { CodeFetcher } from '../../../components/CodeFetcher'
    ```
 
    Update `.env` with your API keys:
-   ```env
-   # Required
+   ```bash
+   # OpenAI
    OPENAI_API_KEY=your-openai-api-key-here
+   
+   # Weaviate
+   WEAVIATE_URL=https://your-weaviate-instance.com
    WEAVIATE_API_KEY=your-weaviate-api-key-here
-   WEAVIATE_URL=your-weaviate-url-here
    ```
 
 ## 🏗️ Architecture
@@ -5264,11 +5112,13 @@ import { CodeFetcher } from '../../../components/CodeFetcher'
    ```
 
    Update `.env` with your API keys:
-   ```env
-   # Required
+   ```bash
+   # OpenAI
    OPENAI_API_KEY=your-openai-api-key-here
+   
+   # Weaviate
+   WEAVIATE_URL=https://your-weaviate-instance.com
    WEAVIATE_API_KEY=your-weaviate-api-key-here
-   WEAVIATE_URL=your-weaviate-url-here
    ```
 
 ## 🏗️ Architecture
@@ -5478,12 +5328,13 @@ cp .env.example .env
 
 Update your `.env` with the following credentials:
 
-```env
-TRELLO_API_KEY=your_trello_api_key
-TRELLO_TOKEN=your_trello_token
+```bash
+# Trello API Keys
+TRELLO_API_KEY=your-trello-api-key
+TRELLO_API_TOKEN=your-trello-api-token
 
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=your_openai_model
+# OpenAI API Key (if using AI features)
+OPENAI_API_KEY=your-openai-api-key
 
 SLACK_WEBHOOK_URL=your_slack_webhook_url
 
@@ -5624,12 +5475,13 @@ cp .env.example .env
 
 Update your `.env` with the following credentials:
 
-```env
-TRELLO_API_KEY=your_trello_api_key
-TRELLO_TOKEN=your_trello_token
+```bash
+# Trello API Keys
+TRELLO_API_KEY=your-trello-api-key
+TRELLO_API_TOKEN=your-trello-api-token
 
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=your_openai_model
+# OpenAI API Key (if using AI features)
+OPENAI_API_KEY=your-openai-api-key
 
 SLACK_WEBHOOK_URL=your_slack_webhook_url
 
@@ -5683,7 +5535,7 @@ description: A 3-minute overview of Motia’s core concepts with a business-read
 Got 3 minutes? Here’s the scoop on Motia—a code-first framework that powers event-driven workflows, perfect for Generative AI (GenAI). We’ll spotlight a real-world win: analyzing customer feedback.
 
 ## What’s Motia?
-Motia builds scalable, observable workflows without infrastructure headaches. Code in JS, TS, Python, or Ruby, chain it up, and track it live in a visual Workbench.
+Motia builds scalable, observable workflows without infrastructure headaches. Code in JS, TS, or Python, chain it up, and track it live in a visual Workbench.
 
 - **Why It’s Clutch**: No queue setup, instant APIs/scheduling, real-time insights.
 - **Who’s It For**: Businesses wanting intelligent workflows without the hassle.
@@ -5734,7 +5586,7 @@ Motia is built with the developer in mind, offering a unique blend of simplicity
 
 - 🚀 **Zero Infrastructure Setup:** Say goodbye to the complexities of message queues and event brokers! Motia handles the underlying infrastructure, allowing you to focus solely on building your workflows.
 
-- 🔌 **Plug-and-Play Steps in Your Language:**  Develop your workflow logic using the languages you love: JavaScript, TypeScript, Python, and Ruby. Mix and match languages within the same flow for ultimate flexibility.
+- 🔌 **Plug-and-Play Steps in Your Language:**  Develop your workflow logic using the languages you love: JavaScript, TypeScript, and Python. Mix and match languages within the same flow for ultimate flexibility.
 
 - 📊 **Built-in Observability:** Gain deep insights into your workflows with real-time logs, traces, and interactive flow visualizations right in the Motia Workbench. Debugging and monitoring have never been easier.
 
@@ -6245,17 +6097,15 @@ Motia Workbench is a development platform that helps you build and debug your Mo
 Start workbench by running:
 
 <Tabs items={['npm', 'yarn', 'pnpm', 'bun']}>
+  <Tab value="pnpm">```pnpm run dev ```</Tab>
   <Tab value="yarn">```yarn run dev ```</Tab>
   <Tab value="npm">```npm run dev ```</Tab>
-  <Tab value="pnpm">```pnpm run dev ```</Tab>
   <Tab value="bun">```bun run dev ```</Tab>
 </Tabs>
 
 <Callout>
-Running the dev command starts:
-- **Motia Server**: Backend services and API endpoints
-- **Motia Workbench**: Web interface at http://localhost:3000
-- **Development Mode**: Auto-reloads when changes are made
+  Running the dev command starts: - **Motia Server**: Backend services and API endpoints - **Motia Workbench**: Web
+  interface at http://localhost:3000 - **Development Mode**: Auto-reloads when changes are made
 </Callout>
 
 ## Key Features
@@ -6270,23 +6120,15 @@ Running the dev command starts:
   - Click any step to see its details
   </Step>
 
-  <Step>
-  ### Real-time Testing
-  Test your flows directly in the interface:
-  - Send test requests to API endpoints
-  - Monitor how events flow through steps
-  - Visualize step sequence execution
-  - Inspect data at each stage
-  </Step>
+<Step>
+  ### Real-time Testing Test your flows directly in the interface: - Send test requests to API endpoints - Monitor how
+  events flow through steps - Visualize step sequence execution - Inspect data at each stage
+</Step>
 
-  <Step>
-  ### Live Logs
-  Monitor your flow execution:
-  ```
-  [INFO] [payment-flow] Payment received: $50.00
-  [DEBUG] [payment-flow] Processing payment...
-  ```
-  </Step>
+<Step>
+  ### Live Logs Monitor your flow execution: ``` [INFO] [payment-flow] Payment received: $50.00 [DEBUG] [payment-flow]
+  Processing payment... ```
+</Step>
 
   <Step>
    ### Development Tools
@@ -6303,6 +6145,7 @@ Motia Workbench allows you to customize how your steps appear in the Workbench f
 ### NOOP Steps
 
 NOOP (No Operation) steps represent virtual points in your flow where external actions occur:
+
 - Human approvals or reviews
 - Webhook callbacks
 - External system integrations
@@ -6313,23 +6156,26 @@ These steps help visualize important external touchpoints without implementing a
 ### UI Steps
 
 UI steps allow you to customize how your steps appear in the Workbench visualization:
+
 - Override the default layout of Event steps
 - Customize API endpoint representations
 - Modify how Cron jobs are displayed
 - Add custom icons and styling
 
-<Breadcrumb items={[{
-  name: 'UI Steps',
-  url: '/docs/workbench/ui-steps'
-},{
-  name: 'NOOP Steps',
-  url: '/docs/workbench/noop-steps'
-}]} />
+<Breadcrumb
+  items={[
+    {
+      name: 'UI Steps',
+      url: '/docs/workbench/ui-steps',
+    },
+    {
+      name: 'NOOP Steps',
+      url: '/docs/workbench/noop-steps',
+    },
+  ]}
+/>
 
-<Callout>
-New to Motia? Follow the **[quick start](/docs/getting-started/quick-start)** guide to get set up.
-</Callout>
-
+<Callout>New to Motia? Follow the **[quick start](/docs/getting-started/quick-start)** guide to get set up.</Callout>
 
 
 -   [UI Steps](/docs/workbench/ui-steps.md): Documentation for UI Steps.
@@ -6337,7 +6183,7 @@ New to Motia? Follow the **[quick start](/docs/getting-started/quick-start)** gu
 title: UI Steps
 ---
 
-UI Steps provide a powerful way to create custom, visually appealing representations of your workflow steps in the Workbench flow visualization tool. 
+UI Steps provide a powerful way to create custom, visually appealing representations of your workflow steps in the Workbench flow visualization tool.
 
 With UI Steps, you can enhance the user experience by designing intuitive, context-aware visual components that clearly communicate your flow's sequencing and events.
 
@@ -6347,9 +6193,9 @@ To create a custom UI for a step, create a `.tsx` or `.jsx` file next to your st
 
 <Tabs items={['tsx', 'jsx']}>
   <Tab value="tsx">
-    ```
-    steps/
-      └── myStep/
+    ``` 
+    steps/ 
+    └── myStep/ 
       ├── myStep.step.ts      # Step definition
       └── myStep.step.tsx     # Visual override
     ```
@@ -6366,43 +6212,59 @@ To create a custom UI for a step, create a `.tsx` or `.jsx` file next to your st
 
 ## Basic Usage
 
+Let's override an EventNode but keeping the same look. Like the image below.
+We're going to add an image on the side and show the description.
+
+![Custom Event Node](./../img/custom-event-node.png)
+
 <Tabs items={['TypeScript', 'JavaScript']}>
   <Tab>
-    ```typescript
+    ```tsx
     // myStep.step.tsx
 
+    import { EventNode, EventNodeProps } from '@motiadev/workbench'
     import React from 'react'
-    import { EventNode } from 'motia/workbench'
-    import type { EventNodeProps } from 'motia/workbench'
 
-    export default function MyStep({ data }: EventNodeProps) {
+    export const Node: React.FC<EventNodeProps> = (props) => {
       return (
-        <EventNode
-          data={data}
-          variant="white"
-          className="py-2 px-4"
-        />
+        <EventNode {...props}>
+          <div className="flex flex-row items-start gap-2">
+            <div className="text-sm text-gray-400 font-mono">{props.data.description}</div>
+            <img
+              style={{ width: '64px', height: '64px' }}
+              src="https://www.motia.dev/icon.png"
+            />
+          </div>
+        </EventNode>
       )
     }
     ```
+
   </Tab>
   <Tab>
-    ```javascript
+    ```jsx
     // myStep.step.jsx
 
+    import { EventNode } from '@motiadev/workbench'
     import React from 'react'
-    import { EventNode } from 'motia/workbench'
 
-    export default function MyStep({ data }) {
+    export const Node = (props) => {
       return (
-        <EventNode
-          data={data}
-          variant="white"
-          className="py-2 px-4"
-        />
+        <EventNode {...props}>
+          <div className="flex flex-row items-start gap-2">
+            <div className="text-sm text-gray-400 font-mono">{props.data.description}</div>
+            <img
+              style={{ width: '64px', height: '64px' }}
+              src="https://www.motia.dev/icon.png"
+            />
+          </div>
+        </EventNode>
       )
     }
     ```
+
+    
+
   </Tab>
 </Tabs>
 
@@ -6410,165 +6272,112 @@ To create a custom UI for a step, create a `.tsx` or `.jsx` file next to your st
 
 Motia Workbench provides out of the box components that you can use to create custom UI steps, which apply to different types of steps.
 
-### EventNode
 
-The main component for general-purpose steps.
+| Component   | Props Type     | Description                                                                    |
+| ----------- | -------------- | ------------------------------------------------------------------------------ |
+| EventNode   | EventNodeProps | Base component for Event Steps, with built-in styling and connection points    |
+| ApiNode     | ApiNodeProps   | Component for API Steps, includes request/response visualization capabilities  |
+| CronNode    | CronNodeProps  | Base component for Cron Steps, displays timing information                     |
+| NoopNode    | NoopNodeProps  | Base component for NoopNodes with a different color to comply workbench legend |
 
-| Prop | Type | Description |
-|------|------|-------------|
-| data | `EventNodeProps['data']` | Step data passed from Workbench |
-| variant | `'white' \| 'ghost' \| 'noop'` | Visual style variant |
-| shape | `'rounded' \| 'square' \| 'noop'` | Node shape style |
-| className | `string` | Additional CSS classes |
+## Customizing completely
 
-<Tabs items={['TypeScript', 'JavaScript']}>
-  <Tab>
-    ```typescript
-    // customStep.step.tsx
+You can also fully customize your node making it look completely different from the result.
+Let's draw the following node.
 
-    import React from 'react'
-    import { EventNode } from 'motia/workbench'
-    import type { EventNodeProps } from 'motia/workbench'
+![Custom Ideator Agent Node](./../img/custom-ideator-agent-node.png)
 
-    export default function CustomStep({ data }: EventNodeProps) {
-      return (
-        <EventNode
-          data={data}
-          variant="white"
-          shape="rounded"
-          className="py-2 px-4"
-        >
-          <div>Custom content</div>
-        </EventNode>
-      )
-    }
-    ```
-  </Tab>
-  <Tab>
-    ```javascript
-    // customStep.step.jsx
+```tsx
+import { BaseHandle, EventNodeProps, Position } from '@motiadev/workbench'
+import React from 'react'
 
-    import React from 'react'
-    import { EventNode } from 'motia/workbench'
+export const Node: React.FC<EventNodeProps> = (props) => {
+  return (
+    <div className="w-80 bg-black text-white rounded-xl p-4">
+      <div className="group relative">
+        <BaseHandle type="target" position={Position.Top} variant="event" />
 
-    export default function CustomStep({ data }) {
-      return (
-        <EventNode
-          data={data}
-          variant="white"
-          shape="rounded"
-          className="py-2 px-4"
-        >
-          <div>Custom content</div>
-        </EventNode>
-      )
-    }
-    ```
-  </Tab>
-</Tabs>
+        <div className="flex items-center space-x-3">
+          <img className="w-8 h-8" src="https://cdn-icons-png.flaticon.com/512/12222/12222588.png" />
+          <div className="text-lg font-semibold">{props.data.name}</div>
+        </div>
 
-<Callout type="info">
-The `EventNodeProps` type provides essential information about your step. Here are the key properties:
+        <div className="mt-2 text-sm font-medium text-gray-300">{props.data.description}</div>
 
-| Property | Type | Description |
-|----------|------|-------------|
-| type | `string` | The type of the step |
-| name | `string` | The name of the step |
-| description | `string` | A detailed description of the step |
-| subscribes | `string[]` | List of topics this step listens to |
-| emits | `string[]` | List of topics this step emits |
-| language | `string` | The programming language used |
+        <div className="mt-3 flex flex-col gap-2 border border-gray-800 border-solid p-2 rounded-md w-full">
+          <div className="flex items-center text-xs text-gray-400 space-x-2">Input</div>
+          <div className="flex flex-col gap-2 whitespace-pre-wrap font-mono">
+            <div className="flex items-center gap-2">
+              <div className="">contentIdea:</div>
+              <div className="text-orange-500">string</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="">contentType:</div>
+              <div className="text-orange-500">string</div>
+            </div>
+          </div>
+        </div>
 
-</Callout>
+        <div className="mt-3 flex flex-col gap-2 border border-gray-800 border-solid p-2 rounded-md w-full">
+          <div className="flex items-center text-xs text-gray-400 space-x-2">Output</div>
+          <div className="flex flex-col gap-2 whitespace-pre-wrap font-mono">
+            <div className="flex items-center gap-2">
+              <div className="">topic:</div>
+              <div className="text-orange-500">string</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="">subtopics:</div>
+              <div className="text-orange-500">string[]</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="">keywords:</div>
+              <div className="text-orange-500">string[]</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="">tone:</div>
+              <div className="text-orange-500">string</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="">audience:</div>
+              <div className="text-orange-500">string</div>
+            </div>
+          </div>
+        </div>
 
-### ApiNode
+        <BaseHandle type="source" position={Position.Bottom} variant="event" />
+      </div>
+    </div>
+  )
+}
+```
 
-Specialized component for API-related steps.
+### Important Notes
 
-| Prop | Type | Description |
-|------|------|-------------|
-| data | `ApiNodeProps['data']` | API step data |
-| className | `string` | Additional CSS classes |
+- You will need to add `<BaseHandle>` to your node, otherwize it won't show the connectors.
+- If your node has padding, make sure to add a group inside your node with class `group relative` so the handles can be correctly positioned.
 
-<Tabs items={['TypeScript', 'JavaScript']}>
-  <Tab>
-    ```typescript
-    // apiStep.step.tsx
-
-    import React from 'react'
-    import { ApiNode } from 'motia/workbench'
-    import type { ApiNodeProps } from 'motia/workbench'
-
-    export default function ApiStep({ data }: ApiNodeProps) {
-      return (
-        <ApiNode
-          data={data}
-          className="border-blue-500"
-        >
-          <div>API endpoint: {data.name}</div>
-        </ApiNode>
-      )
-    }
-    ```
-  </Tab>
-  <Tab>
-    ```javascript
-    // apiStep.step.jsx
-
-    import React from 'react'
-    import { ApiNode } from 'motia/workbench'
-
-    export default function ApiStep({ data }) {
-      return (
-        <ApiNode
-          data={data}
-          className="border-blue-500"
-        >
-          <div>API endpoint: {data.name}</div>
-        </ApiNode>
-      )
-    }
-    ```
-  </Tab>
-</Tabs>
-
-<Callout type="info">
-The `ApiNodeProps` type provides essential information about your step. Here are the key properties:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| type | `string` | The type of the step |
-| name | `string` | The name of the step |
-| description | `string` | A detailed description of the step |
-| emits | `string[]` | List of topics this step emits |
-| subscribes | `string[]` | List of topics this step listens to |
-| webhookUrl | `string` | The URL of the webhook |
-| bodySchema | `JSONSchema7` | The schema of the body of the request |
-
-</Callout>
+<Callout type="info">Feel free to create your own custom components and reuse across multiple notes.</Callout>
 
 ## Styling Guidelines
 
-| Guideline | Description |
-|-----------|-------------|
-| Use Tailwind's utility classes only | Stick to Tailwind CSS utilities for consistent styling |
-| Avoid arbitrary values | Use predefined scales from the design system |
-| Keep components responsive | Ensure UI elements adapt well to different screen sizes |
-| Follow Motia's design system | Maintain consistency with Motia's established design patterns |
+| Guideline                           | Description                                                   |
+| ----------------------------------- | ------------------------------------------------------------- |
+| Use Tailwind's utility classes only | Stick to Tailwind CSS utilities for consistent styling        |
+| Avoid arbitrary values              | Use predefined scales from the design system                  |
+| Keep components responsive          | Ensure UI elements adapt well to different screen sizes       |
+| Follow Motia's design system        | Maintain consistency with Motia's established design patterns |
 
-<Callout type="info">
-  Custom styles should be minimal and consistent with the overall Workbench UI.
-</Callout>
+
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| Use base components | Use `EventNode` and `ApiNode` when possible |
-| Keep it simple | Maintain simple and clear visualizations |
-| Optimize performance | Minimize state and computations |
-| Documentation | Document custom components and patterns |
-| Style sharing | Share common styles through utility classes |
+| Practice             | Description                                 |
+| -------------------- | ------------------------------------------- |
+| Use base components  | Use `EventNode` and `ApiNode` when possible |
+| Keep it simple       | Maintain simple and clear visualizations    |
+| Optimize performance | Minimize state and computations             |
+| Documentation        | Document custom components and patterns     |
+| Style sharing        | Share common styles through utility classes |
 
 
 

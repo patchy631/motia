@@ -1,6 +1,6 @@
 'use client';
-import { cn } from 'fumadocs-ui/components/api';
 import Link from 'next/link';
+import { cn } from '@/lib/utils'
  
 export function Breadcrumb({ items }: { items: { name: string, url: string }[] }) {
 
