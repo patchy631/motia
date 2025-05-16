@@ -9,16 +9,16 @@ import { EventHandler, ApiRouteHandler } from 'motia'
 declare module 'motia' {
   type Handlers = {
     'Test State With Python': EventHandler<never, { topic: 'check-state-change'; data: { key: string; expected?: unknown } }>
-    'Test state api trigger': ApiRouteHandler<{}, never, never>
+    'Test state api trigger': ApiRouteHandler<{}, unknown, never>
     'Test State With Ruby': EventHandler<never, never>
     'Check state change': EventHandler<{ key: string; expected?: unknown }, never>
     'Tested Event': EventHandler<never, never>
     'Test Event': EventHandler<never, never>
-    'Test API Endpoint': ApiRouteHandler<never, never, never>
+    'Test API Endpoint': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'stepC': EventHandler<never, { topic: 'pms.stepC.done'; data: { msg: string; timestamp: number } }>
     'stepB': EventHandler<never, { topic: 'pms.stepB.done'; data: { msg: string; timestamp: number } }>
     'stepA': EventHandler<{}, { topic: 'pms.stepA.done'; data: { msg: string; timestamp: number } }>
-    'Parallel Merge': ApiRouteHandler<never, never, { topic: 'pms.start'; data: {} }>
+    'Parallel Merge': ApiRouteHandler<Record<string, unknown>, unknown, { topic: 'pms.start'; data: {} }>
     'join-step': EventHandler<{ msg: string; timestamp: number }, { topic: 'pms.join.complete'; data: { stepA: { msg: string; timestamp: number }; stepB: unknown; stepC: unknown; mergedAt: string } }>
     'Join Complete': EventHandler<{ stepA: { msg: string; timestamp: number }; stepB: unknown; stepC: unknown; mergedAt: string }, never>
     'HandlePeriodicJob': EventHandler<never, never>

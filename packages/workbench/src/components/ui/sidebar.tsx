@@ -1,14 +1,15 @@
 import React, { PropsWithChildren, useState } from 'react'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from './button'
+
 export const Sidebar: React.FC<PropsWithChildren> = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
     <div
       className={cn(
-        'max-h-screen overflow-y-auto transition-[width] duration-300 border-r border-zinc-800 border-solid',
+        'max-h-screen overflow-y-auto transition-[width] duration-300 border-r border-zinc-800 border-solid overflow-hidden',
         isCollapsed ? 'w-[50px]' : 'w-[250px]',
       )}
     >
