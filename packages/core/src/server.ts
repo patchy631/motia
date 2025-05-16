@@ -2,6 +2,7 @@ import { CronManager, setupCronHandlers } from './cron-handler'
 import bodyParser from 'body-parser'
 import express, { Express, Request, Response } from 'express'
 import http from 'http'
+import { Server as WsServer } from 'ws'
 import multer from 'multer'
 import { Server as SocketIOServer } from 'socket.io'
 import cors from 'cors'
@@ -9,7 +10,17 @@ import { flowsEndpoint } from './flows-endpoint'
 import { isApiStep } from './guards'
 import { globalLogger } from './logger'
 import { StateAdapter } from './state/state-adapter'
-import { ApiRequest, ApiResponse, ApiRouteConfig, ApiRouteMethod, EventManager, Step } from './types'
+import {
+  ApiRequest,
+  ApiResponse,
+  ApiRouteConfig,
+  ApiRouteMethod,
+  BaseStateStreamData,
+  EventManager,
+  InternalStateManager,
+  IStateStream,
+  Step,
+} from './types'
 import { systemSteps } from './steps'
 import { LockedData } from './locked-data'
 import { callStepFile } from './call-step-file'
@@ -17,6 +28,8 @@ import { LoggerFactory } from './LoggerFactory'
 import { generateTraceId } from './generate-trace-id'
 import { flowsConfigEndpoint } from './flows-config-endpoint'
 import { apiEndpoints } from './api-endpoints'
+import { socketServer } from './socket-server'
+import { StateStreamFactory } from './state-stream'
 
 export type MotiaServer = {
   app: Express
@@ -35,7 +48,7 @@ type MotiaServerConfig = {
 export const createServer = async (
   lockedData: LockedData,
   eventManager: EventManager,
-  state: StateAdapter,
+  state: InternalStateManager,
   config: MotiaServerConfig,
 ): Promise<MotiaServer> => {
   const printer = lockedData.printer
@@ -48,6 +61,104 @@ export const createServer = async (
   const allSteps = [...systemSteps, ...lockedData.activeSteps]
   const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory)
 
+  const { pushEvent } = socketServer({
+    server,
+    onJoin: async (streamName: string, id: string) => {
+      const streams = lockedData.getStreams()
+      const stream = streams[streamName]
+      return await stream(state).get(id)
+    },
+    onJoinGroup: async (streamName: string, groupId: string) => {
+      const streams = lockedData.getStreams()
+      const stream = streams[streamName]
+      return await stream(state).getList(groupId)
+    },
+  })
+
+  lockedData.applyStreamWrapper((streamName, stream) => {
+    return (state: InternalStateManager): IStateStream<BaseStateStreamData> => {
+      const originalStream = stream(state)
+      const wrapObject = (id: string, object: any) => ({
+        ...object,
+        __motia: { type: 'state-stream', streamName, id },
+      })
+
+      const createState = (id: string, data: any) => {
+        const result = wrapObject(id, data)
+        const groupId = originalStream.getGroupId(result)
+
+        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'create', data: result })
+        pushEvent({ streamName, id, event: { type: 'create', data: result } })
+
+        if (groupId) {
+          pushEvent({ streamName, groupId, event: { type: 'create', data: result } })
+        }
+
+        return result
+      }
+
+      const updateState = (id: string, data: any) => {
+        const result = wrapObject(id, data)
+        const groupId = originalStream.getGroupId(result)
+
+        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'update', data: result })
+        pushEvent({ streamName, id, event: { type: 'update', data: result } })
+
+        if (groupId) {
+          pushEvent({ streamName, groupId, event: { type: 'update', data: result } })
+        }
+        return result
+      }
+
+      const deleteState = async (id: string) => {
+        const data = await originalStream.delete(id)
+        const groupId = data && originalStream.getGroupId(data)
+
+        pushEvent({ streamName, id, event: { type: 'delete', data: data } })
+        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'delete', id })
+
+        if (groupId) {
+          pushEvent({ streamName, groupId, event: { type: 'delete', data } })
+        }
+
+        return data
+      }
+
+      return {
+        get: (id: string) =>
+          originalStream.get(id).then((object: BaseStateStreamData | null) => wrapObject(id, object)),
+        update: (id: string, data: BaseStateStreamData) =>
+          originalStream.update(id, data).then((object: BaseStateStreamData) => updateState(id, object)),
+        delete: (id: string) => deleteState(id),
+        create: (id: string, data: BaseStateStreamData) =>
+          originalStream.create(id, data).then((object: BaseStateStreamData) => createState(id, object)),
+        getGroupId: (data: BaseStateStreamData) => originalStream.getGroupId(data),
+        getList: async (groupId: string) => {
+          const list = await originalStream.getList(groupId)
+          return list.map((object: BaseStateStreamData) => wrapObject(object.id, object))
+        },
+      }
+    }
+  })
+
+  io.on('connection', (socket) => {
+    socket.on('join', async ({ id, streamName }: { streamName: string; id: string }) => {
+      socket.join(`${streamName}-${id}`)
+
+      const streams = lockedData.getStreams()
+      const item = streams[streamName]
+
+      if (item) {
+        const object = await item(state).get(id)
+        socket.emit('update', object)
+      }
+    })
+
+    socket.on('leave', ({ id, streamName }: { streamName: string; id: string }) => {
+      socket.leave(`${streamName}-${id}`)
+    })
+  })
+
   const asyncHandler = (step: Step<ApiRouteConfig>) => {
     return async (req: Request, res: Response) => {
       const traceId = generateTraceId()
@@ -56,8 +167,7 @@ export const createServer = async (
 
       logger.debug('[API] Received request, processing step', { path: req.path })
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const request: ApiRequest<any> = {
+      const request: ApiRequest = {
         body: req.body,
         headers: req.headers as Record<string, string | string[]>,
         pathParams: req.params,
@@ -69,6 +179,7 @@ export const createServer = async (
         const data = request
         const result = await callStepFile<ApiResponse>({
           contextInFirstArg: false,
+          lockedData,
           data,
           step,
           printer,

@@ -3,6 +3,7 @@ import fs from 'fs'
 import * as path from 'path'
 
 export type FileAdapterConfig = {
+  adapter: 'default'
   filePath: string
 }
 
@@ -28,11 +29,11 @@ export class FileStateAdapter implements StateAdapter {
     }
   }
 
-  async get(traceId: string, key: string) {
+  async get<T>(traceId: string, key: string): Promise<T | null> {
     const data = this._readFile()
     const fullKey = this._makeKey(traceId, key)
 
-    return data[fullKey] ? JSON.parse(data[fullKey]) : null
+    return data[fullKey] ? (JSON.parse(data[fullKey]) as T) : null
   }
 
   async set<T>(traceId: string, key: string, value: T) {
@@ -42,15 +43,21 @@ export class FileStateAdapter implements StateAdapter {
     data[fullKey] = JSON.stringify(value)
 
     this._writeFile(data)
+
+    return value
   }
 
-  async delete(traceId: string, key: string) {
+  async delete<T>(traceId: string, key: string): Promise<T | null> {
     const data = this._readFile()
     const fullKey = this._makeKey(traceId, key)
+    const value = await this.get<T>(traceId, key)
 
-    delete data[fullKey]
+    if (value) {
+      delete data[fullKey]
+      this._writeFile(data)
+    }
 
-    this._writeFile(data)
+    return value
   }
 
   async clear(traceId: string) {

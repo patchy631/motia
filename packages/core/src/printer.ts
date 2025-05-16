@@ -1,11 +1,12 @@
 import colors from 'colors'
 import path from 'path'
 import { ValidationError } from './step-validator'
-import { Step } from './types'
+import { StateStreamConfig, Step, Stream } from './types'
 import { isApiStep, isCronStep, isEventStep, isNoopStep } from './guards'
 
 const stepTag = colors.bold(colors.magenta('Step'))
 const flowTag = colors.bold(colors.blue('Flow'))
+const streamTag = colors.bold(colors.green('Stream'))
 const created = colors.green('➜ [CREATED]')
 const building = colors.yellow('⚡ [BUILDING]')
 const built = colors.green('✓ [BUILT]')
@@ -55,6 +56,18 @@ export class Printer {
     console.log(`${removed} ${flowTag} ${colors.bold(colors.cyan(flowName))} removed`)
   }
 
+  printStreamCreated(stream: Stream) {
+    console.log(`${created} ${streamTag} ${this.getStreamPath(stream)} created`)
+  }
+
+  printStreamUpdated(stream: Stream) {
+    console.log(`${updated} ${streamTag} ${this.getStreamPath(stream)} updated`)
+  }
+
+  printStreamRemoved(stream: Stream) {
+    console.log(`${removed} ${streamTag} ${this.getStreamPath(stream)} removed`)
+  }
+
   printInvalidSchema(topic: string, step: Step[]) {
     console.log(`${error} Topic ${colors.bold(colors.blue(topic))} has incompatible schemas in the following steps:`)
     step.forEach((step) => {
@@ -93,6 +106,11 @@ export class Printer {
     const stepPath = this.getRelativePath(step.filePath)
     return colors.bold(colors.cyan(stepPath))
   }
+
+  getStreamPath(stream: Stream) {
+    const streamPath = this.getRelativePath(stream.filePath)
+    return colors.bold(colors.magenta(streamPath))
+  }
 }
 
 export class NoPrinter extends Printer {
@@ -109,4 +127,8 @@ export class NoPrinter extends Printer {
   printFlowRemoved() {}
   printStepType() {}
   printStepPath() {}
+
+  printStreamCreated() {}
+  printStreamUpdated() {}
+  printStreamRemoved() {}
 }

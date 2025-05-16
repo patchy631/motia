@@ -1,16 +1,23 @@
 import chokidar, { FSWatcher } from 'chokidar'
 import { randomUUID } from 'crypto'
-import { getStepConfig, LockedData, Step } from '@motiadev/core'
+import { getStepConfig, getStreamConfig, LockedData, Step, Stream } from '@motiadev/core'
 
 type StepChangeHandler = (oldStep: Step, newStep: Step) => void
 type StepCreateHandler = (step: Step) => void
 type StepDeleteHandler = (step: Step) => void
+
+type StreamChangeHandler = (oldStream: Stream, newStream: Stream) => void
+type StreamCreateHandler = (stream: Stream) => void
+type StreamDeleteHandler = (stream: Stream) => void
 
 export class Watcher {
   private watcher?: FSWatcher
   private stepChangeHandler?: StepChangeHandler
   private stepCreateHandler?: StepCreateHandler
   private stepDeleteHandler?: StepDeleteHandler
+  private streamChangeHandler?: StreamChangeHandler
+  private streamCreateHandler?: StreamCreateHandler
+  private streamDeleteHandler?: StreamDeleteHandler
 
   constructor(
     private readonly dir: string,
@@ -29,6 +36,18 @@ export class Watcher {
     this.stepDeleteHandler = handler
   }
 
+  onStreamChange(handler: StreamChangeHandler) {
+    this.streamChangeHandler = handler
+  }
+
+  onStreamCreate(handler: StreamCreateHandler) {
+    this.streamCreateHandler = handler
+  }
+
+  onStreamDelete(handler: StreamDeleteHandler) {
+    this.streamDeleteHandler = handler
+  }
+
   private findStep(path: string): Step | undefined {
     return (
       this.lockedData.activeSteps.find((step) => step.filePath === path) ||
@@ -36,15 +55,13 @@ export class Watcher {
     )
   }
 
-  private async onFileAdd(path: string): Promise<void> {
+  private async onStepFileAdd(path: string): Promise<void> {
     if (!this.stepCreateHandler) {
       console.warn(`No step create handler, step skipped`)
       return
     }
 
-    const config = await getStepConfig(path).catch((err) => {
-      console.error(err)
-    })
+    const config = await getStepConfig(path).catch((err) => console.error(err))
 
     if (!config) {
       return
@@ -56,7 +73,7 @@ export class Watcher {
     this.stepCreateHandler?.(step)
   }
 
-  private async onFileChange(path: string): Promise<void> {
+  private async onStepFileChange(path: string): Promise<void> {
     const config = await getStepConfig(path).catch((err) => {
       console.error(err)
     })
@@ -87,7 +104,7 @@ export class Watcher {
     }
   }
 
-  private async onFileDelete(path: string): Promise<void> {
+  private async onStepFileDelete(path: string): Promise<void> {
     const step = this.findStep(path)
 
     if (!step) {
@@ -98,16 +115,75 @@ export class Watcher {
     this.stepDeleteHandler?.(step)
   }
 
+  private async onStreamFileAdd(path: string): Promise<void> {
+    const config = await getStreamConfig(path).catch((err) => console.error(err))
+
+    if (!config) {
+      return
+    }
+
+    this.streamCreateHandler?.({ filePath: path, config })
+  }
+
+  private async onStreamFileChange(path: string): Promise<void> {
+    const stream = this.lockedData.findStream(path)
+    const config = await getStreamConfig(path).catch((err) => console.error(err))
+
+    if (!stream && config) {
+      this.streamCreateHandler?.({ filePath: path, config })
+    } else if (stream && config) {
+      this.streamChangeHandler?.(stream, { filePath: path, config })
+    } else if (stream && !config) {
+      this.streamDeleteHandler?.(stream)
+    }
+  }
+
+  private async onStreamFileDelete(path: string): Promise<void> {
+    const stream = this.lockedData.findStream(path)
+
+    if (this.streamDeleteHandler && stream) {
+      this.streamDeleteHandler(stream)
+    }
+  }
+
+  private async onFileAdd(path: string): Promise<void> {
+    if (this.isStepFile(path)) {
+      this.onStepFileAdd(path)
+    } else if (this.isStreamFile(path)) {
+      this.onStreamFileAdd(path)
+    }
+  }
+
+  private async onFileChange(path: string): Promise<void> {
+    if (this.isStepFile(path)) {
+      this.onStepFileChange(path)
+    } else if (this.isStreamFile(path)) {
+      this.onStreamFileChange(path)
+    }
+  }
+
+  private async onFileDelete(path: string): Promise<void> {
+    if (this.isStepFile(path)) {
+      this.onStepFileDelete(path)
+    } else if (this.isStreamFile(path)) {
+      this.onStreamFileDelete(path)
+    }
+  }
+
   init() {
     this.watcher = chokidar
       .watch(this.dir, { persistent: true, ignoreInitial: true })
-      .on('add', (path) => this.isStepFile(path) && this.onFileAdd(path))
-      .on('change', (path) => this.isStepFile(path) && this.onFileChange(path))
-      .on('unlink', (path) => this.isStepFile(path) && this.onFileDelete(path))
+      .on('add', (path) => this.onFileAdd(path))
+      .on('change', (path) => this.onFileChange(path))
+      .on('unlink', (path) => this.onFileDelete(path))
   }
 
   private isStepFile(path: string): boolean {
     return /\.step\.[^.]+$/.test(path) && !/\.tsx$/.test(path)
+  }
+
+  private isStreamFile(path: string): boolean {
+    return /\.stream\.[^.]+$/.test(path) && !/\.tsx$/.test(path)
   }
 
   async stop(): Promise<void> {

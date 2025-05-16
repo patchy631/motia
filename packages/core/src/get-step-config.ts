@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
 import path from 'path'
-import { StepConfig } from './types'
+import { StateStreamConfig, StepConfig } from './types'
 import { globalLogger } from './logger'
 
 const getLanguageBasedRunner = (
@@ -44,6 +44,42 @@ export const getStepConfig = (file: string): Promise<StepConfig | null> => {
     })
 
     child.on('message', (message: StepConfig) => {
+      globalLogger.debug('[Config] Read config', { config: message })
+      config = message
+      resolve(config)
+      child.kill() // we can kill the child process since we already received the message
+    })
+
+    child.on('close', (code) => {
+      if (config) {
+        return // Config was already resolved
+      } else if (code !== 0) {
+        reject(`Process exited with code ${code}`)
+      } else if (!config) {
+        reject(`No config found for file ${file}`)
+      }
+    })
+
+    child.on('error', (error: { code?: string }) => {
+      if (error.code === 'ENOENT') {
+        reject(`Executable ${command} not found`)
+      } else {
+        reject(error)
+      }
+    })
+  })
+}
+export const getStreamConfig = (file: string): Promise<StateStreamConfig | null> => {
+  const { runner, command, args } = getLanguageBasedRunner(file)
+
+  return new Promise((resolve, reject) => {
+    let config: StateStreamConfig | null = null
+
+    const child = spawn(command, [...args, runner, file], {
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+    })
+
+    child.on('message', (message: StateStreamConfig) => {
       globalLogger.debug('[Config] Read config', { config: message })
       config = message
       resolve(config)

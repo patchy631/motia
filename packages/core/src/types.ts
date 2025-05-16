@@ -4,19 +4,40 @@ import { BaseLogger, Logger } from './logger'
 
 export type InternalStateManager = {
   get<T>(traceId: string, key: string): Promise<T | null>
-  set<T>(traceId: string, key: string, value: T): Promise<void>
-  delete(traceId: string, key: string): Promise<void>
+  set<T>(traceId: string, key: string, value: T): Promise<T>
+  delete<T>(traceId: string, key: string): Promise<T | null>
   clear(traceId: string): Promise<void>
 }
 
 export type EmitData = { topic: ''; data: unknown }
 export type Emitter<TData> = (event: TData) => Promise<void>
 
+export interface FlowContextStateStreams {}
+
+export interface StateStreamConfig {
+  name: string
+  schema: ZodObject<any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  baseConfig: { type: 'state'; property: string } | { type: 'custom' }
+}
+
+export type BaseStateStreamData = { id: string }
+
+export interface IStateStream<TData extends BaseStateStreamData> {
+  get(id: string): Promise<TData | null>
+  update(id: string, data: Omit<TData, 'id'>): Promise<TData>
+  delete(id: string): Promise<TData>
+  create(id: string, data: Omit<TData, 'id'>): Promise<TData>
+
+  getGroupId(data: TData): string | null
+  getList(groupId: string): Promise<TData[]>
+}
+
 export interface FlowContext<TEmitData = never> {
   emit: Emitter<TEmitData>
   traceId: string
   state: InternalStateManager
   logger: Logger
+  streams: FlowContextStateStreams
 }
 
 export type EventHandler<TInput, TEmitData> = (input: TInput, ctx: FlowContext<TEmitData>) => Promise<void>
@@ -165,6 +186,7 @@ export type EventManager = {
 export type StepConfig = EventConfig | NoopConfig | ApiRouteConfig | CronConfig
 
 export type Step<TConfig extends StepConfig = StepConfig> = { filePath: string; version: string; config: TConfig }
+export type Stream<TConfig extends StateStreamConfig = StateStreamConfig> = { filePath: string; config: TConfig }
 
 export type Flow = {
   name: string
