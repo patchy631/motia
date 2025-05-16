@@ -12,15 +12,11 @@ export interface TracingOptions {
   /** Environment (dev, prod, etc) */
   environment: string
   /** OTLP endpoint for exporting traces */
-  endpoint?: string
+  endpoint: string
   /** Enable debug logging */
-  debug?: boolean
-  /** Custom headers for trace export requests */
-  headers?: Record<string, string>
-  /** Sampling ratio (0-1) */
-  samplingRatio?: number
+  debug: boolean
   /** Custom attributes to include with all traces */
-  customAttributes?: Record<string, string>
+  customAttributes: Record<string, string>
 }
 
 /**
@@ -34,15 +30,9 @@ export interface MetricsOptions {
   /** Environment (dev, prod, etc) */
   environment: string
   /** OTLP endpoint for exporting metrics */
-  endpoint?: string
-  /** Custom headers for metric export requests */
-  headers?: Record<string, string>
-  /** Interval in milliseconds for exporting metrics */
-  exportIntervalMillis?: number
-  /** Whether to disable automatic host metrics collection */
-  disableDefaultMetrics?: boolean
+  endpoint: string
   /** Enable debug logging */
-  debug?: boolean
+  debug: boolean
   /** Custom attributes to include with all metrics */
   customAttributes?: Record<string, string>
 }
@@ -71,20 +61,8 @@ export interface TelemetryOptions {
   serviceName: string
   /** Version of the service */
   serviceVersion: string
-  /** Deployment environment (production, staging, development) */
-  environment: string
   /** Name for this instrumentation to identify in spans */
   instrumentationName: string
-  /** Specific options for tracing */
-  tracing?: Omit<TracingOptions, 'serviceName' | 'serviceVersion' | 'environment'>
-  /** Specific options for metrics */
-  metrics?: Omit<MetricsOptions, 'serviceName' | 'serviceVersion' | 'environment'>
-  /** Whether to set up global handlers for uncaught exceptions */
-  enableGlobalErrorHandlers?: boolean
-  /** Whether to log diagnostic messages */
-  debug?: boolean
-  /** Additional custom attributes to include in all telemetry */
-  customAttributes?: Record<string, string>
 }
 
 /**

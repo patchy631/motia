@@ -20,24 +20,19 @@ export const createTelemetry = (options: TelemetryOptions): Telemetry => {
   const {
     serviceName,
     serviceVersion,
-    environment,
     instrumentationName,
-    tracing = {},
-    metrics = {},
-    enableGlobalErrorHandlers = true,
-    debug = false,
-    customAttributes = {}
   } = options;
 
+  const environment = process.env.NODE_ENV || 'development';
+  const endpoint = process.env.MOTIA_TELEMETRY_ENDPOINT || 'https://telemetry.motia.dev';
   const isEnabled = isTelemetryEnabled();
-  
+  const debug = process.env.MOTIA_TELEMETRY_DEBUG === 'true';
+  const enableGlobalErrorHandlers = process.env.MOTIA_ENABLE_GLOBAL_ERROR_HANDLERS !== 'false';
+
   setupDebugLogging(debug);
   logTelemetryStatus(debug, isEnabled, serviceName, serviceVersion);
   
-  const combinedAttributes = {
-    ...getTelemetryIdentityAttributes(instrumentationName),
-    ...customAttributes
-  };
+  const attributes = getTelemetryIdentityAttributes(instrumentationName);
 
   const { tracerSdk, systemMetricsInterval } = initializeTelemetryProviders({
     serviceName,
@@ -46,9 +41,8 @@ export const createTelemetry = (options: TelemetryOptions): Telemetry => {
     instrumentationName,
     isEnabled,
     debug,
-    combinedAttributes,
-    tracing,
-    metrics,
+    attributes,
+    endpoint,
     enableGlobalErrorHandlers
   });
 
@@ -84,9 +78,8 @@ const initializeTelemetryProviders = (config: {
   instrumentationName: string;
   isEnabled: boolean;
   debug: boolean;
-  combinedAttributes: Record<string, string>;
-  tracing: Partial<TracingOptions>;
-  metrics: Partial<MetricsOptions>;
+  endpoint: string;
+  attributes: Record<string, string>;
   enableGlobalErrorHandlers: boolean;
 }): TelemetryProviders => {
   const {
@@ -96,9 +89,8 @@ const initializeTelemetryProviders = (config: {
     instrumentationName,
     isEnabled,
     debug,
-    combinedAttributes,
-    tracing,
-    metrics,
+    endpoint,
+    attributes,
     enableGlobalErrorHandlers
   } = config;
 
@@ -107,24 +99,24 @@ const initializeTelemetryProviders = (config: {
 
   if (isEnabled) {
     try {
+      createMetricsProvider({
+        serviceName,
+        serviceVersion,
+        environment,
+        customAttributes: attributes,
+        debug,
+        endpoint,
+      });
+
       tracerSdk = initializeTracing({
         serviceName,
         serviceVersion,
         environment,
         debug,
-        customAttributes: combinedAttributes,
-        ...tracing,
+        customAttributes: attributes,
+        endpoint,
       });
       tracerSdk.start();
-
-      createMetricsProvider({
-        serviceName,
-        serviceVersion,
-        environment,
-        customAttributes: combinedAttributes,
-        debug,
-        ...metrics,
-      });
 
       if (enableGlobalErrorHandlers) {
         setupGlobalErrorHandlers();

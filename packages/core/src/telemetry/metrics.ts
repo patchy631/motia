@@ -12,19 +12,14 @@ import {
 } from './utils'
 import { MetricsOptions, MotiaMetrics } from './types'
 
-
-
 export const createMetricsProvider = (options: MetricsOptions): MeterProvider => {
   const {
     serviceName,
     serviceVersion,
     environment,
-    endpoint = process.env.MOTIA_OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers = {},
-    exportIntervalMillis = DEFAULT_METRICS_INTERVAL,
-    disableDefaultMetrics = false,
+    endpoint,
     customAttributes = {},
-    debug = false,
+    debug,
   } = options
 
   const resource = resourceFromAttributes({
@@ -35,13 +30,12 @@ export const createMetricsProvider = (options: MetricsOptions): MeterProvider =>
   })
 
   const metricExporter = new OTLPMetricExporter({
-    url: `${endpoint}:4317/v1/metrics`,
-    headers,
+    url: `${endpoint}/v1/metrics`,
   })
 
   const reader = new PeriodicExportingMetricReader({
     exporter: metricExporter,
-    exportIntervalMillis,
+    exportIntervalMillis: DEFAULT_METRICS_INTERVAL,
   })
 
   const meterProvider = new MeterProvider({
@@ -49,14 +43,12 @@ export const createMetricsProvider = (options: MetricsOptions): MeterProvider =>
     readers: [reader],
   })
 
-  if (!disableDefaultMetrics) {
-    try {
-      const { HostMetrics } = require('@opentelemetry/host-metrics')
-      const hostMetrics = new HostMetrics({ meterProvider, name: 'motia-host-metrics' })
-      hostMetrics.start()
-    } catch (e) {
-      handleError(e, 'initializing default metrics', debug)
-    }
+  try {
+    const { HostMetrics } = require('@opentelemetry/host-metrics')
+    const hostMetrics = new HostMetrics({ meterProvider, name: 'motia-frameworks-metrics' })
+    hostMetrics.start()
+  } catch (e) {
+    handleError(e, 'initializing default metrics', debug)
   }
 
   metrics.setGlobalMeterProvider(meterProvider)

@@ -6,7 +6,6 @@ import {
   globalLogger,
   createStateAdapter,
   createMermaidGenerator,
-  getTelemetryIdentityAttributes,
 } from '@motiadev/core'
 import { generateLockedData } from './generate-locked-data'
 import path from 'path'
@@ -14,7 +13,7 @@ import { FileStateAdapter } from '@motiadev/core/dist/src/state/adapters/default
 import { createDevWatchers } from './dev-watchers'
 import { stateEndpoints } from './dev/state-endpoints'
 import { activatePythonVenv } from './utils/activatePythonEnv'
-import { initializeSnapTelemetry, getTelemetryConfigFromEnv } from './utils/telemetry-init'
+import { initializeSnapTelemetry } from './utils/telemetry-init'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require('ts-node').register({
@@ -25,7 +24,7 @@ require('ts-node').register({
 export const dev = async (port: number, isVerbose: boolean, enableMermaid: boolean): Promise<void> => {
   const baseDir = process.cwd()
 
-  const telemetry = initializeSnapTelemetry(isVerbose)
+  const telemetry = initializeSnapTelemetry()
 
   activatePythonVenv({ baseDir, isVerbose })
 
@@ -61,7 +60,7 @@ export const dev = async (port: number, isVerbose: boolean, enableMermaid: boole
       require('@motiadev/workbench/dist/middleware')
   await applyMiddleware(motiaServer.app)
 
-  lockedData.telemetry?.metrics.incrementCounter('motia.startup', 1, getTelemetryIdentityAttributes())
+  lockedData.telemetry?.metrics.incrementCounter('motia.startup', 1)
 
   // 6) Gracefully shut down on SIGTERM
   process.on('SIGTERM', async () => {

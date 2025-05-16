@@ -15,10 +15,9 @@ export const initializeTracing = (options: TracingOptions): NodeSDK => {
     serviceName,
     serviceVersion,
     environment,
-    endpoint = process.env.MOTIA_OTEL_EXPORTER_OTLP_ENDPOINT,
-    debug = false,
-    headers = {},
-    customAttributes = {}
+    endpoint,
+    debug,
+    customAttributes
   } = options
 
   if (debug) {
@@ -34,11 +33,14 @@ export const initializeTracing = (options: TracingOptions): NodeSDK => {
 
   const traceExporter = new OTLPTraceExporter({
     url: `${endpoint}/v1/traces`,
-    headers,
   })
 
-  const instrumentations = createInstrumentations()
-  const sdk = createTracingSdk(resource, traceExporter, instrumentations)
+  const sdk = new NodeSDK({
+    resource,
+    traceExporter,
+    instrumentations: createInstrumentations(),
+  })
+
   setupShutdownHandler(sdk, debug)
 
   return sdk
@@ -69,13 +71,6 @@ const createInstrumentations = (): any[] => {
   ]
 }
 
-const createTracingSdk = (resource: any, traceExporter: OTLPTraceExporter, instrumentations: any[]): NodeSDK => {
-  return new NodeSDK({
-    resource,
-    traceExporter,
-    instrumentations,
-  })
-}
 
 const setupShutdownHandler = (sdk: NodeSDK, debug: boolean): void => {
   process.on('SIGTERM', () => {

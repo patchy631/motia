@@ -133,11 +133,13 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
     })
 
     child.stderr?.on('data', (data) => {
+      const error = Buffer.from(data).toString()
       // Record metric for stderr output
       telemetry?.metrics.incrementCounter('steps.child_process.stderr', 1, {
         step_name: step.config.name,
+        error_message: error,
       })
-      logger.error(Buffer.from(data).toString())
+      logger.error(error)
     })
 
     child.on('close', (code) => {

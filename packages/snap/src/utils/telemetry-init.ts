@@ -1,4 +1,4 @@
-import { createTelemetry, Telemetry, TelemetryOptions, findPackageJson } from '@motiadev/core';
+import { createTelemetry, Telemetry, TelemetryOptions, findPackageJson, isTelemetryEnabled } from '@motiadev/core'
 import fs from 'fs';
 import crypto from 'crypto';
 
@@ -7,41 +7,18 @@ import crypto from 'crypto';
  * All identifying information is anonymized through one-way hashing
  */
 export const initializeSnapTelemetry = (): Telemetry => {
-  // Get configuration from environment
-  const {
-    enabled,
-    environment,
-    endpoint,
-    debug,
-    apiKey
-  } = getTelemetryConfigFromEnv();
-  
-  if (!enabled) {
+  if (!isTelemetryEnabled()) {
     return createDisabledTelemetry();
   }
 
   const { name, version } = getPackageDetails();
   
   const instrumentationName = generateInstrumentationName(name);
-  
-  const headers = apiKey ? { 'api-key': apiKey } : undefined;
 
   const telemetryOptions: TelemetryOptions = {
     serviceName: 'motia-framework',
     serviceVersion: version,
-    environment,
     instrumentationName,
-    tracing: {
-      endpoint,
-      debug,
-      headers,
-    },
-    metrics: {
-      endpoint,
-      headers,
-    },
-    enableGlobalErrorHandlers: true,
-    debug,
   };
 
   return createTelemetry(telemetryOptions);
@@ -68,19 +45,6 @@ const createDisabledTelemetry = (): Telemetry => {
 };
 
 /**
- * Extract telemetry configuration from environment variables
- */
-const getTelemetryConfigFromEnv = () => {
-  return {
-    enabled: process.env.MOTIA_TELEMETRY_ENABLED !== 'false',
-    environment: process.env.NODE_ENV || 'development',
-    endpoint: process.env.MOTIA_OTEL_EXPORTER_OTLP_ENDPOINT,
-    debug: process.env.MOTIA_TELEMETRY_DEBUG === 'true',
-    apiKey: process.env.NEW_RELIC_LICENSE_KEY || process.env.MOTIA_TELEMETRY_API_KEY,
-  };
-};
-
-/**
  * Extract package information from package.json
  */
 const getPackageDetails = () => {
@@ -104,10 +68,6 @@ const getPackageDetails = () => {
   };
 };
 
-/**
- * Generate a hashed instrumentation name from the package name
- * for privacy and consistency
- */
 const generateInstrumentationName = (packageName: string): string => {
   return crypto.createHash('sha1').update(packageName).digest('hex').substring(0, 16);
 }; 

@@ -60,6 +60,7 @@ export const setupCronHandlers = (
       // Record cron job execution
       telemetry?.metrics.incrementCounter('cron.execution', 1, {
         step_name: stepName,
+        expression: cronExpression,
       })
       
       const startTime = performance.now()
@@ -94,6 +95,7 @@ export const setupCronHandlers = (
         
         telemetry?.metrics.incrementCounter('cron.execution.errors', 1, {
           step_name: stepName,
+          expression: cronExpression,
           error_type: error.name || 'unknown',
           error_message: error.message || '',
         })

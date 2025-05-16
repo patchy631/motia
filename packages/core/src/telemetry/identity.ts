@@ -9,15 +9,10 @@ import os from 'os'
 export const generateUserId = (): string => {
   try {
     // Combine only non-personally identifiable system information
-    // Explicitly avoid usernames, home directory paths, or machine names that could be identifiable
     const machineParts = [
-      // Use only hardware and OS information, nothing user-specific
       os.platform(),
       os.arch(),
-      os.release(),
-      // Include CPU details without serial numbers
-      os.cpus()[0]?.model.replace(/[0-9]/g, '') || '',
-      // Include memory size as a hardware identifier
+      os.homedir(),
       Math.floor(os.totalmem() / (1024 * 1024 * 100)).toString() + '00MB'
     ]
     
@@ -50,6 +45,8 @@ export const getTelemetryIdentityAttributes = (projectId: string): Record<string
     'motia.user.id': userId,
     'motia.runtime': process.version,
     'motia.os.platform': os.platform(),
+    'motia.os.arch': os.arch(),
     'motia.version': process.env.npm_package_dependencies_motia || '0.0.0',
+    'motia.startedAt': new Date().toISOString(),
   }
 }; 
