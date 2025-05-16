@@ -36,6 +36,11 @@ async function getConfig(filePath: string) {
       }
     }
 
+    // TODO fix isZodSchema from main (rebase)
+    if (module.config.schema instanceof ZodObject) {
+      module.config.schema = zodToJsonSchema(module.config.schema)
+    }
+
     process.send?.(module.config)
 
     process.exit(0)

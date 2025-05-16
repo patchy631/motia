@@ -6,6 +6,7 @@ import {
   isEventStep,
   isCronStep,
   CronManager,
+  Stream,
 } from '@motiadev/core'
 import { Step } from '@motiadev/core'
 import { Watcher } from './watcher'
@@ -31,6 +32,10 @@ export const createDevWatchers = (
   lockedData.on('flow-updated', (flowName: string) => {
     server.socketServer.emit('flow-updated', flowName)
   })
+
+  watcher.onStreamChange((oldStream: Stream, stream: Stream) => lockedData.updateStream(oldStream, stream))
+  watcher.onStreamCreate((stream: Stream) => lockedData.createStream(stream))
+  watcher.onStreamDelete((stream: Stream) => lockedData.deleteStream(stream))
 
   watcher.onStepChange((oldStep: Step, newStep: Step) => {
     if (isApiStep(oldStep)) server.removeRoute(oldStep)

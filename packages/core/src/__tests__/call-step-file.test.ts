@@ -6,6 +6,7 @@ import { BaseLogger } from '../logger'
 import { Printer } from '../printer'
 import { MemoryStateAdapter } from '../state/adapters/memory-state-adapter'
 import { createCronStep } from './fixtures/step-fixtures'
+import { LockedData } from '../locked-data'
 
 describe('callStepFile', () => {
   beforeAll(() => {
@@ -24,6 +25,7 @@ describe('callStepFile', () => {
     jest.spyOn(eventManager, 'emit').mockImplementation(() => Promise.resolve())
 
     await callStepFile({
+      lockedData: new LockedData(baseDir),
       step,
       eventManager,
       printer,

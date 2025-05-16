@@ -1,13 +1,29 @@
 import fs from 'fs'
 import path from 'path'
-import { ApiRouteConfig, CronConfig, EventConfig, Flow, Step } from './types'
 import { isApiStep, isCronStep, isEventStep } from './guards'
 import { Printer } from './printer'
+import { StateStream, StateStreamFactory } from './state-stream'
 import { validateStep } from './step-validator'
-import { generateTypesString, generateTypesFromSteps } from './types/generate-types'
+import {
+  ApiRouteConfig,
+  BaseStateStreamData,
+  CronConfig,
+  EventConfig,
+  Flow,
+  InternalStateManager,
+  Step,
+  Stream,
+} from './types'
+import { generateTypesFromSteps, generateTypesFromStreams, generateTypesString } from './types/generate-types'
 
 type FlowEvent = 'flow-created' | 'flow-removed' | 'flow-updated'
 type StepEvent = 'step-created' | 'step-removed' | 'step-updated'
+type StreamEvent = 'stream-created' | 'stream-removed' | 'stream-updated'
+
+type StreamWrapper<TData extends BaseStateStreamData> = (
+  streamName: string,
+  factory: StateStreamFactory<TData>,
+) => StateStreamFactory<TData>
 
 export class LockedData {
   public flows: Record<string, Flow>
@@ -18,6 +34,10 @@ export class LockedData {
   private stepsMap: Record<string, Step>
   private handlers: Record<FlowEvent, ((flowName: string) => void)[]>
   private stepHandlers: Record<StepEvent, ((step: Step) => void)[]>
+  private streamHandlers: Record<StreamEvent, ((stream: Stream) => void)[]>
+  private streams: Record<string, Stream>
+
+  private streamWrapper?: StreamWrapper<any>
 
   constructor(public readonly baseDir: string) {
     this.flows = {}
@@ -37,11 +57,24 @@ export class LockedData {
       'step-removed': [],
       'step-updated': [],
     }
+
+    this.streamHandlers = {
+      'stream-created': [],
+      'stream-removed': [],
+      'stream-updated': [],
+    }
+
+    this.streams = {}
+  }
+
+  applyStreamWrapper<TData extends BaseStateStreamData>(streamWrapper: StreamWrapper<TData>): void {
+    this.streamWrapper = streamWrapper
   }
 
   saveTypes() {
     const types = generateTypesFromSteps(this.activeSteps, this.printer)
-    const typesString = generateTypesString(types)
+    const streams = generateTypesFromStreams(this.streams)
+    const typesString = generateTypesString(types, streams)
     fs.writeFileSync(path.join(this.baseDir, 'types.d.ts'), typesString)
   }
 
@@ -51,6 +84,10 @@ export class LockedData {
 
   onStep(event: StepEvent, handler: (step: Step) => void) {
     this.stepHandlers[event].push(handler)
+  }
+
+  onStream(event: StreamEvent, handler: (stream: Stream) => void) {
+    this.streamHandlers[event].push(handler)
   }
 
   eventSteps(): Step<EventConfig>[] {
@@ -71,6 +108,31 @@ export class LockedData {
 
   tsSteps(): Step[] {
     return this.activeSteps.filter((step) => step.filePath.endsWith('.ts'))
+  }
+
+  getStreams(): Record<string, StateStreamFactory<any>> {
+    const streams: Record<string, StateStreamFactory<any>> = {}
+
+    for (const [key, value] of Object.entries(this.streams)) {
+      const baseConfig = value.config.baseConfig
+
+      // TODO add support for custom stream types
+      if (baseConfig.type === 'state') {
+        const streamFactory = (state: InternalStateManager) => new StateStream(state, baseConfig.property)
+
+        if (this.streamWrapper) {
+          streams[key] = this.streamWrapper(key, streamFactory)
+        } else {
+          streams[key] = streamFactory
+        }
+      }
+    }
+
+    return streams
+  }
+
+  findStream(path: string): Stream | undefined {
+    return Object.values(this.streams).find((stream) => stream.filePath === path)
   }
 
   updateStep(oldStep: Step, newStep: Step, options: { disableTypeCreation?: boolean } = {}): boolean {
@@ -191,6 +253,53 @@ export class LockedData {
 
     this.stepHandlers['step-removed'].forEach((handler) => handler(step))
     this.printer.printStepRemoved(step)
+  }
+
+  createStream(stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
+    const config = stream.config.baseConfig
+
+    if (config.type === 'state') {
+      this.streams[stream.config.name] = stream
+      this.streamHandlers['stream-created'].forEach((handler) => handler(stream))
+      this.printer.printStreamCreated(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
+    }
+  }
+
+  deleteStream(stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
+    Object.entries(this.streams).forEach(([streamName, stream]) => {
+      if (stream.filePath === stream.filePath) {
+        delete this.streams[streamName]
+      }
+    })
+
+    this.streamHandlers['stream-removed'].forEach((handler) => handler(stream))
+    this.printer.printStreamRemoved(stream)
+
+    if (!options.disableTypeCreation) {
+      this.saveTypes()
+    }
+  }
+
+  updateStream(oldStream: Stream, stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
+    if (oldStream.config.name !== stream.config.name) {
+      delete this.streams[oldStream.config.name]
+    }
+
+    const config = stream.config.baseConfig
+
+    if (config.type === 'state') {
+      this.streams[stream.config.name] = stream
+      this.streamHandlers['stream-updated'].forEach((handler) => handler(stream))
+      this.printer.printStreamUpdated(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
+    }
   }
 
   private createFlow(flowName: string): Flow {
