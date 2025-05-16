@@ -12,6 +12,7 @@ export const applyMiddleware = async (app: Express) => {
 
     server: {
       middlewareMode: true,
+      host: true,
       fs: {
         allow: [__dirname, path.join(process.cwd(), './steps')],
       },
@@ -22,7 +23,7 @@ export const applyMiddleware = async (app: Express) => {
     plugins: [react()],
     css: {
       postcss: {
-        plugins: [tailwindcssPostcss()],
+        plugins: [tailwindcssPostcss({ base: path.join(__dirname, './src') })],
       },
     },
   })
