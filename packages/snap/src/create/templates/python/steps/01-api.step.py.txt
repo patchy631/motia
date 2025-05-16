@@ -16,9 +16,11 @@ config = {
   },
 
   # Expected response body for type checking and documentation
-  "responseBody": {
-    "type": "object",
-    "properties": { "message": { "type": "string" } }
+  "responseSchema": {
+    "200": {
+      "type": "object",
+      "properties": { "message": { "type": "string" } }
+    }
   },
 
   # The virtual subscribes this step has, will be available in Workbench

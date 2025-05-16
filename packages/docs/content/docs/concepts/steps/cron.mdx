@@ -22,7 +22,7 @@ The following examples showcase how to configure an **CRON Step**
 <Tabs  items={['TS', 'JS', 'Python']}>
   <Tab value="TS">
     ```typescript
-    import { CronConfig } from 'motia'
+    import { CronConfig, Handlers } from 'motia'
 
     export const config: CronConfig = {
       type: 'cron' as const,
@@ -33,7 +33,7 @@ The following examples showcase how to configure an **CRON Step**
       flows: ['cron-example'],
     }
 
-    export const handler: StepHandler<typeof config> = async ({ emit }) => {
+    export const handler: Handlers['PeriodicJob'] = async ({ emit }) => {
       await emit({
         topic: 'cron-ticked',
         data: { message: 'Cron job executed' },

@@ -88,7 +88,7 @@ const apiSchema = z
     middleware: z.array(z.any()).optional(),
     queryParams: z.array(z.object({ name: z.string(), description: z.string().optional() })).optional(),
     bodySchema: z.union([jsonSchema, z.object({}), z.null()]).optional(),
-    responseBody: z.union([jsonSchema, z.object({}), z.null()]).optional(),
+    responseSchema: z.record(z.string(), jsonSchema).optional(),
   })
   .strict()
 

@@ -3,7 +3,10 @@ config = {
     "name": "Test State With Python",
     "subscribes": ["test-state"], 
     "emits": ["check-state-change"],
-    "input": None,  # No schema validation in Python version
+    "input": {
+        "key": { "type": "string" },
+        "expected": { "type": "string" },
+    },
     "flows": ["test-state"]
 }
 

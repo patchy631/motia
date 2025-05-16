@@ -1,4 +1,4 @@
-import { CronConfig, FlowContext } from '@motiadev/core'
+import { CronConfig, FlowContext } from 'motia'
 
 export const config = {
   type: 'cron',

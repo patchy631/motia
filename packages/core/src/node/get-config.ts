@@ -25,8 +25,12 @@ async function getConfig(filePath: string) {
       module.config.bodySchema = zodToJsonSchema(module.config.bodySchema)
     }
 
-    if (module.config.responseBody instanceof ZodObject) {
-      module.config.responseBody = zodToJsonSchema(module.config.responseBody)
+    if (module.config.responseSchema) {
+      for (const [status, schema] of Object.entries(module.config.responseSchema)) {
+        if (schema instanceof ZodObject) {
+          module.config.responseSchema[status] = zodToJsonSchema(schema)
+        }
+      }
     }
 
     process.send?.(module.config)

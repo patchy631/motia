@@ -9,7 +9,7 @@ Cron Steps enable scheduled task execution using cron expressions.
 
 ## Configuration
 ```typescript
-import { CronConfig } from 'motia'
+import { CronConfig, Handlers } from 'motia'
  
 export const config: CronConfig = {
   type: 'cron' as const,
@@ -20,7 +20,7 @@ export const config: CronConfig = {
   flows: ['cron-example'],
 }
  
-export const handler: StepHandler<typeof config> = async ({ emit }) => {
+export const handler: Handlers['PeriodicJob'] = async ({ emit }) => {
   await emit({
     topic: 'cron-ticked',
     data: { message: 'Cron job executed' },
@@ -73,6 +73,7 @@ end
 // Every 5 minutes
 export const config: CronConfig = {
   type: 'cron',
+  name: 'CronJob',
   schedule: '*/5 * * * *',
   // ...
 };
@@ -80,6 +81,7 @@ export const config: CronConfig = {
 // Daily at midnight
 export const config: CronConfig = {
   type: 'cron',
+  name: 'CronJob',
   schedule: '0 0 * * *',
   timezone: 'UTC',
   // ...
@@ -88,7 +90,7 @@ export const config: CronConfig = {
 
 ### State Management
 ```typescript
-export const handler: StepHandler<typeof config> = async (_, { state }: FlowContext) => {
+export const handler: Handler['CronJob'] = async (_, { state }: FlowContext) => {
   // Get last run timestamp
   const lastRun = await state.get('lastRunTime');
   

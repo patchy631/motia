@@ -3,6 +3,7 @@
 This guide equips Claude Code to generate Motia workflows, a code-first, event-driven framework supporting TypeScript (TS), JavaScript (JS), Python, and Ruby. It covers all step types, state management, logging, testing, CLI commands, Workbench features, and best practices for creating robust, scalable workflows.
 
 ## Overview
+
 - **Purpose**: Build observable, event-driven workflows with minimal infrastructure setup.
 - **Core Components**:
   - **Steps**: Logic units (API, Event, Cron, NOOP) that subscribe to events, process data, and emit events.
@@ -13,6 +14,7 @@ This guide equips Claude Code to generate Motia workflows, a code-first, event-d
   - **Workbench**: Visual tool at `http://localhost:3000` for flow design, testing, and debugging.
 
 ## Instructions for Claude Code
+
 - **Default Language**: For any given step, use the best lanaguge for the job. For example if the step requires a dependency that is best in npm use TypeScript. Same applies for Python and Ruby.
 - **Module Format**: Use ES modules (`import/export`) for TS/JS. Use standard module/require for Python and Ruby.
 - **File Structure**: Keep all code in one file unless I request multiple files.
@@ -33,17 +35,17 @@ This guide equips Claude Code to generate Motia workflows, a code-first, event-d
 ## Step Types and Templates
 
 ### 1. API Step
+
 - **Purpose**: Exposes an HTTP endpoint to trigger workflows.
 - **Config**: Requires `path`, `method`, `bodySchema`.
 - **Handler**: Returns `{ status: number, body: any }`.
 
 **Template (TS)**:
+
 ```typescript
 // api.step.ts
-import { ApiRouteConfig, StepHandler } from 'motia';
-import { z } from 'zod';
-
-const bodySchema = z.object({ message: z.string() });
+import { ApiRouteConfig, Handlers } from 'motia'
+import { z } from 'zod'
 
 export const config: ApiRouteConfig = {
   type: 'api',
@@ -52,24 +54,25 @@ export const config: ApiRouteConfig = {
   path: '/trigger',
   method: 'POST',
   emits: ['trigger.received'],
-  bodySchema,
-  flows: ['my-flow']
-};
+  bodySchema: z.object({ message: z.string() }),
+  flows: ['my-flow'],
+}
 
-export const handler: StepHandler<typeof config> = async (req, { logger, emit }) => {
-  logger.info('API request received', { body: req.body });
+export const handler: Handlers['ApiTrigger'] = async (req, { logger, emit }) => {
+  logger.info('API request received', { body: req.body })
   try {
-    const data = req.body;
-    await emit({ topic: 'trigger.received', data });
-    return { status: 200, body: { message: 'Success' } };
+    const data = req.body
+    await emit({ topic: 'trigger.received', data })
+    return { status: 200, body: { message: 'Success' } }
   } catch (error) {
-    logger.error('API error', { error: error.message });
-    return { status: 500, body: { error: 'Internal error' } };
+    logger.error('API error', { error: error.message })
+    return { status: 500, body: { error: 'Internal error' } }
   }
-};
+}
 ```
 
 **Template (Python)**:
+
 ```python
 # api.step.py
 config = {
@@ -101,6 +104,7 @@ async def handler(req, ctx):
 ```
 
 **Template (Ruby)**:
+
 ```ruby
 # api.step.rb
 def config
@@ -138,39 +142,40 @@ end
 **Prompt**: "Create an API step at `/feedback` accepting `message: string`, emitting `feedback.received`."
 
 ### 2. Event Step
+
 - **Purpose**: Listens to events and emits new ones.
 - **Config**: Requires `subscribes`, `emits`; optional `input` schema.
 
 **Template (TS)**:
+
 ```typescript
 // event.step.ts
-import { EventConfig, StepHandler } from 'motia';
-import { z } from 'zod';
+import { EventConfig, Handlers } from 'motia'
+import { z } from 'zod'
 
-const inputSchema = z.object({ message: z.string() });
-
-export const config: EventConfig<typeof inputSchema> = {
+export const config: EventConfig = {
   type: 'event',
   name: 'EventProcessor',
   description: 'Processes event data',
   subscribes: ['trigger.received'],
   emits: ['trigger.processed'],
-  input: inputSchema,
-  flows: ['my-flow']
-};
+  input: z.object({ message: z.string() }),
+  flows: ['my-flow'],
+}
 
-export const handler: StepHandler<typeof config> = async (input, { logger, emit, state, traceId }) => {
-  logger.info('Processing event', { input });
+export const handler: Handlers['EventProcessor'] = async (input, { logger, emit, state, traceId }) => {
+  logger.info('Processing event', { input })
   try {
-    await state.set(traceId, 'result', { value: input.message });
-    await emit({ topic: 'trigger.processed', data: { result: `Processed: ${input.message}` } });
+    await state.set(traceId, 'result', { value: input.message })
+    await emit({ topic: 'trigger.processed', data: { result: `Processed: ${input.message}` } })
   } catch (error) {
-    logger.error('Event failed', { error: error.message });
+    logger.error('Event failed', { error: error.message })
   }
-};
+}
 ```
 
 **Template (Python)**:
+
 ```python
 # event.step.py
 config = {
@@ -199,6 +204,7 @@ async def handler(input, ctx):
 ```
 
 **Template (Ruby)**:
+
 ```ruby
 # event.step.rb
 def config
@@ -233,13 +239,15 @@ end
 **Prompt**: "Write an event step listening to `feedback.received`, saving `message` to state, emitting `feedback.processed`."
 
 ### 3. Cron Step
+
 - **Purpose**: Runs on a schedule using cron syntax (e.g., `0 9 * * *` for 9 AM daily).
 - **Config**: Requires `cron`.
 
 **Template (TS)**:
+
 ```typescript
 // cron.step.ts
-import { CronConfig, StepHandler } from 'motia';
+import { CronConfig, Handlers } from 'motia'
 
 export const config: CronConfig = {
   type: 'cron',
@@ -247,21 +255,22 @@ export const config: CronConfig = {
   description: 'Runs daily at 9 AM',
   cron: '0 9 * * *',
   emits: ['task.ran'],
-  flows: ['my-flow']
-};
+  flows: ['my-flow'],
+}
 
-export const handler: StepHandler<typeof config> = async (_, { logger, emit }) => {
-  logger.info('Cron job started');
+export const handler: Handlers['DailyTask'] = async (_, { logger, emit }) => {
+  logger.info('Cron job started')
   try {
-    await emit({ topic: 'task.ran', data: { timestamp: Date.now() } });
-    logger.info('Cron job completed');
+    await emit({ topic: 'task.ran', data: { timestamp: Date.now() } })
+    logger.info('Cron job completed')
   } catch (error) {
-    logger.error('Cron job failed', { error: error.message });
+    logger.error('Cron job failed', { error: error.message })
   }
-};
+}
 ```
 
 **Template (Python)**:
+
 ```python
 # cron.step.py
 config = {
@@ -284,6 +293,7 @@ import time
 ```
 
 **Template (Ruby)**:
+
 ```ruby
 # cron.step.rb
 def config
@@ -311,13 +321,15 @@ end
 **Prompt**: "Generate a cron step running daily at 9 AM, emitting `daily.check` with a timestamp."
 
 ### 4. NOOP Step (TS/JS Only)
+
 - **Purpose**: Simulates external processes (e.g., webhooks, human tasks).
 - **Files**: `.ts` for config, `.tsx` for optional UI.
 
 **Template (TS)**:
+
 ```typescript
 // external-noop.step.ts
-import { NoopConfig } from 'motia';
+import { NoopConfig } from 'motia'
 
 export const config: NoopConfig = {
   type: 'noop',
@@ -325,8 +337,8 @@ export const config: NoopConfig = {
   description: 'Simulates external action',
   virtualSubscribes: ['start'],
   virtualEmits: ['done'],
-  flows: ['my-flow']
-};
+  flows: ['my-flow'],
+}
 ```
 
 ```typescript
@@ -348,6 +360,7 @@ export default function ExternalProcess() {
 **Prompt**: "Create a NOOP step simulating a webhook from `webhook.sent` to `/api/webhook/received`."
 
 ## State Management
+
 - **Access**: Via `ctx.state` in handlers.
 - **Methods**:
   - `get(scope: string, key: string)`: Returns `Promise<T | null>`.
@@ -358,14 +371,16 @@ export default function ExternalProcess() {
 - **Scope**: Use `ctx.traceId` as the default scope for state isolation.
 
 **Example (TS)**:
+
 ```typescript
-await ctx.state.set(ctx.traceId, 'data', { value: 'test' });
-const data = await ctx.state.get<{ value: string }>(ctx.traceId, 'data');
-await ctx.state.delete(ctx.traceId, 'data');
-await ctx.state.clear(ctx.traceId);
+await ctx.state.set(ctx.traceId, 'data', { value: 'test' })
+const data = await ctx.state.get<{ value: string }>(ctx.traceId, 'data')
+await ctx.state.delete(ctx.traceId, 'data')
+await ctx.state.clear(ctx.traceId)
 ```
 
 **Example (Python)**:
+
 ```python
 await ctx.state.set(ctx.trace_id, 'data', {'value': 'test'})
 data = await ctx.state.get(ctx.trace_id, 'data')
@@ -374,6 +389,7 @@ await ctx.state.clear(ctx.trace_id)
 ```
 
 **Example (Ruby)**:
+
 ```ruby
 ctx.state.set(ctx.trace_id, 'data', { value: 'test' })
 data = ctx.state.get(ctx.trace_id, 'data')
@@ -382,6 +398,7 @@ ctx.state.clear(ctx.trace_id)
 ```
 
 **Adapters**:
+
 - **Memory**: In-memory, non-persistent.
 - **File**: Saves to `.motia/motia.state.json`.
 - **Redis**: Persistent, configurable in `config.yml`:
@@ -396,19 +413,22 @@ ctx.state.clear(ctx.trace_id)
 **Prompt**: "Add state to an event step to store and retrieve a `count` number."
 
 ## Logging
+
 - **Access**: Via `ctx.logger` in handlers.
 - **Levels**: `info`, `warn`, `error`, `debug`.
 - **Usage**: Include context for structured logging.
 
 **Example (TS)**:
+
 ```typescript
-logger.info('Processing started', { input });
-logger.warn('Large value', { value: 1000 });
-logger.error('Failed', { error: error.message, stack: error.stack });
-logger.debug('Details', { rawInput: input });
+logger.info('Processing started', { input })
+logger.warn('Large value', { value: 1000 })
+logger.error('Failed', { error: error.message, stack: error.stack })
+logger.debug('Details', { rawInput: input })
 ```
 
 **Example (Python)**:
+
 ```python
 ctx.logger.info('Processing started', {'input': input})
 ctx.logger.warn('Large value', {'value': 1000})
@@ -417,6 +437,7 @@ ctx.logger.debug('Details', {'rawInput': input.__dict__})
 ```
 
 **Example (Ruby)**:
+
 ```ruby
 ctx.logger.info('Processing started', { input: input })
 ctx.logger.warn('Large value', { value: 1000 })
@@ -427,6 +448,7 @@ ctx.logger.debug('Details', { rawInput: input.to_h })
 **Prompt**: "Add logging to an API step for request receipt and errors."
 
 ## CLI Commands
+
 - **Installation**: Comes with `motia` package (`npx motia`).
 - **Key Commands**:
   - `create`: `npx motia create -n my-project -t template-name`
@@ -438,25 +460,28 @@ ctx.logger.debug('Details', { rawInput: input.to_h })
 **Prompt**: "Provide a CLI command to test an event step with topic `test.event`."
 
 ## Testing
+
 - **Framework**: Jest (`@motiadev/testing`) for TS/JS. Use CLI `emit` or `curl` for Python/Ruby testing.
 - **Command**: Include `curl` or `npx motia emit` with sample data.
 
 **Example Test (TS)**:
+
 ```typescript
-import { createTestContext } from '@motiadev/testing';
-import { handler } from './my-step.step';
+import { createTestContext } from '@motiadev/testing'
+import { handler } from './my-step.step'
 
 describe('MyStep', () => {
   it('emits event', async () => {
-    const { emit, done } = createTestContext();
-    await handler({ key: 'test' }, { emit });
-    expect(emit).toHaveBeenCalledWith({ topic: 'my.event', data: { key: 'test' } });
-    done();
-  });
-});
+    const { emit, done } = createTestContext()
+    await handler({ key: 'test' }, { emit })
+    expect(emit).toHaveBeenCalledWith({ topic: 'my.event', data: { key: 'test' } })
+    done()
+  })
+})
 ```
 
 **Example Test Command (Python/Ruby)**:
+
 ```bash
 npx motia emit --topic test.event --message '{"key": "value"}'
 ```
@@ -464,14 +489,17 @@ npx motia emit --topic test.event --message '{"key": "value"}'
 **Prompt**: "Generate a test command for an API step at `/test`."
 
 ## Workbench Customization
+
 - **Access**: `npx motia dev` (runs at `http://localhost:3000`).
 - **Features**: Flow visualization, real-time logs, testing.
 
 ### UI Steps (TS/JS Only)
+
 - **Purpose**: Custom visuals for steps in Workbench.
 - **Files**: `.ts` for config, `.tsx` for optional UI.
 
 **Template (TS)**:
+
 ```typescript
 // custom-ui.step.tsx
 import React from 'react';
@@ -488,12 +516,14 @@ export default function CustomStep({ data }: EventNodeProps) {
 ```
 
 **Components**:
+
 - `EventNode`: For event steps (`variant`: "white", "ghost", "noop").
 - `ApiNode`: For API steps.
 
 **Prompt**: "Create a custom UI for an event step displaying its name."
 
 ## Best Practices
+
 - **Naming**: Descriptive flow/step names (e.g., `user-registration-flow`).
 - **Logging**: Structured (e.g., `logger.info('Done', { id: 1 })`).
 - **State**:
@@ -503,15 +533,15 @@ export default function CustomStep({ data }: EventNodeProps) {
 - **Testing**: Provide realistic sample data and responses.
 
 ## Complete Example: Feedback Workflow
+
 **Prompt**: "Build a workflow with an API step to receive feedback, an event step to analyze it, and a cron step to report daily."
 
 ### API Step: Receive Feedback (TypeScript)
-```typescript
-// feedback-api.step.ts
-import { ApiRouteConfig, StepHandler } from 'motia';
-import { z } from 'zod';
 
-const bodySchema = z.object({ message: z.string() });
+````typescript
+// feedback-api.step.ts
+import { ApiRouteConfig, Handlers } from 'motia';
+import { z } from 'zod';
 
 export const config: ApiRouteConfig = {
   type: 'api',
@@ -520,11 +550,15 @@ export const config: ApiRouteConfig = {
   path: '/feedback',
   method: 'POST',
   emits: ['feedback.received'],
-  bodySchema,
-  flows: ['feedback-analyzer']
+  flows: ['feedback-analyzer'],
+  bodySchema: z.object({ message: z.string() }),
+  responseSchema: {
+    200: z.object({ message: z.string() }),
+    500: z.object({ error: z.string() }),
+  },
 };
 
-export const handler: StepHandler<typeof config> = async (req, { logger, emit }) => {
+export const handler: Handlers['FeedbackReceiver'] = async (req, { logger, emit }) => {
   logger.info('Feedback received', { body: req.body });
   try {
     await emit({ topic: 'feedback.received', data: req.body });
@@ -603,22 +637,20 @@ end
 ### Event Step: Analyze Feedback (TypeScript)
 ```typescript
 // feedback-analyzer.step.ts
-import { EventConfig, StepHandler } from 'motia';
+import { EventConfig, Handlers } from 'motia';
 import { z } from 'zod';
 
-const inputSchema = z.object({ message: z.string() });
-
-export const config: EventConfig<typeof inputSchema> = {
+export const config: EventConfig = {
   type: 'event',
   name: 'FeedbackAnalyzer',
   description: 'Analyzes feedback',
   subscribes: ['feedback.received'],
   emits: ['feedback.analyzed'],
-  input: inputSchema,
+  input: z.object({ message: z.string() }),
   flows: ['feedback-analyzer']
 };
 
-export const handler: StepHandler<typeof config> = async (input, { logger, emit, state, traceId }) => {
+export const handler: Handlers['FeedbackAnalyzer'] = async (input, { logger, emit, state, traceId }) => {
   logger.info('Analyzing', { input });
   try {
     const sentiment = input.message.includes('good') ? 'positive' : 'neutral';
@@ -696,7 +728,7 @@ end
 ### Cron Step: Daily Report (TypeScript)
 ```typescript
 // feedback-report.step.ts
-import { CronConfig, StepHandler } from 'motia';
+import { CronConfig, Handlers } from 'motia';
 
 export const config: CronConfig = {
   type: 'cron',
@@ -707,7 +739,7 @@ export const config: CronConfig = {
   flows: ['feedback-analyzer']
 };
 
-export const handler: StepHandler<typeof config> = async (_, { logger, emit, state, traceId }) => {
+export const handler: Handlers['FeedbackReporter'] = async (_, { logger, emit, state, traceId }) => {
   logger.info('Generating report');
   try {
     const sentiment = await state.get<string>(traceId, 'sentiment') || 'unknown';
@@ -773,16 +805,23 @@ end
 
 
 ### Example Usage
-```
+````
+
 # Test API
+
 curl -X POST http://localhost:3000/feedback -H "Content-Type: application/json" -d '{"message": "This is good"}'
 
 # Test Event (manual trigger)
+
 npx motia emit --topic feedback.received --message '{"message": "This is good"}'
 
 # Expected Logs
+
 [INFO] Feedback received: {"message": "This is good"}
 [INFO] Analyzing: {"message": "This is good"}
 [INFO] Generating report (at 9 AM)
 [INFO] Report completed
+
+```
+
 ```

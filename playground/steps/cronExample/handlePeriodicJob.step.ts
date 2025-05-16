@@ -1,4 +1,4 @@
-import { CronHandler } from '@motiadev/core'
+import { CronHandler } from 'motia'
 
 export const config = {
   type: 'event',

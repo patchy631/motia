@@ -48,7 +48,7 @@ export const config = {
   flows: ['flow-name']
 }
 
-export const handler: StepHandler<typeof config> = async (input, context: FlowContext) => {
+export const handler: Handlers['unique-step-name'] = async (input, context: FlowContext) => {
   // Business logic here
 }
 ```

@@ -1,4 +1,4 @@
-import { ApiRouteConfig, StepHandler, ApiMiddleware } from '@motiadev/core'
+import { ApiRouteConfig, Handlers, ApiMiddleware } from 'motia'
 
 const timingMiddleware: ApiMiddleware = async (_, ctx, next) => {
   const start = Date.now()
@@ -23,7 +23,7 @@ export const config: ApiRouteConfig = {
   middleware: [timingMiddleware],
 }
 
-export const handler: StepHandler<typeof config> = async (req, { emit, logger }) => {
+export const handler: Handlers['Parallel Merge'] = async (_, { emit, logger }) => {
   logger.info('Starting parallel merge')
 
   await emit({ topic: 'pms.start', data: {} })

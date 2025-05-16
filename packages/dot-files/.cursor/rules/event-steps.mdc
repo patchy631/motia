@@ -11,26 +11,20 @@ Calling generative LLMs, accessing files, python or ruby logic.
 
 ## Examples
 ```typescript
-import { EventConfig, StepHandler } from 'motia'
+import { EventConfig, Handlers } from 'motia'
 import { z } from 'zod'
  
-const inputSchema = z.object({
-  message: z.string()
-})
- 
-type Input = typeof inputSchema
- 
-export const config: EventConfig<Input> = {
+export const config: EventConfig = {
   type: 'event',
   name: 'stepA',
   description: 'Hello from Step A',
   subscribes: ['pms.start'],
   emits: ['pms.stepA.done'],
-  input: inputSchema,
+  input: z.object({ message: z.string() }),
   flows: ['parallel-merge'],
 }
  
-export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+export const handler: Handlers['stepA'] = async (input, { emit, logger }) => {
   logger.info('Processing message:', input.message)
  
   await emit({
@@ -96,7 +90,7 @@ end
 
 ### Sequential Processing
 ```typescript
-export const handler: StepHandler<typeof config> = async (input, { emit }: FlowContext) => {
+export const handler: Handlers['{{StepName}}'] = async (input, { emit }: FlowContext) => {
   // Process input
   const result = await processData(input);
   
@@ -110,7 +104,7 @@ export const handler: StepHandler<typeof config> = async (input, { emit }: FlowC
 
 ### Parallel Processing
 ```typescript
-export const handler: StepHandler<typeof config> = async (input, { emit }) => {
+export const handler: Handlers['{{StepName}}'] = async (input, { emit }) => {
   // Emit multiple events
   await Promise.all([
     emit({ topic: 'branch1', data: input }),

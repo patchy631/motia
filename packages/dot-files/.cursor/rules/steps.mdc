@@ -22,20 +22,16 @@ Steps are self-contained units of business logic that process events and emit re
 // Input validation
 import { z } from 'zod';
 
-const inputSchema = z.object({
-  message: z.string()
-});
-
-export const config: EventConfig<typeof inputSchema> = {
+export const config: EventConfig = {
   type: 'event',
   name: 'Minimal Step',
-  input: inputSchema,
+  input: z.object({ message: z.string() }),
   subscribes: ['start'],
   emits: ['done'],
 };
 
 // State management
-export const handler: StepHandler<typeof config> = async (input, { state }: FlowContext) => {
+export const handler: Handlers['Minimal Step'] = async (input, { state }: FlowContext) => {
   const currentCount = await state.get('counter') || 0;
   await state.set('counter', currentCount + 1);
 };

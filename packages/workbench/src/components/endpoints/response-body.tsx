@@ -1,0 +1,16 @@
+import React from 'react'
+import { useJsonSchemaToJson } from './hooks/use-json-schema-to-json'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Props = { status: string; body: Record<string, any> }
+
+export const ResponseBody: React.FC<Props> = ({ status, body }) => {
+  const { body: responseBody } = useJsonSchemaToJson(body)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-bold">{status}</span>
+      <span className="text-xs font-mono bg-black/50 p-2 rounded-lg whitespace-pre-wrap">{responseBody}</span>
+    </div>
+  )
+}

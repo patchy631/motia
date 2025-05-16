@@ -1,11 +1,11 @@
 import React from 'react'
 import { ApiEndpoint } from './hooks/use-get-endpoints'
 import { useJsonSchemaToJson } from './hooks/use-json-schema-to-json'
+import { ResponseBody } from './response-body'
 
 type Props = { endpoint: ApiEndpoint }
 
 export const SelectedEndpoint: React.FC<Props> = ({ endpoint }) => {
-  const { body: responseBody } = useJsonSchemaToJson(endpoint.responseBody)
   const { body: requestBody } = useJsonSchemaToJson(endpoint.bodySchema)
 
   return (
@@ -30,10 +30,12 @@ export const SelectedEndpoint: React.FC<Props> = ({ endpoint }) => {
           <span className="text-xs font-mono bg-black/50 p-2 rounded-lg whitespace-pre-wrap">{requestBody}</span>
         </div>
       )}
-      {responseBody && (
+      {endpoint.responseSchema && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-bold">Response</span>
-          <span className="text-xs font-mono bg-black/50 p-2 rounded-lg whitespace-pre-wrap">{responseBody}</span>
+          {Object.entries(endpoint.responseSchema).map(([status, schema]) => (
+            <ResponseBody key={status} status={status} body={schema} />
+          ))}
         </div>
       )}
     </>

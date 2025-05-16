@@ -1,4 +1,4 @@
-import { ApiRouteConfig, ApiRouteHandler } from '../types'
+import { ApiResponse, ApiRouteConfig, ApiRouteHandler } from '../types'
 import { z } from 'zod'
 
 export const config: ApiRouteConfig = {
@@ -17,7 +17,11 @@ export const config: ApiRouteConfig = {
 
 type EmitData = { topic: string; data: Record<string, unknown> }
 
-export const handler: ApiRouteHandler<EmitData, unknown, EmitData> = async (req, { emit, logger }) => {
+export const handler: ApiRouteHandler<
+  EmitData,
+  ApiResponse<200, { success: true; emitted: EmitData }>,
+  EmitData
+> = async (req, { emit, logger }) => {
   const { topic, data } = req.body
 
   logger.info('[Event Emitter] Emitting event', { topic, data })

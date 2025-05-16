@@ -22,7 +22,9 @@ export const config: ApiRouteConfig = {
   /** 
    * Expected response body for type checking and documentation
    */
-  responseBody: z.object({ message: z.string() }),
+  responseSchema: {
+    200: z.object({ message: z.string() })
+  },
 
   /** 
    * We're using virtual subscribes to virtually connect noop step

@@ -64,14 +64,14 @@ State data is stored as key-value pairs, namespaced under a scope string. When u
 <Tabs items={['TypeScript', 'JavaScript', 'Python']}>
   <Tab label="TypeScript">
     ```typescript
-    import { StepHandler } from 'motia'
+    import { Handlers } from 'motia'
 
     interface BookingData {
       customer: { name: string; email: string };
       venue: { id: string; name: string };
     }
 
-    export const handler: StepHandler<typeof config> = async (input, { state, traceId }) => { // Get traceId from context
+    export const handler: Handlers['StepName'] = async (input, { state, traceId }) => { // Get traceId from context
       // Store state (using traceId as scope)
       await state.set<BookingData>(traceId, 'booking', {
         customer: input.customer,
@@ -93,9 +93,9 @@ State data is stored as key-value pairs, namespaced under a scope string. When u
 
   <Tab label="JavaScript">
     ```javascript
-    import { StepHandler } from 'motia'
+    import { Handlers } from 'motia'
 
-    export const handler = async (input, { state, traceId }) => { // Get traceId from context
+    export const handler: Handlers['StepName'] = async (input, { state, traceId }) => { // Get traceId from context
       // Store state (using traceId as scope)
       await state.set(traceId, 'booking', {
         customer: input.customer,
@@ -293,7 +293,7 @@ Always clean up state when you're done with it:
 <Tabs items={['TypeScript', 'JavaScript', 'Python']}>
     <Tab label="TypeScript">
       ```typescript
-      export const handler: StepHandler<typeof config> = async (input, { state, traceId }) => {
+      export const handler: Handlers['StepName'] = async (input, { state, traceId }) => {
         try {
           await processBooking(input)
           // Clean up specific keys

@@ -9,7 +9,7 @@ API Steps expose HTTP endpoints for external interaction with workflows.
 
 ## Basic Configuration
 ```typescript
-import { ApiMiddleware, ApiRouteConfig, ApiRequest, FlowContext } from 'motia'
+import { ApiMiddleware, ApiRouteConfig, ApiRequest, FlowContext, Handlers } from 'motia'
  
 // Logging middleware
 const loggingMiddleware: ApiMiddleware = async (req, ctx, next) => {
@@ -53,7 +53,7 @@ export const config = {
   ]
 }
  
-export const handler: StepHandler<typeof config> = async (req: ApiRouteConfig, ctx: FlowContext) => {
+export const handler: Handlers['protected-endpoint'] = async (req: ApiRouteConfig, ctx: FlowContext) => {
   // This handler will only be called if all middleware pass
   return {
     status: 200,

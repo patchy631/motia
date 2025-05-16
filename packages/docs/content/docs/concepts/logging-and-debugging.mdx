@@ -27,7 +27,7 @@ Motia supports four standard log levels:
 <Tabs items={['TS', 'JS', 'Python']}>
   <Tab value='TS'>
     ```typescript
-    export const handler: StepHandler<typeof config> = async (input, { logger }) => {
+    export const handler: Handlers['StepName'] = async (input, { logger }) => {
       // Basic logging
       logger.info('Starting process')
 
@@ -220,7 +220,7 @@ logger.info(`Payment ${paymentId} processed: amount=${amount}`)
 ### Performance Monitoring
 
 ```typescript
-export const handler: StepHandler<typeof config> = async (input, { logger }) => {
+export const handler: Handlers['StepName'] = async (input, { logger }) => {
   const startTime = performance.now()
 
   // Process operation

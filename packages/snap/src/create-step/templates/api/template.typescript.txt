@@ -1,4 +1,4 @@
-import { ApiRouteConfig, StepHandler } from '@motiadev/core'
+import { ApiRouteConfig, Handlers } from 'motia'
 import { z } from 'zod'
 
 export const config: ApiRouteConfig = {
@@ -11,10 +11,15 @@ export const config: ApiRouteConfig = {
   flows: {{FLOWS}},
   bodySchema: z.object({
     // Add your schema here
-  })
+  }),
+  responseSchema: {
+    200: z.object({ 
+      // add your response schema here
+    }),
+  },
 }
 
-export const handler: StepHandler<typeof config> = async (req, { logger, emit }) => {
+export const handler: Handlers['{{STEP_NAME}}'] = async (req, { logger, emit }) => {
   logger.info('Processing {{STEP_NAME}}', req)
 
   // Add your handler logic here

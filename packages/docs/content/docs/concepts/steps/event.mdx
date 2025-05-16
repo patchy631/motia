@@ -23,7 +23,7 @@ The following examples showcase how to configure an **Event Step**
 <Tabs  items={['TS', 'JS', 'Python']}>
   <Tab value="TS">
     ```typescript
-    import { EventConfig, StepHandler } from 'motia'
+    import { EventConfig, Handlers } from 'motia'
     import { z } from 'zod'
 
     export const config: EventConfig = {
@@ -36,7 +36,7 @@ The following examples showcase how to configure an **Event Step**
       flows: ['parallel-merge'],
     }
 
-    export const handler: StepHandler<typeof config> = async (input, { emit, logger }) => {
+    export const handler: Handlers['stepA'] = async (input, { emit, logger }) => {
       logger.info('Processing message:', input.message)
 
       await emit({

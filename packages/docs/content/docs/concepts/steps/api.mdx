@@ -23,9 +23,9 @@ The following properties are specific to the API Step, in addition to the [commo
         'Schema for validating the request body. For TypeScript/JavaScript steps, it uses zod schemas. For Python steps, it uses Pydantic models.',
       type: 'object',
     },
-    responseBody: {
+    responseSchema: {
       description:
-        'Mostly used for documentation, the expected output of an API endpoint. For TypeScript/JavaScript steps, it uses zod schemas. For Python steps, it uses Pydantic models.',
+        'Mostly used for documentation, the expected output of an API endpoint. For TypeScript/JavaScript steps, it uses zod schemas. For Python steps, it uses Pydantic models or Dict Json Schema.',
       type: 'object',
     },
     queryParams: {
@@ -44,20 +44,23 @@ The following properties are specific to the API Step, in addition to the [commo
 <Tabs items={['TypeScript', 'JavaScript', 'Python']}>
   <Tab value="TypeScript">
     ```typescript
-    import { ApiRouteConfig, StepHandler } from '@motiadev/core'
+    import { ApiRouteConfig, Handlers } from 'motia'
     import { z } from 'zod'
-
-    const responseSchema = z.object({ message: z.string({ description: 'The message from OpenAI' }) })
 
     export const config: ApiRouteConfig = {
       type: 'api',
-      name: 'Get Message by Trace ID',
+      name: 'GetMessage',
       description: 'Retrieves a generated message from OpenAI based on the Trace ID returned by the POST /openai endpoint',
       path: '/openai/:traceId',
       method: 'GET',
       emits: ['call-openai'],
       flows: ['openai'],
-      responseBody: responseSchema,
+      responseSchema: {
+        // When response code is 200
+        200: z.object({ message: z.string({ description: 'The message from OpenAI' }) }),
+        // When response code is 400
+        400: z.object({ message: z.string({ description: 'The error message' }) })
+      },
       queryParams: [
         {
           name: 'includeProps',
@@ -66,7 +69,7 @@ The following properties are specific to the API Step, in addition to the [commo
       ],
     }
 
-    export const handler: StepHandler<typeof config> = async (req, { logger }) => {
+    export const handler: Handlers['GetMessage'] = async (req, { logger }) => {
       logger.info('[Call OpenAI] Received callOpenAi event', req)
 
       return {
@@ -81,8 +84,6 @@ The following properties are specific to the API Step, in addition to the [commo
     ```typescript
     const { z } = require('zod')
 
-    const responseSchema = z.object({ message: z.string({ description: 'The message from OpenAI' }) })
-
     export const config = {
       type: 'api',
       name: 'Get Message by Trace ID',
@@ -91,7 +92,12 @@ The following properties are specific to the API Step, in addition to the [commo
       method: 'GET',
       emits: ['call-openai'],
       flows: ['openai'],
-      responseBody: responseSchema,
+      responseSchema: {
+        // When response code is 200
+        200: z.object({ message: z.string({ description: 'The message from OpenAI' }) }),
+        // When response code is 400
+        400: z.object({ message: z.string({ description: 'The error message' }) })
+      },
       queryParams: [
         {
           name: 'includeProps',
@@ -127,7 +133,9 @@ The following properties are specific to the API Step, in addition to the [commo
       "method": "GET",
       "emits": ["call-openai"],
       "flows": ["openai"],
-      "responseBody": RequestBody.model_json_schema(),
+      "responseSchema": {
+        "200": RequestBody.model_json_schema()
+      },
       "queryParams": [
         {
           "name": "includeProps",
@@ -315,12 +323,12 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
 <Tabs items={['TypeScript', 'JavaScript', 'Python']}>
   <Tab value="TypeScript">
     ```typescript
-      import { ApiRouteConfig, StepHandler } from 'motia'
+      import { ApiRouteConfig, Handlers } from 'motia'
       import { z } from 'zod'
 
       export const config: ApiRouteConfig = {
         type: 'api',
-        name: 'Test state api trigger',
+        name: 'TestStateApiTrigger',
         description: 'test state',
         path: '/test-state',
         method: 'POST',
@@ -329,7 +337,7 @@ const rateLimiterMiddleware: ApiMiddleware = (() => {
         flows: ['test-state'],
       }
 
-      export const handler: StepHandler<typeof config> = async (req, { logger, emit }) => {
+      export const handler: Handlers['TestStateApiTrigger'] = async (req, { logger, emit }) => {
         logger.info('[Test State] Received request', req)
 
         await emit({

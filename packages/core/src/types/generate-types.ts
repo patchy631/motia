@@ -2,6 +2,7 @@ import { isApiStep, isCronStep, isEventStep } from '../guards'
 import { Printer } from '../printer'
 import { Emit, Step } from '../types'
 import { generateTypeFromSchema } from './generate-type-from-schema'
+import { generateTypesFromResponse } from './generate-types-from-response'
 import { mergeSchemas } from './merge-schemas'
 import { JsonSchema, JsonSchemaError } from './schema.types'
 
@@ -14,7 +15,7 @@ export const generateTypesString = (handlers: HandlersMap): string => {
  * 
  * Consider adding this file to .prettierignore and eslint ignore.
  */
-import { EventHandler, ApiRouteHandler } from 'motia'
+import { EventHandler, ApiRouteHandler, ApiResponse } from 'motia'
 
 declare module 'motia' {
   type Handlers = {
@@ -85,8 +86,8 @@ export const generateTypesFromSteps = (steps: Step[], printer: Printer): Handler
       const input = step.config.bodySchema
         ? generateTypeFromSchema(step.config.bodySchema as never as JsonSchema)
         : 'Record<string, unknown>'
-      const result = step.config.responseBody
-        ? generateTypeFromSchema(step.config.responseBody as never as JsonSchema)
+      const result = step.config.responseSchema
+        ? generateTypesFromResponse(step.config.responseSchema as never as Record<number, JsonSchema>)
         : 'unknown'
       handlers[step.config.name] = { type: 'ApiRouteHandler', generics: [input, result, emits] }
     } else if (isCronStep(step)) {

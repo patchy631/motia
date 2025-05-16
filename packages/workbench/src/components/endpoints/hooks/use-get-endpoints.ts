@@ -9,8 +9,8 @@ export type ApiEndpoint = {
   path: string
   description?: string
   queryParams?: QueryParam[]
-  responseBody?: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-  bodySchema?: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  responseSchema?: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  bodySchema?: Record<string, Record<string, any>> // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export const useGetEndpoints = () => {

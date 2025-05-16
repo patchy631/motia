@@ -1,10 +1,10 @@
-import { EventConfig, StepHandler } from '@motiadev/core'
+import { EventConfig, Handlers } from 'motia'
 import { z } from 'zod'
 import equal from 'deep-equal'
 
 export const config: EventConfig = {
   type: 'event',
-  name: 'Check state change',
+  name: 'CheckStateChange',
   description: 'check state change',
   subscribes: ['check-state-change'],
   emits: [],
@@ -15,7 +15,7 @@ export const config: EventConfig = {
   flows: ['test-state'],
 }
 
-export const handler: StepHandler<typeof config> = async (input, { traceId, logger, state }) => {
+export const handler: Handlers['CheckStateChange'] = async (input, { traceId, logger, state }) => {
   logger.info('[Test motia state with TS] received check-state-change event', input)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

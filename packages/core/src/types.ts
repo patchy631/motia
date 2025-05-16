@@ -53,8 +53,8 @@ export type ApiRouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTI
 export type ApiMiddleware<TBody = unknown, TEmitData = never, TResult = unknown> = (
   req: ApiRequest<TBody>,
   ctx: FlowContext<TEmitData>,
-  next: () => Promise<ApiResponse<TResult>>,
-) => Promise<ApiResponse<TResult>>
+  next: () => Promise<ApiResponse<number, TResult>>,
+) => Promise<ApiResponse<number, TResult>>
 
 type QueryParam = {
   name: string
@@ -73,7 +73,7 @@ export type ApiRouteConfig = {
   flows?: string[]
   middleware?: ApiMiddleware<any, any, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
   bodySchema?: ZodObject<any> // eslint-disable-line @typescript-eslint/no-explicit-any
-  responseBody?: ZodObject<any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  responseSchema?: Record<number, ZodObject<any>> // eslint-disable-line @typescript-eslint/no-explicit-any
   queryParams?: QueryParam[]
   /**
    * Files to include in the step bundle.
@@ -94,16 +94,17 @@ export type ApiRequest<TBody = unknown> = {
       }
 }
 
-export type ApiResponse<TBody = string | Buffer | Record<string, unknown>> = {
-  status: number
+export type ApiResponse<TStatus extends number = number, TBody = string | Buffer | Record<string, unknown>> = {
+  status: TStatus
   headers?: Record<string, string>
   body: TBody
 }
 
-export type ApiRouteHandler<TRequestBody = unknown, TResponseBody = unknown, TEmitData = never> = (
-  req: ApiRequest<TRequestBody>,
-  ctx: FlowContext<TEmitData>,
-) => Promise<ApiResponse<TResponseBody>>
+export type ApiRouteHandler<
+  TRequestBody = unknown,
+  TResponseBody extends ApiResponse<number, unknown> = ApiResponse<number, unknown>,
+  TEmitData = never,
+> = (req: ApiRequest<TRequestBody>, ctx: FlowContext<TEmitData>) => Promise<TResponseBody>
 
 export type CronConfig = {
   type: 'cron'
@@ -122,10 +123,13 @@ export type CronConfig = {
 
 export type CronHandler<TEmitData = never> = (ctx: FlowContext<TEmitData>) => Promise<void>
 
+/**
+ * @deprecated Use `Handlers` instead.
+ */
 export type StepHandler<T> = T extends EventConfig
   ? EventHandler<z.infer<T['input']>, { topic: string; data: any }> // eslint-disable-line @typescript-eslint/no-explicit-any
   : T extends ApiRouteConfig
-    ? ApiRouteHandler<any, any, { topic: string; data: any }> // eslint-disable-line @typescript-eslint/no-explicit-any
+    ? ApiRouteHandler<any, ApiResponse<number, any>, { topic: string; data: any }> // eslint-disable-line @typescript-eslint/no-explicit-any
     : T extends CronConfig
       ? CronHandler<{ topic: string; data: any }> // eslint-disable-line @typescript-eslint/no-explicit-any
       : never

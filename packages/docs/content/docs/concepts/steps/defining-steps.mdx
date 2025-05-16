@@ -84,16 +84,16 @@ Here're examples of how to define a handler in the Motia supported languages:
 <Tabs items={['TS', 'JS', 'Python']}>
   <Tab value="TS">
     ```typescript
-    import { EventConfig, StepHandler } from 'motia'
+    import { EventConfig, Handlers } from 'motia'
 
     export const config: EventConfig = {
       type: 'event',
-      name: 'Minimal Step',
+      name: 'MinimalStep',
       subscribes: ['start'],
       emits: ['done'],
     }
 
-    export const handler: StepHandler<typeof config> = async (input, { emit, traceId, state, logger }) => {
+    export const handler: Handlers['MinimalStep'] = async (input, { emit, traceId, state, logger }) => {
       await emit({ topic: 'done', data: {} })
     }
     ```
