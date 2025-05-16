@@ -16,7 +16,7 @@ interface DocsLayoutWrapperProps {
 
 export default function DocsLayoutWrapper({ children, tree, baseOptions }: DocsLayoutWrapperProps) {
   return (
-    <DocsLayout tree={tree} {...baseOptions}>
+    <DocsLayout tree={tree} nav={baseOptions.nav}>
       {children}
       <CopyDocsButton />
     </DocsLayout>
