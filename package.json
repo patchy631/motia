@@ -11,36 +11,37 @@
     "clean": "rm -rf node_modules pnpm-lock.yaml dist .turbo .next"
   },
   "devDependencies": {
-    "@types/node": "^22.10.7",
-    "@typescript-eslint/eslint-plugin": "^8.21.0",
-    "@typescript-eslint/parser": "^8.21.0",
-    "eslint": "^9.17.0",
-    "eslint-config-prettier": "^10.0.1",
+    "@types/node": "^22.15.18",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^9.26.0",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-jest": "^28.11.0",
-    "eslint-plugin-prettier": "^5.2.3",
-    "eslint-plugin-react-hooks": "^5.1.0",
-    "eslint-plugin-react-refresh": "^0.4.18",
-    "globals": "^15.14.0",
-    "prettier": "^3.4.2"
+    "eslint-plugin-prettier": "^5.4.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.1.0",
+    "prettier": "^3.5.3"
   },
   "resolutions": {
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
-    "postcss": "^8.5.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwindcss": "^3.4.17",
+    "postcss": "^8.5.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.7",
+    "@tailwindcss/postcss": "^4.1.7",
     "typescript": "^5.7.3",
     "@types/node": "22.10.7",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3"
   },
-  "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c",
+  "packageManager": "pnpm@10.11.0",
   "volta": {
     "node": "20.11.1"
   },
   "dependencies": {
-    "axios": "^1.8.2"
+    "axios": "^1.9.0"
   },
   "version": "0.0.7"
 }
