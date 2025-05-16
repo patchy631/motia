@@ -52,7 +52,7 @@ export default function CardSection() {
             
             <div className="space-y-8">
               <div className="flex items-start">
-                <div className="flex-shrink-0 mr-4">
+                <div className="shrink-0 mr-4">
                   <Image 
                     src="/icons/matches-fire.svg" 
                     alt="Zero Config Icon" 
@@ -69,7 +69,7 @@ export default function CardSection() {
               </div>
               
               <div className="flex items-start">
-                <div className="flex-shrink-0 mr-4">
+                <div className="shrink-0 mr-4">
                   <Image 
                     src="/icons/monitor-heart-desktop.svg" 
                     alt="Monitoring Icon" 
@@ -86,7 +86,7 @@ export default function CardSection() {
               </div>
               
               <div className="flex items-start">
-                <div className="flex-shrink-0 mr-4">
+                <div className="shrink-0 mr-4">
                   <Image 
                     src="/icons/workflow-teamwork.svg" 
                     alt="Team Collaboration Icon" 

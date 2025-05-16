@@ -23,7 +23,7 @@ export function CodeSandbox({ repo, path, module, template = 'node' }: CodeSandb
   }, [repo, path, module, template]);
 
   return (
-    <div className="relative w-full aspect-[16/10] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
+    <div className="relative w-full aspect-16/10 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
       <iframe
         ref={iframeRef}
         className="absolute inset-0 w-full h-full"

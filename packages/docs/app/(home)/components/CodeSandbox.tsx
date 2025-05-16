@@ -18,7 +18,7 @@ const CodeSandbox: React.FC<CodeSandboxProps> = ({
 
   return (
     <div className="relative" style={{ height }}>
-      <div className="absolute rounded-t-lg top-0 left-0 right-0 z-10 p-1 px-3 flex items-center justify-between min-h-[40px] border border-[#310E7F] bg-gradient-to-r from-[#160045] from-[57.54%] to-transparent to-[84.95%]">
+      <div className="absolute rounded-t-lg top-0 left-0 right-0 z-10 p-1 px-3 flex items-center justify-between min-h-[40px] border border-[#310E7F] bg-linear-to-r from-[#160045] from-[57.54%] to-transparent to-[84.95%]">
         <div className="flex items-center">
           <TypeScriptIcon width={14} height={14} className="text-[#CDBCF0]" />
           <span className="ml-2 text-gray-300 text-sm">

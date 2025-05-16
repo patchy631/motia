@@ -7,7 +7,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col">
       <HomeLayout 
         {...baseOptions} 
-        className={`flex-1 pb-4 lg:pt-32 sm:pt-20 bg-gradient-to-b from-[#0E002D] to-[#2F0093]`}
+        className={`flex-1 pb-4 lg:pt-32 sm:pt-20 bg-linear-to-b from-[#0E002D] to-[#2F0093]`}
       >
         {children}
         <footer className="text-center py-4 text-sm text-gray-600 dark:text-gray-400">

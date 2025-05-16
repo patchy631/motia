@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
 
 @layer base {
     :root {
@@ -96,25 +96,22 @@ body {
 
 /* Add these styles */
 .sandbox-wrapper {
-  @apply relative w-full my-8;
+  @apply relative w-full;
 }
 
 .sandbox-wrapper iframe {
-  @apply rounded-lg shadow-lg;
-  border: 1px solid theme('colors.gray.200');
+  border: 1px solid hsl(var(--border));
 }
 
 .dark .sandbox-wrapper iframe {
-  border-color: theme('colors.gray.800');
+  border-color: hsl(var(--border));
 }
 
-
-
-@layer base {
-  * {
-    @apply border-border;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
-}
+/*@layer base {*/
+/*    * {*/
+/*        @apply border-border;*/
+/*    }*/
+/*    body {*/
+/*        @apply bg-background text-foreground;*/
+/*    }*/
+/*}*/

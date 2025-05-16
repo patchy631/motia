@@ -8,7 +8,7 @@ import CardSection from '@/app/(home)/components/CardSection';
 export default function HomePage() {
 
   return (
-    <div className="bg-gradient-to-b from-[#0E002D] to-[#2F0093]">
+    <div className="bg-linear-to-b from-[#0E002D] to-[#2F0093]">
       <HeroSection/>
       <FeaturesSection/>
       <WorkbenchSection/>

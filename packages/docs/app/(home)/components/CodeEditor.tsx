@@ -110,7 +110,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   return (
     <div className="w-full h-full rounded-md rounded-t-[16px] overflow-hidden bg-[#0f0d19]">
       <div className="w-full h-full overflow-hidden">
-        <div className="p-1 px-3 flex items-center justify-between min-h-[75px] rounded-t-[16px] border border-[#310E7F] bg-gradient-to-r from-[#160045] from-[57.54%] to-transparent to-[84.95%]">
+        <div className="p-1 px-3 flex items-center justify-between min-h-[75px] rounded-t-[16px] border border-[#310E7F] bg-linear-to-r from-[#160045] from-[57.54%] to-transparent to-[84.95%]">
           <div className="flex gap-1">
             <button 
               onClick={() => handleLanguageChange('javascript')}
