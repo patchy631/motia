@@ -7,7 +7,7 @@ const version = `${randomUUID()}:${Math.floor(Date.now() / 1000)}`
 
 // Helper function to recursively collect flow data
 export const collectFlows = async (projectDir: string, lockedData: LockedData): Promise<void> => {
-  const files = globSync(path.join(projectDir, 'steps/**/*.step.{ts,js,py,rb}'))
+  const files = globSync(path.join(projectDir, 'steps/**/*.step.{ts,js,py,rb}'), { windowsPathsNoEscape: process.platform === 'win32' })
 
   for (const filePath of files) {
     const config = await getStepConfig(filePath)
