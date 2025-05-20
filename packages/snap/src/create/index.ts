@@ -123,6 +123,7 @@ export const create = async ({ projectName, template, cursorEnabled }: Args): Pr
         'generate-types': 'motia generate-types',
         build: 'motia build',
         clean: 'rm -rf dist node_modules python_modules .motia .mermaid',
+        'generate-types': 'motia generate-types'
         //'generate:config': 'motia get-config --output ./', TODO: doesnt work at the moment
       },
       keywords: ['motia'],
