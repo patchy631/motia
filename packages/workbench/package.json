@@ -40,7 +40,8 @@
     "typescript-eslint": "^8.32.1",
     "vite": "^6.3.5",
     "zod": "^3.24.4",
-    "zustand": "^5.0.4"
+    "zustand": "^5.0.4",
+    "@motiadev/stream-client-react": "workspace:*"
   },
   "devDependencies": {
     "@types/dagre": "^0.7.52",

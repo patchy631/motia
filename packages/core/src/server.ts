@@ -4,12 +4,10 @@ import express, { Express, Request, Response } from 'express'
 import http from 'http'
 import { Server as WsServer } from 'ws'
 import multer from 'multer'
-import { Server as SocketIOServer } from 'socket.io'
 import cors from 'cors'
 import { flowsEndpoint } from './flows-endpoint'
 import { isApiStep } from './guards'
 import { globalLogger } from './logger'
-import { StateAdapter } from './state/state-adapter'
 import {
   ApiRequest,
   ApiResponse,
@@ -24,17 +22,17 @@ import {
 import { systemSteps } from './steps'
 import { LockedData } from './locked-data'
 import { callStepFile } from './call-step-file'
-import { LoggerFactory } from './LoggerFactory'
+import { LoggerFactory } from './logger-factory'
 import { generateTraceId } from './generate-trace-id'
 import { flowsConfigEndpoint } from './flows-config-endpoint'
 import { apiEndpoints } from './api-endpoints'
-import { socketServer } from './socket-server'
-import { StateStreamFactory } from './state-stream'
+import { createSocketServer } from './socket-server'
+import { Log, LogsStream } from './streams/logs-stream'
 
 export type MotiaServer = {
   app: Express
   server: http.Server
-  socketServer: SocketIOServer
+  socketServer: WsServer
   close: () => Promise<void>
   removeRoute: (step: Step<ApiRouteConfig>) => void
   addRoute: (step: Step<ApiRouteConfig>) => void
@@ -54,24 +52,23 @@ export const createServer = async (
   const printer = lockedData.printer
   const app = express()
   const server = http.createServer(app)
-  const io = new SocketIOServer(server)
-  const loggerFactory = new LoggerFactory(config.isVerbose, io)
   const upload = multer()
 
-  const allSteps = [...systemSteps, ...lockedData.activeSteps]
-  const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory)
-
-  const { pushEvent } = socketServer({
+  const { pushEvent, socketServer } = createSocketServer({
     server,
     onJoin: async (streamName: string, id: string) => {
       const streams = lockedData.getStreams()
       const stream = streams[streamName]
-      return await stream(state).get(id)
+
+      if (stream) {
+        return stream(state).get(id)
+      }
     },
     onJoinGroup: async (streamName: string, groupId: string) => {
       const streams = lockedData.getStreams()
       const stream = streams[streamName]
-      return await stream(state).getList(groupId)
+
+      return stream ? stream(state).getList(groupId) : []
     },
   })
 
@@ -83,11 +80,11 @@ export const createServer = async (
         __motia: { type: 'state-stream', streamName, id },
       })
 
-      const createState = (id: string, data: any) => {
-        const result = wrapObject(id, data)
+      const createState = async (id: string, data: any) => {
+        const created = await originalStream.create(id, data)
+        const result = wrapObject(id, created ?? data)
         const groupId = originalStream.getGroupId(result)
 
-        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'create', data: result })
         pushEvent({ streamName, id, event: { type: 'create', data: result } })
 
         if (groupId) {
@@ -97,28 +94,35 @@ export const createServer = async (
         return result
       }
 
-      const updateState = (id: string, data: any) => {
-        const result = wrapObject(id, data)
+      const updateState = async (id: string, data: any) => {
+        if (!data) {
+          return null
+        }
+
+        const updated = await originalStream.update(id, data)
+        const result = wrapObject(id, updated ?? data)
         const groupId = originalStream.getGroupId(result)
 
-        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'update', data: result })
         pushEvent({ streamName, id, event: { type: 'update', data: result } })
 
         if (groupId) {
           pushEvent({ streamName, groupId, event: { type: 'update', data: result } })
         }
+
         return result
       }
 
       const deleteState = async (id: string) => {
         const data = await originalStream.delete(id)
-        const groupId = data && originalStream.getGroupId(data)
 
-        pushEvent({ streamName, id, event: { type: 'delete', data: data } })
-        io.to(`${streamName}-${id}`).emit(`${streamName}-${id}`, { type: 'delete', id })
+        if (data) {
+          const groupId = originalStream.getGroupId(data)
 
-        if (groupId) {
-          pushEvent({ streamName, groupId, event: { type: 'delete', data } })
+          pushEvent({ streamName, id, event: { type: 'delete', data: data } })
+
+          if (groupId) {
+            pushEvent({ streamName, groupId, event: { type: 'delete', data } })
+          }
         }
 
         return data
@@ -127,11 +131,9 @@ export const createServer = async (
       return {
         get: (id: string) =>
           originalStream.get(id).then((object: BaseStateStreamData | null) => wrapObject(id, object)),
-        update: (id: string, data: BaseStateStreamData) =>
-          originalStream.update(id, data).then((object: BaseStateStreamData) => updateState(id, object)),
+        update: (id: string, data: BaseStateStreamData) => updateState(id, data),
         delete: (id: string) => deleteState(id),
-        create: (id: string, data: BaseStateStreamData) =>
-          originalStream.create(id, data).then((object: BaseStateStreamData) => createState(id, object)),
+        create: (id: string, data: BaseStateStreamData) => createState(id, data),
         getGroupId: (data: BaseStateStreamData) => originalStream.getGroupId(data),
         getList: async (groupId: string) => {
           const list = await originalStream.getList(groupId)
@@ -141,23 +143,19 @@ export const createServer = async (
     }
   })
 
-  io.on('connection', (socket) => {
-    socket.on('join', async ({ id, streamName }: { streamName: string; id: string }) => {
-      socket.join(`${streamName}-${id}`)
+  const logStream = lockedData.createStream<Log>({
+    filePath: '__motia.log',
+    hidden: true,
+    config: {
+      name: '__motia.log',
+      baseConfig: { type: 'custom', factory: () => new LogsStream() },
+      schema: null as never,
+    },
+  })(state)
 
-      const streams = lockedData.getStreams()
-      const item = streams[streamName]
-
-      if (item) {
-        const object = await item(state).get(id)
-        socket.emit('update', object)
-      }
-    })
-
-    socket.on('leave', ({ id, streamName }: { streamName: string; id: string }) => {
-      socket.leave(`${streamName}-${id}`)
-    })
-  })
+  const allSteps = [...systemSteps, ...lockedData.activeSteps]
+  const loggerFactory = new LoggerFactory(config.isVerbose, logStream)
+  const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory)
 
   const asyncHandler = (step: Step<ApiRouteConfig>) => {
     return async (req: Request, res: Response) => {
@@ -256,7 +254,7 @@ export const createServer = async (
   app.use(cors())
   app.use(router)
 
-  apiEndpoints(lockedData, app, io)
+  apiEndpoints(lockedData, state)
   flowsEndpoint(lockedData, app)
   flowsConfigEndpoint(app, process.cwd())
 
@@ -266,9 +264,8 @@ export const createServer = async (
 
   const close = async (): Promise<void> => {
     cronManager.close()
-    await io.close()
-    server.close()
+    socketServer.close()
   }
 
-  return { app, server, socketServer: io, close, removeRoute, addRoute, cronManager }
+  return { app, server, socketServer, close, removeRoute, addRoute, cronManager }
 }

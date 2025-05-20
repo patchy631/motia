@@ -8,21 +8,21 @@ export class StateStream<TData extends BaseStateStreamData> implements IStateStr
     private readonly propertyName: string,
   ) {}
 
-  get(id: string): Promise<TData | null> {
+  async get(id: string): Promise<TData | null> {
     return this.state.get<TData>(id, this.propertyName)
   }
 
-  update(id: string, data: TData): Promise<TData> {
+  async update(id: string, data: TData): Promise<TData> {
     return this.state.set(id, this.propertyName, data)
   }
 
-  async delete(id: string): Promise<TData> {
+  async delete(id: string): Promise<TData | null> {
     const data = await this.state.delete(id, this.propertyName)
     return data as TData
   }
 
-  create(id: string, data: TData): Promise<TData> {
-    return this.state.set(id, this.propertyName, data)
+  async create(id: string, data: TData): Promise<TData> {
+    return this.state.set(id, this.propertyName, { ...data, id })
   }
 
   getGroupId(data: TData): string | null {

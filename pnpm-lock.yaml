@@ -320,7 +320,7 @@ importers:
         specifier: ^3.5.3
         version: 3.5.5(typescript@5.8.3)
 
-  packages/stream:
+  packages/stream-client:
     dependencies:
       uuid:
         specifier: ^11.1.0
@@ -340,10 +340,45 @@ importers:
         version: 29.7.0(@types/node@22.10.7)(ts-node@10.9.2(@types/node@22.10.7)(typescript@5.8.3))
       ts-jest:
         specifier: ^29.2.5
-        version: 29.3.2(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.25.3)(jest@29.7.0(@types/node@22.10.7)(ts-node@10.9.2(@types/node@22.10.7)(typescript@5.8.3)))(typescript@5.8.3)
+        version: 29.3.2(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(jest@29.7.0(@types/node@22.10.7))(typescript@5.8.3)
       typescript:
         specifier: ^5.7.3
         version: 5.8.3
+
+  packages/stream-client-browser:
+    dependencies:
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
+    devDependencies:
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@22.10.7)(ts-node@10.9.2(@types/node@22.10.7)(typescript@5.8.3))
+      ts-jest:
+        specifier: ^29.2.5
+        version: 29.3.2(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(jest@29.7.0(@types/node@22.10.7))(typescript@5.8.3)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.3
+
+  packages/stream-client-react:
+    dependencies:
+      '@motiadev/stream-client-browser':
+        specifier: workspace:*
+        version: link:../stream-client-browser
+      react:
+        specifier: ^19.0.0
+        version: 19.1.0
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.7
+        version: 19.1.2
 
   packages/test:
     dependencies:
@@ -375,6 +410,9 @@ importers:
 
   packages/workbench:
     dependencies:
+      '@motiadev/stream-client-react':
+        specifier: workspace:*
+        version: link:../stream-client-react
       '@radix-ui/react-collapsible':
         specifier: ^1.1.10
         version: 1.1.10(@types/react-dom@19.1.5(@types/react@19.1.4))(@types/react@19.1.4)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
