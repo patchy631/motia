@@ -11,7 +11,7 @@ export const config: ApiRouteConfig = {
   path: '/open-ai',
   method: 'POST',
   emits: ['openai-prompt'],
-  flows: ['openai'],
+  flows: ['open-ai'],
   queryParams: [
     { name: 'model', description: 'The model to use' },
     { name: 'temperature', description: 'The temperature to use' },
