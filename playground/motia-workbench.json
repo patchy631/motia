@@ -82,5 +82,15 @@
       "x": 244.5,
       "y": 914
     }
+  },
+  "open-ai": {
+    "steps/open-ai/02-prompt.step.ts": {
+      "x": 0,
+      "y": 238
+    },
+    "steps/open-ai/01-prompt-api.step.ts": {
+      "x": 2,
+      "y": 0
+    }
   }
 }

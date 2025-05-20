@@ -7,7 +7,7 @@ export const config: EventConfig = {
   name: 'CallOpenAi',
   description: 'Call OpenAI',
   subscribes: ['openai-prompt'],
-  emits: [{ topic: 'openai-response', label: 'OpenAI Response' }],
+  emits: [],
   input: z.object({
     message: z.string({ description: 'The message to send to OpenAI' }),
   }),
