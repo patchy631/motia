@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useSocket } from '../../../hooks/use-socket'
+import { useStreamGroup } from '@motiadev/stream-client-react'
 
 type ApiRouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
 type QueryParam = { name: string; description: string }
@@ -14,23 +13,10 @@ export type ApiEndpoint = {
 }
 
 export const useGetEndpoints = () => {
-  const { socket } = useSocket()
-  const [endpoints, setEndpoints] = useState<ApiEndpoint[]>([])
-
-  const fetchEndpoints = useCallback(() => {
-    fetch(`/api-endpoints`)
-      .then((res) => res.json())
-      .then((endpoints) => setEndpoints(endpoints))
-  }, [])
-
-  useEffect(() => {
-    fetchEndpoints()
-    socket.on('api-endpoint-changed', fetchEndpoints)
-
-    return () => {
-      socket.off('api-endpoint-changed', fetchEndpoints)
-    }
-  }, [socket, fetchEndpoints])
+  const { data: endpoints } = useStreamGroup<ApiEndpoint>({
+    streamName: '__motia.api-endpoints',
+    groupId: 'default',
+  })
 
   return endpoints
 }

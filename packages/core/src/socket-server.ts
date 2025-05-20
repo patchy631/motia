@@ -19,11 +19,8 @@ type Props = {
   onJoinGroup: <TData>(streamName: string, groupId: string) => Promise<TData[]>
 }
 
-export const socketServer = (props: Props) => {
-  const socketServer = new WsServer({
-    // server: props.server,
-    noServer: true,
-  })
+export const createSocketServer = ({ server, onJoin, onJoinGroup }: Props) => {
+  const socketServer = new WsServer({ server })
   const rooms: Record<string, Map<string, WebSocket>> = {}
   const subscriptions: Map<WebSocket, Set<[string, string]>> = new Map()
 
@@ -45,13 +42,13 @@ export const socketServer = (props: Props) => {
         }
 
         if ('id' in message.data) {
-          const item = await props.onJoin(message.data.streamName, message.data.id)
+          const item = await onJoin(message.data.streamName, message.data.id)
 
           if (item) {
             socket.send(JSON.stringify({ type: 'sync', data: item }))
           }
         } else {
-          const items = await props.onJoinGroup(message.data.streamName, message.data.groupId)
+          const items = await onJoinGroup(message.data.streamName, message.data.groupId)
 
           if (items) {
             socket.send(JSON.stringify({ type: 'sync', data: items }))
@@ -85,5 +82,5 @@ export const socketServer = (props: Props) => {
     }
   }
 
-  return { pushEvent }
+  return { pushEvent, socketServer }
 }

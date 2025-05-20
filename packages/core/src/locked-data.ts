@@ -115,16 +115,10 @@ export class LockedData {
 
     for (const [key, value] of Object.entries(this.streams)) {
       const baseConfig = value.config.baseConfig
+      const streamFactory = baseConfig.type === 'custom' ? baseConfig.factory : null
 
-      // TODO add support for custom stream types
-      if (baseConfig.type === 'state') {
-        const streamFactory = (state: InternalStateManager) => new StateStream(state, baseConfig.property)
-
-        if (this.streamWrapper) {
-          streams[key] = this.streamWrapper(key, streamFactory)
-        } else {
-          streams[key] = streamFactory
-        }
+      if (streamFactory) {
+        streams[key] = streamFactory
       }
     }
 
@@ -255,18 +249,42 @@ export class LockedData {
     this.printer.printStepRemoved(step)
   }
 
-  createStream(stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
-    const config = stream.config.baseConfig
-
-    if (config.type === 'state') {
-      this.streams[stream.config.name] = stream
-      this.streamHandlers['stream-created'].forEach((handler) => handler(stream))
-      this.printer.printStreamCreated(stream)
-
-      if (!options.disableTypeCreation) {
-        this.saveTypes()
-      }
+  private createFactoryWrapper<TData extends BaseStateStreamData>(
+    stream: Stream,
+    factory: StateStreamFactory<TData>,
+  ): StateStreamFactory<TData> {
+    return (state: InternalStateManager) => {
+      const streamFactory = this.streamWrapper //
+        ? this.streamWrapper(stream.config.name, factory)
+        : factory
+      return streamFactory(state)
     }
+  }
+
+  createStream<TData extends BaseStateStreamData>(
+    stream: Stream,
+    options: { disableTypeCreation?: boolean } = {},
+  ): StateStreamFactory<TData> {
+    this.streams[stream.config.name] = stream
+    this.streamHandlers['stream-created'].forEach((handler) => handler(stream))
+    this.printer.printStreamCreated(stream)
+
+    let factory: StateStreamFactory<TData>
+
+    if (stream.config.baseConfig.type === 'state') {
+      const property = stream.config.baseConfig.property
+      factory = this.createFactoryWrapper(stream, (state) => new StateStream<TData>(state, property))
+    } else {
+      factory = this.createFactoryWrapper(stream, stream.config.baseConfig.factory)
+    }
+
+    stream.config.baseConfig = { type: 'custom', factory }
+
+    if (!options.disableTypeCreation) {
+      this.saveTypes()
+    }
+
+    return factory
   }
 
   deleteStream(stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
@@ -289,16 +307,23 @@ export class LockedData {
       delete this.streams[oldStream.config.name]
     }
 
-    const config = stream.config.baseConfig
+    let factory: StateStreamFactory<any>
 
-    if (config.type === 'state') {
-      this.streams[stream.config.name] = stream
-      this.streamHandlers['stream-updated'].forEach((handler) => handler(stream))
-      this.printer.printStreamUpdated(stream)
+    if (stream.config.baseConfig.type === 'state') {
+      const property = stream.config.baseConfig.property
+      factory = this.createFactoryWrapper(stream, (state) => new StateStream(state, property))
+    } else {
+      factory = this.createFactoryWrapper(stream, stream.config.baseConfig.factory)
+    }
 
-      if (!options.disableTypeCreation) {
-        this.saveTypes()
-      }
+    stream.config.baseConfig = { type: 'custom', factory }
+
+    this.streams[stream.config.name] = stream
+    this.streamHandlers['stream-updated'].forEach((handler) => handler(stream))
+    this.printer.printStreamUpdated(stream)
+
+    if (!options.disableTypeCreation) {
+      this.saveTypes()
     }
   }
 

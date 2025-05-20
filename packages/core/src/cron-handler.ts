@@ -1,5 +1,5 @@
 import * as cron from 'node-cron'
-import { LoggerFactory } from './LoggerFactory'
+import { LoggerFactory } from './logger-factory'
 import { callStepFile } from './call-step-file'
 import { generateTraceId } from './generate-trace-id'
 import { LockedData } from './locked-data'

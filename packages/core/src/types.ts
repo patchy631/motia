@@ -17,15 +17,17 @@ export interface FlowContextStateStreams {}
 export interface StateStreamConfig {
   name: string
   schema: ZodObject<any> // eslint-disable-line @typescript-eslint/no-explicit-any
-  baseConfig: { type: 'state'; property: string } | { type: 'custom' }
+  baseConfig:
+    | { type: 'state'; property: string }
+    | { type: 'custom'; factory: (state: InternalStateManager) => IStateStream<any> }
 }
 
 export type BaseStateStreamData = { id: string }
 
 export interface IStateStream<TData extends BaseStateStreamData> {
   get(id: string): Promise<TData | null>
-  update(id: string, data: Omit<TData, 'id'>): Promise<TData>
-  delete(id: string): Promise<TData>
+  update(id: string, data: Omit<TData, 'id'>): Promise<TData | null>
+  delete(id: string): Promise<TData | null>
   create(id: string, data: Omit<TData, 'id'>): Promise<TData>
 
   getGroupId(data: TData): string | null
@@ -77,7 +79,7 @@ export type ApiMiddleware<TBody = unknown, TEmitData = never, TResult = unknown>
   next: () => Promise<ApiResponse<number, TResult>>,
 ) => Promise<ApiResponse<number, TResult>>
 
-type QueryParam = {
+export type QueryParam = {
   name: string
   description: string
 }
@@ -186,7 +188,11 @@ export type EventManager = {
 export type StepConfig = EventConfig | NoopConfig | ApiRouteConfig | CronConfig
 
 export type Step<TConfig extends StepConfig = StepConfig> = { filePath: string; version: string; config: TConfig }
-export type Stream<TConfig extends StateStreamConfig = StateStreamConfig> = { filePath: string; config: TConfig }
+export type Stream<TConfig extends StateStreamConfig = StateStreamConfig> = {
+  filePath: string
+  config: TConfig
+  hidden?: boolean
+}
 
 export type Flow = {
   name: string

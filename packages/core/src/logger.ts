@@ -1,5 +1,7 @@
-import { Server } from 'socket.io'
+import { randomUUID } from 'crypto'
 import { prettyPrint } from './pretty-print'
+import { Log } from './streams/logs-stream'
+import { IStateStream } from './types'
 
 const logLevel = process.env.LOG_LEVEL ?? 'info'
 
@@ -59,25 +61,27 @@ export class Logger extends BaseLogger {
     private readonly flows: string[] | undefined,
     private readonly step: string,
     isVerbose: boolean,
-    private readonly socketServer?: Server,
+    private readonly logStream?: IStateStream<Log>,
   ) {
     super(isVerbose, { traceId, flows, step })
 
     this.emitLog = (level: string, msg: string, args?: unknown) => {
-      socketServer?.emit('log', {
+      const id = randomUUID()
+      this.logStream?.create(id, {
+        id,
         step: this.step,
         ...(args ?? {}),
         level,
         time: Date.now(),
         msg,
         traceId: this.traceId,
-        flows: this.flows,
+        flows: this.flows ?? [],
       })
     }
   }
 
   child(meta: Record<string, unknown> = {}): this {
-    return new Logger(this.traceId, this.flows, meta.step as string, this.isVerbose, this.socketServer) as this
+    return new Logger(this.traceId, this.flows, meta.step as string, this.isVerbose, this.logStream) as this
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -108,7 +108,9 @@ export const generateTypesFromSteps = (steps: Step[], printer: Printer): Handler
 
 export const generateTypesFromStreams = (streams: Record<string, Stream>): StreamsMap => {
   return Object.entries(streams).reduce((acc, [key, stream]) => {
-    acc[key] = generateTypeFromSchema(stream.config.schema as unknown as JsonSchema)
+    if (!stream.hidden) {
+      acc[key] = generateTypeFromSchema(stream.config.schema as unknown as JsonSchema)
+    }
     return acc
   }, {} as StreamsMap)
 }
