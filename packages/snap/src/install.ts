@@ -4,6 +4,7 @@ import { executeCommand } from './utils/executeCommand'
 import { activatePythonVenv } from './utils/activatePythonEnv'
 import { installLambdaPythonPackages } from './utils/installLambdaPythonPackages'
 import { getStepFiles } from './generate-locked-data'
+import { getPythonCommand } from './utils/pythonVersionUtils'
 
 interface InstallConfig {
   isVerbose?: boolean
@@ -17,10 +18,16 @@ const pythonInstall = async ({ baseDir, isVerbose = false, pythonVersion = '3.13
   console.log('📦 Installing Python dependencies...', venvPath)
 
   try {
+    // Get the appropriate Python command
+    const pythonCmd = await getPythonCommand(pythonVersion, baseDir)
+    if (isVerbose) {
+      console.log(`🐍 Using Python command: ${pythonCmd}`)
+    }
+
     // Check if virtual environment exists
     if (!fs.existsSync(venvPath)) {
       console.log('📦 Creating Python virtual environment...')
-      await executeCommand(`python${pythonVersion} -m venv python_modules`, baseDir)
+      await executeCommand(`${pythonCmd} -m venv python_modules`, baseDir)
     }
 
     activatePythonVenv({ baseDir, isVerbose, pythonVersion })
