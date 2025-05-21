@@ -1,10 +1,9 @@
-import autoprefixer from 'autoprefixer'
 import type { Express, NextFunction, Request, Response } from 'express'
 import fs from 'fs'
 import path from 'path'
-import tailwindcss from 'tailwindcss'
 import { createServer as createViteServer } from 'vite'
-import tailwindcssConfig from './tailwind.config'
+import react from '@vitejs/plugin-react'
+import tailwindcssPostcss from '@tailwindcss/postcss'
 
 export const applyMiddleware = async (app: Express) => {
   const vite = await createViteServer({
@@ -13,6 +12,7 @@ export const applyMiddleware = async (app: Express) => {
 
     server: {
       middlewareMode: true,
+      host: true,
       fs: {
         allow: [__dirname, path.join(process.cwd(), './steps')],
       },
@@ -20,9 +20,10 @@ export const applyMiddleware = async (app: Express) => {
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },
     },
+    plugins: [react()],
     css: {
       postcss: {
-        plugins: [autoprefixer(), tailwindcss(tailwindcssConfig)],
+        plugins: [tailwindcssPostcss({ base: path.join(__dirname, './src') })],
       },
     },
   })

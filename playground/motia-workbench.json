@@ -1,8 +1,8 @@
 {
   "simple-python": {
     "steps/simplePython/apiEndpoint.step.py": {
-      "x": 0,
-      "y": 0
+      "x": -80,
+      "y": 7
     },
     "steps/simplePython/testEvent.step.py": {
       "x": 23.5,
@@ -51,6 +51,54 @@
     "steps/cronExample/periodicJob.step.ts": {
       "x": 0,
       "y": 0
+    }
+  },
+  "test-state": {
+    "steps/testState/test_state.step.py": {
+      "x": 132.75,
+      "y": 195
+    },
+    "steps/testState/testState.api.step.ts": {
+      "x": 137.75,
+      "y": 0
+    },
+    "steps/testState/check_state_change.step.rb": {
+      "x": 0,
+      "y": 438
+    },
+    "steps/testState/checkStateChange.step.ts": {
+      "x": 277,
+      "y": 428
+    }
+  },
+  "parallel-merge": {
+    "steps/parallelMergeState/stepC.step.rb": {
+      "x": 0,
+      "y": 470
+    },
+    "steps/parallelMergeState/stepB.step.py": {
+      "x": 210,
+      "y": 446
+    },
+    "steps/parallelMergeState/stepA.step.ts": {
+      "x": 510,
+      "y": 470
+    },
+    "steps/parallelMergeState/startParallelMerge.step.ts": {
+      "x": 155,
+      "y": 188
+    },
+    "steps/parallelMergeState/noopStartButton.step.ts": {
+      "x": 262.5,
+      "y": 0
+    },
+    "steps/parallelMergeState/joinStep.step.ts": {
+      "x": 198.5,
+      "y": 704
+    },
+    "steps/parallelMergeState/joinComplete.step.ts": {
+      "x": 242.5,
+      "y": 914
     }
   }
 }
