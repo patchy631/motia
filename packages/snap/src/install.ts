@@ -70,7 +70,7 @@ export const install = async ({ isVerbose = false, pythonVersion = '3.13' }: Ins
   const baseDir = process.cwd()
   const steps = getStepFiles(baseDir)
   if (steps.some((file) => file.endsWith('.py'))) {
-    pythonInstall({ baseDir, isVerbose, pythonVersion })
+    await pythonInstall({ baseDir, isVerbose, pythonVersion })
   }
 
   console.info('✅ Installation completed successfully!')

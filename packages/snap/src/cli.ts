@@ -41,6 +41,7 @@ program
       template: arg.template ?? 'default',
       cursorEnabled: arg.cursor,
     })
+    process.exit(0)
   })
 
 program

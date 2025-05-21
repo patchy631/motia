@@ -238,5 +238,5 @@ export const create = async ({ projectName, template, cursorEnabled }: Args): Pr
     await executeCommand('motia install', rootDir)
   }
 
-  process.exit(0)
+  return
 }
