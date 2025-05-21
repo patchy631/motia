@@ -22,9 +22,10 @@ require('ts-node').register({
 
 export const dev = async (port: number, isVerbose: boolean, enableMermaid: boolean): Promise<void> => {
   const baseDir = process.cwd()
-  
+
   const stepFiles = getStepFiles(baseDir)
-  if (stepFiles.filter((file) => file.endsWith('.py')).length) {
+  if (stepFiles.some((file) => file.endsWith('.py'))) {
+    console.log('⚙️ Activating Python environment...')
     activatePythonVenv({ baseDir, isVerbose })
   }
 
