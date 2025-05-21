@@ -16,7 +16,7 @@ type Message = { type: 'join' | 'leave'; data: JoinMessage }
 type Props = {
   server: http.Server
   onJoin: <TData>(streamName: string, id: string) => Promise<TData>
-  onJoinGroup: <TData>(streamName: string, groupId: string) => Promise<TData[]>
+  onJoinGroup: <TData>(streamName: string, groupId: string) => Promise<TData[] | undefined>
 }
 
 export const createSocketServer = ({ server, onJoin, onJoinGroup }: Props) => {

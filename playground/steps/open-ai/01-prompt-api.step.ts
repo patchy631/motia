@@ -25,7 +25,13 @@ export const handler: Handlers['OpenAiApi'] = async (req, { traceId, logger, emi
 
   const result = await streams.openai.create(traceId, { message: '' })
 
-  // streams.openai.pushEvent('event-name', { message: 'event-data' })
+  // streams.openai.send(
+  //   { id: traceId },
+  //   {
+  //     type: 'event-name',
+  //     data: { message: 'event-data' },
+  //   },
+  // )
 
   await emit({
     topic: 'openai-prompt',

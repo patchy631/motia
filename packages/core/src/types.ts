@@ -36,7 +36,7 @@ export interface IStateStream<TData extends BaseStateStreamData> {
   getGroupId(data: TData): string | null
   getList(groupId: string): Promise<TData[]>
 
-  emit<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>): Promise<void>
+  send<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>): Promise<void>
 }
 
 export interface FlowContext<TEmitData = never> {

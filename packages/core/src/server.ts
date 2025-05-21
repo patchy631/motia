@@ -72,8 +72,10 @@ export const createServer = async (
       const streams = lockedData.getStreams()
       const stream = streams[streamName]
 
-      const result = stream ? await stream(state).getList(groupId) : []
-      return result.map(({ __motia, ...rest }) => rest)
+      if (stream) {
+        const result = stream ? await stream(state).getList(groupId) : []
+        return result.map(({ __motia, ...rest }) => rest)
+      }
     },
   })
 
@@ -85,10 +87,10 @@ export const createServer = async (
         __motia: { type: 'state-stream', streamName, id },
       })
 
-      const wrapper = {
+      const wrapper: IStateStream<BaseStateStreamData> = {
         ...suuper,
 
-        async emit<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>) {
+        async send<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>) {
           pushEvent({ streamName, ...channel, event: { type: 'event', event } })
         },
 
@@ -118,6 +120,14 @@ export const createServer = async (
 
         async delete(id: string) {
           const result = await suuper.delete.apply(wrapper, [id])
+          const groupId = result && suuper.getGroupId(result)
+
+          pushEvent({ streamName, id, event: { type: 'delete', data: result } })
+
+          if (groupId) {
+            pushEvent({ streamName, groupId, event: { type: 'delete', data: result } })
+          }
+
           return wrapObject(id, result)
         },
 

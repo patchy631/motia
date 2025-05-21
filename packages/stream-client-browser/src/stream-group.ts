@@ -23,7 +23,11 @@ export class StreamGroupSubscription<TData extends { id: string }> extends Strea
         if (message.event.type === 'sync') {
           this.state = message.event.data
         } else if (message.event.type === 'create') {
-          this.state = [...this.state, message.event.data]
+          const id = message.event.data.id
+
+          if (!this.state.find((item) => item.id === id)) {
+            this.state = [...this.state, message.event.data]
+          }
         } else if (message.event.type === 'update') {
           const messageData = message.event.data
           const messageDataId = messageData.id

@@ -1,5 +1,5 @@
 import { useLogs } from '@/stores/use-logs'
-import { useStreamGroup, useStreamEventHandler } from '@motiadev/stream-client-react'
+import { useStreamEventHandler, useStreamGroup } from '@motiadev/stream-client-react'
 
 export const useLogListener = () => {
   const addLog = useLogs((state) => state.addLog)

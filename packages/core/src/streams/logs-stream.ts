@@ -16,7 +16,7 @@ export class LogsStream implements IStateStream<Log> {
   delete = async () => null
 
   async create(_: string, data: Log): Promise<Log> {
-    await this.emit({ groupId: 'default' }, { type: 'log', data })
+    await this.send({ groupId: 'default' }, { type: 'log', data })
     return data
   }
 
@@ -28,5 +28,5 @@ export class LogsStream implements IStateStream<Log> {
     return data.traceId
   }
 
-  async emit<T>(_: StateStreamEventChannel, __: StateStreamEvent<T>) {}
+  async send<T>(_: StateStreamEventChannel, __: StateStreamEvent<T>) {}
 }

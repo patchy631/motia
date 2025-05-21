@@ -6,7 +6,10 @@ type Flow = {
 }
 
 export const useListFlows = () => {
-  const { data: flows } = useStreamGroup<Flow>({ streamName: '__motia.flows', groupId: 'default' })
+  const { data: flows } = useStreamGroup<Flow>({
+    streamName: '__motia.flows',
+    groupId: 'default',
+  })
 
   return { flows }
 }

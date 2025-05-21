@@ -33,5 +33,5 @@ export class StateStream<TData extends BaseStateStreamData> implements IStateStr
     return []
   }
 
-  async emit() {}
+  async send() {}
 }

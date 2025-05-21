@@ -55,11 +55,11 @@
   },
   "test-state": {
     "steps/testState/test_state.step.py": {
-      "x": 132.75,
-      "y": 195
+      "x": 129.5,
+      "y": 238
     },
     "steps/testState/testState.api.step.ts": {
-      "x": 137.75,
+      "x": 139.5,
       "y": 0
     },
     "steps/testState/check_state_change.step.rb": {
@@ -109,24 +109,6 @@
     "steps/open-ai/01-prompt-api.step.ts": {
       "x": 2,
       "y": 0
-    }
-  },
-  "test-state": {
-    "steps/testState/test_state.step.py": {
-      "x": 129.5,
-      "y": 238
-    },
-    "steps/testState/testState.api.step.ts": {
-      "x": 139.5,
-      "y": 0
-    },
-    "steps/testState/check_state_change.step.rb": {
-      "x": 0,
-      "y": 438
-    },
-    "steps/testState/checkStateChange.step.ts": {
-      "x": 277,
-      "y": 428
     }
   }
 }

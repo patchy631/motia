@@ -37,5 +37,5 @@ export class FlowsStream implements IStateStream<Flow> {
     return 'default'
   }
 
-  async emit() {}
+  async send() {}
 }

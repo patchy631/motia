@@ -44,7 +44,7 @@ class ApiEndpointsStream implements IStateStream<ApiEndpoint> {
   }
 
   async delete(id: string): Promise<ApiEndpoint> {
-    return (await this.get(id))!
+    return { id } as never
   }
 
   async create(_: string, data: ApiEndpoint): Promise<ApiEndpoint> {
@@ -59,7 +59,7 @@ class ApiEndpointsStream implements IStateStream<ApiEndpoint> {
     return 'default'
   }
 
-  async emit() {}
+  async send() {}
 }
 
 export const apiEndpoints = (lockedData: LockedData, state: InternalStateManager) => {
