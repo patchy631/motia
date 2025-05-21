@@ -25,11 +25,11 @@ export class StateStream<TData extends BaseStateStreamData> implements IStateStr
     return this.state.set(id, this.propertyName, { ...data, id })
   }
 
-  getGroupId(data: TData): string | null {
+  getGroupId() {
     return null
   }
 
-  async getList(groupId: string): Promise<TData[]> {
+  async getList() {
     return []
   }
 

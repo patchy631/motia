@@ -44,13 +44,15 @@ async function runTypescriptModule(filePath: string, event: Record<string, unkno
       (acc, streams) => {
         acc[streams.name] = {
           get: (id: string) => sender.send(`streams.${streams.name}.get`, { id }),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           update: (id: string, data: any) => sender.send(`streams.${streams.name}.update`, { id, data }),
           delete: (id: string) => sender.send(`streams.${streams.name}.delete`, { id }),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           create: (id: string, data: any) => sender.send(`streams.${streams.name}.create`, { id, data }),
         }
         return acc
       },
-      {} as Record<string, any>,
+      {} as Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
     )
 
     const context = { traceId, flows, logger, state, emit, streams }

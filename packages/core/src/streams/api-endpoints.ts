@@ -1,4 +1,3 @@
-import { Express } from 'express'
 import { isApiStep } from '../guards'
 import { LockedData } from '../locked-data'
 import { ApiRouteConfig, ApiRouteMethod, InternalStateManager, IStateStream, Step } from '../types'
@@ -51,11 +50,11 @@ class ApiEndpointsStream implements IStateStream<ApiEndpoint> {
     return data
   }
 
-  async getList(_: string): Promise<ApiEndpoint[]> {
+  async getList(): Promise<ApiEndpoint[]> {
     return this.lockedData.apiSteps().map(mapEndpoint)
   }
 
-  getGroupId(_: ApiEndpoint): string {
+  getGroupId(): string {
     return 'default'
   }
 

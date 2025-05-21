@@ -1,9 +1,10 @@
-import { CustomEvent, ItemEventMessage, StreamEvent } from './stream.types'
+import { CustomEvent } from './stream.types'
 
-type CustomEventListener<TData> = (event: TData) => void
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CustomEventListener = (event: any) => void
 
 export abstract class StreamSubscription {
-  private customEventListeners: Map<string, CustomEventListener<any>[]> = new Map()
+  private customEventListeners: Map<string, CustomEventListener[]> = new Map()
 
   protected onEventReceived(event: CustomEvent) {
     const customEventListeners = this.customEventListeners.get(event.type)
@@ -14,12 +15,12 @@ export abstract class StreamSubscription {
     }
   }
 
-  onEvent(type: string, listener: CustomEventListener<any>) {
+  onEvent(type: string, listener: CustomEventListener) {
     const listeners = this.customEventListeners.get(type) || []
     this.customEventListeners.set(type, [...listeners, listener])
   }
 
-  offEvent(type: string, listener: CustomEventListener<any>) {
+  offEvent(type: string, listener: CustomEventListener) {
     const listeners = this.customEventListeners.get(type) || []
     this.customEventListeners.set(
       type,

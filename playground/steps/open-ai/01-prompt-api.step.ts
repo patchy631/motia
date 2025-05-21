@@ -12,10 +12,6 @@ export const config: ApiRouteConfig = {
   method: 'POST',
   emits: ['openai-prompt'],
   flows: ['open-ai'],
-  queryParams: [
-    { name: 'model', description: 'The model to use' },
-    { name: 'temperature', description: 'The temperature to use' },
-  ],
   bodySchema: inputSchema,
   responseSchema: { 200: responseSchema },
 }
@@ -25,21 +21,10 @@ export const handler: Handlers['OpenAiApi'] = async (req, { traceId, logger, emi
 
   const result = await streams.openai.create(traceId, { message: '' })
 
-  // streams.openai.send(
-  //   { id: traceId },
-  //   {
-  //     type: 'event-name',
-  //     data: { message: 'event-data' },
-  //   },
-  // )
-
   await emit({
     topic: 'openai-prompt',
     data: { message: req.body.message },
   })
 
-  return {
-    status: 200,
-    body: result,
-  }
+  return { status: 200, body: result }
 }

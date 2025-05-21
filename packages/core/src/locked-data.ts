@@ -37,6 +37,7 @@ export class LockedData {
   private streamHandlers: Record<StreamEvent, ((stream: Stream) => void)[]>
   private streams: Record<string, Stream>
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private streamWrapper?: StreamWrapper<any>
 
   constructor(public readonly baseDir: string) {
@@ -110,7 +111,9 @@ export class LockedData {
     return this.activeSteps.filter((step) => step.filePath.endsWith('.ts'))
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getStreams(): Record<string, StateStreamFactory<any>> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const streams: Record<string, StateStreamFactory<any>> = {}
 
     for (const [key, value] of Object.entries(this.streams)) {
@@ -313,6 +316,7 @@ export class LockedData {
       delete this.streams[oldStream.config.name]
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let factory: StateStreamFactory<any>
 
     if (stream.config.baseConfig.type === 'state') {

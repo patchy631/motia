@@ -74,6 +74,7 @@ export const createServer = async (
 
       if (stream) {
         const result = stream ? await stream(state).getList(groupId) : []
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         return result.map(({ __motia, ...rest }) => rest)
       }
     },
@@ -82,6 +83,7 @@ export const createServer = async (
   lockedData.applyStreamWrapper((streamName, stream) => {
     return (state: InternalStateManager): IStateStream<BaseStateStreamData> => {
       const suuper = stream(state)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const wrapObject = (id: string, object: any) => ({
         ...object,
         __motia: { type: 'state-stream', streamName, id },

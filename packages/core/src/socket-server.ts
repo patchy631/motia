@@ -8,6 +8,7 @@ type StreamEvent<TData> =
   | { type: 'create'; data: TData }
   | { type: 'update'; data: TData }
   | { type: 'delete'; data: TData }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   | { type: 'event'; event: { type: string; data: any } }
 type EventMessage<TData> = BaseMessage & { event: StreamEvent<TData> }
 

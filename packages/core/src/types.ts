@@ -12,6 +12,7 @@ export type InternalStateManager = {
 export type EmitData = { topic: ''; data: unknown }
 export type Emitter<TData> = (event: TData) => Promise<void>
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface FlowContextStateStreams {}
 
 export interface StateStreamConfig {
@@ -19,6 +20,7 @@ export interface StateStreamConfig {
   schema: ZodObject<any> // eslint-disable-line @typescript-eslint/no-explicit-any
   baseConfig:
     | { type: 'state'; property: string }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     | { type: 'custom'; factory: (state: InternalStateManager) => IStateStream<any> }
 }
 

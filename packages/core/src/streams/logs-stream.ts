@@ -28,5 +28,6 @@ export class LogsStream implements IStateStream<Log> {
     return data.traceId
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async send<T>(_: StateStreamEventChannel, __: StateStreamEvent<T>) {}
 }
