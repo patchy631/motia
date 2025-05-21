@@ -14,10 +14,9 @@ export const config: EventConfig = {
   flows: ['open-ai'],
 }
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY_ })
-
 export const handler: Handlers['CallOpenAi'] = async (input, context) => {
   const { logger, traceId } = context
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY_ })
 
   logger.info('[Call OpenAI] Received callOpenAi event', input)
 
