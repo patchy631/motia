@@ -2,7 +2,6 @@ import { Event, EventConfig, EventManager, InternalStateManager, Step } from './
 import { globalLogger } from './logger'
 import { callStepFile } from './call-step-file'
 import { LockedData } from './locked-data'
-import { StateAdapter } from './state/state-adapter'
 
 export type MotiaEventManager = {
   createHandler: (step: Step<EventConfig>) => void
