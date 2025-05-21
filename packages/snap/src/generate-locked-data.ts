@@ -5,11 +5,15 @@ import path from 'path'
 
 const version = `${randomUUID()}:${Math.floor(Date.now() / 1000)}`
 
-// Helper function to recursively collect flow data
-export const collectFlows = async (projectDir: string, lockedData: LockedData): Promise<void> => {
-  const files = globSync(path.join(projectDir, 'steps', '**', '*.step.{ts,js,py,rb}'), {
+export const getStepFiles = (projectDir: string): string[] => {
+  return globSync(path.join(projectDir, 'steps', '**', '*.step.{ts,js,py,rb}'), {
     windowsPathsNoEscape: process.platform === 'win32',
   })
+}
+
+// Helper function to recursively collect flow data
+export const collectFlows = async (projectDir: string, lockedData: LockedData): Promise<void> => {
+  const files = getStepFiles(projectDir)
 
   for (const filePath of files) {
     const config = await getStepConfig(filePath)
