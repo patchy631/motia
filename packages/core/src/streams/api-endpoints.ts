@@ -1,8 +1,8 @@
 import { Express } from 'express'
-import { isApiStep } from './guards'
-import { LockedData } from './locked-data'
-import { ApiRouteConfig, ApiRouteMethod, InternalStateManager, IStateStream, Step } from './types'
-import { JsonSchema } from './types/schema.types'
+import { isApiStep } from '../guards'
+import { LockedData } from '../locked-data'
+import { ApiRouteConfig, ApiRouteMethod, InternalStateManager, IStateStream, Step } from '../types'
+import { JsonSchema } from '../types/schema.types'
 
 type QueryParam = {
   name: string
@@ -19,13 +19,9 @@ type ApiEndpoint = {
   bodySchema?: JsonSchema
 }
 
-const endpointId = (step: Step<ApiRouteConfig>): string => {
-  return `${step.config.method} ${step.config.path}`
-}
-
 const mapEndpoint = (step: Step<ApiRouteConfig>): ApiEndpoint => {
   return {
-    id: endpointId(step),
+    id: step.filePath,
     method: step.config.method,
     path: step.config.path,
     description: step.config.description,
@@ -62,6 +58,8 @@ class ApiEndpointsStream implements IStateStream<ApiEndpoint> {
   getGroupId(_: ApiEndpoint): string {
     return 'default'
   }
+
+  async emit() {}
 }
 
 export const apiEndpoints = (lockedData: LockedData, state: InternalStateManager) => {
@@ -77,8 +75,8 @@ export const apiEndpoints = (lockedData: LockedData, state: InternalStateManager
 
   const apiStepCreated = (step: Step) => {
     if (isApiStep(step)) {
-      streamFactory(state).create(endpointId(step), {
-        id: endpointId(step),
+      streamFactory(state).create(step.filePath, {
+        id: step.filePath,
         method: step.config.method,
         path: step.config.path,
         description: step.config.description,
@@ -89,13 +87,13 @@ export const apiEndpoints = (lockedData: LockedData, state: InternalStateManager
 
   const apiStepUpdated = (step: Step) => {
     if (isApiStep(step)) {
-      streamFactory(state).update(endpointId(step), mapEndpoint(step))
+      streamFactory(state).update(step.filePath, mapEndpoint(step))
     }
   }
 
   const apiStepRemoved = (step: Step) => {
     if (isApiStep(step)) {
-      streamFactory(state).delete(endpointId(step))
+      streamFactory(state).delete(step.filePath)
     }
   }
 

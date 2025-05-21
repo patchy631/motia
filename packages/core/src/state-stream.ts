@@ -32,4 +32,6 @@ export class StateStream<TData extends BaseStateStreamData> implements IStateStr
   async getList(groupId: string): Promise<TData[]> {
     return []
   }
+
+  async emit() {}
 }

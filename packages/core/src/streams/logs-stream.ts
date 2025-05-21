@@ -1,4 +1,4 @@
-import { IStateStream } from '../types'
+import { IStateStream, StateStreamEvent, StateStreamEventChannel } from '../types'
 
 export type Log = {
   id: string
@@ -7,58 +7,26 @@ export type Log = {
   msg: string
   traceId: string
   flows: string[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
+  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export class LogsStream implements IStateStream<Log> {
-  private logs: Log[] = []
-
-  async get(id: string): Promise<Log | null> {
-    const log = this.logs.find((log) => log.id === id)
-    return log ?? null
-  }
-
-  async update(id: string, data: Log): Promise<Log | null> {
-    const index = this.logs.findIndex((log) => log.id === id)
-
-    if (index === -1) {
-      return null
-    }
-
-    const log = this.logs[index]
-    this.logs[index] = { ...log, ...data }
-
-    return log
-  }
-
-  async delete(id: string): Promise<Log | null> {
-    const index = this.logs.findIndex((log) => log.id === id)
-
-    if (index === -1) {
-      return null
-    }
-
-    const log = this.logs[index]
-    this.logs.splice(index, 1)
-
-    return log
-  }
+  get = async () => null
+  update = async () => null
+  delete = async () => null
 
   async create(_: string, data: Log): Promise<Log> {
-    this.logs.push(data)
+    await this.emit({ groupId: 'default' }, { type: 'log', data })
     return data
   }
 
-  async getList(groupId: string): Promise<Log[]> {
-    if (groupId === 'default') {
-      return this.logs
-    }
-
-    return this.logs.filter((log) => log.traceId === groupId)
+  async getList(): Promise<Log[]> {
+    return []
   }
 
   getGroupId(data: Log): string {
     return data.traceId
   }
+
+  async emit<T>(_: StateStreamEventChannel, __: StateStreamEvent<T>) {}
 }

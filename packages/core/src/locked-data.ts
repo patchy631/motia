@@ -267,7 +267,6 @@ export class LockedData {
   ): StateStreamFactory<TData> {
     this.streams[stream.config.name] = stream
     this.streamHandlers['stream-created'].forEach((handler) => handler(stream))
-    this.printer.printStreamCreated(stream)
 
     let factory: StateStreamFactory<TData>
 
@@ -280,8 +279,12 @@ export class LockedData {
 
     stream.config.baseConfig = { type: 'custom', factory }
 
-    if (!options.disableTypeCreation) {
-      this.saveTypes()
+    if (!stream.hidden) {
+      this.printer.printStreamCreated(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
     }
 
     return factory
@@ -295,10 +298,13 @@ export class LockedData {
     })
 
     this.streamHandlers['stream-removed'].forEach((handler) => handler(stream))
-    this.printer.printStreamRemoved(stream)
 
-    if (!options.disableTypeCreation) {
-      this.saveTypes()
+    if (!stream.hidden) {
+      this.printer.printStreamRemoved(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
     }
   }
 
@@ -320,10 +326,13 @@ export class LockedData {
 
     this.streams[stream.config.name] = stream
     this.streamHandlers['stream-updated'].forEach((handler) => handler(stream))
-    this.printer.printStreamUpdated(stream)
 
-    if (!options.disableTypeCreation) {
-      this.saveTypes()
+    if (!stream.hidden) {
+      this.printer.printStreamUpdated(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
     }
   }
 

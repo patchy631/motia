@@ -2,10 +2,12 @@ import { randomUUID } from 'crypto'
 import { Express } from 'express'
 import fs from 'fs'
 import path from 'path'
-import { Emit, Step } from './types'
-import { isApiStep, isEventStep, isNoopStep, isCronStep } from './guards'
+import { z } from 'zod'
 import { getStepLanguage } from './get-step-language'
+import { isApiStep, isCronStep, isEventStep, isNoopStep } from './guards'
 import { LockedData } from './locked-data'
+import { FlowsStream } from './streams/flows-stream'
+import { Emit, InternalStateManager, Step } from './types'
 
 // Types
 type FlowListResponse = { id: string; name: string }
@@ -46,27 +48,34 @@ type FlowResponse = FlowListResponse & {
   edges: FlowEdge[]
 }
 
-export const flowsEndpoint = (lockedData: LockedData, app: Express) => {
-  app.get('/flows', async (_, res) => {
-    const list = generateFlowsList(lockedData)
-    res.status(200).send(list.map(({ id, name }) => ({ id, name })))
-  })
+export const flowsEndpoint = (lockedData: LockedData, app: Express, state: InternalStateManager) => {
+  const flowsStream = lockedData.createStream(
+    {
+      filePath: '__motia.flows',
+      hidden: true,
+      config: {
+        name: '__motia.flows',
+        schema: z.object({ id: z.string(), name: z.string() }),
+        baseConfig: { type: 'custom', factory: () => new FlowsStream(lockedData) },
+      },
+    },
+    { disableTypeCreation: true },
+  )(state)
+
+  lockedData.on('flow-created', (flow) => flowsStream.create(flow, { id: flow, name: flow }))
+  lockedData.on('flow-updated', (flow) => flowsStream.update(flow, { id: flow, name: flow }))
+  lockedData.on('flow-removed', (flow) => flowsStream.delete(flow))
 
   app.get('/flows/:id', async (req, res) => {
-    const list = generateFlowsList(lockedData)
-    const { id } = req.params as { id: string }
-    const flow = list.find((flow) => flow.id === id)
+    const flowId = req.params.id
+    const flow = lockedData.flows[flowId]
 
     if (!flow) {
       res.status(404).send({ error: 'Flow not found' })
     } else {
-      res.status(200).send(flow)
+      res.status(200).send(generateFlow(flowId, flow.steps))
     }
   })
-}
-
-export const generateFlowsList = (lockedData: LockedData): FlowResponse[] => {
-  return Object.entries(lockedData.flows).map(([flowId, flow]) => generateFlow(flowId, flow.steps))
 }
 
 // Helper functions
@@ -221,7 +230,7 @@ const createEdgesForStep = (sourceStep: FlowStepResponse, allSteps: FlowStepResp
   return [...regularEdges, ...virtualEdges]
 }
 
-const generateFlow = (flowId: string, flowSteps: Step[]): FlowResponse => {
+export const generateFlow = (flowId: string, flowSteps: Step[]): FlowResponse => {
   const steps = flowSteps.map(createStepResponse)
   const edges = steps.flatMap((step) => createEdgesForStep(step, steps))
 

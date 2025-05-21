@@ -5,8 +5,9 @@ import { StreamItemSubscription } from './stream-item'
 export class Stream {
   private ws: WebSocket
 
-  constructor(address: string) {
+  constructor(address: string, onReady: () => void) {
     this.ws = new WebSocket(address)
+    this.ws.onopen = () => onReady()
   }
 
   subscribeItem<TData extends { id: string }>(streamName: string, id: string): StreamItemSubscription<TData> {
