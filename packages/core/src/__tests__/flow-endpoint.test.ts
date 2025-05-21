@@ -1,5 +1,5 @@
 import { createApiStep, createEventStep } from './fixtures/step-fixtures'
-import { generateFlowsList } from '../flows-endpoint'
+import { generateFlow } from '../flows-endpoint'
 import { LockedData } from '../locked-data'
 import { z } from 'zod'
 import { Step } from '../types'
@@ -30,18 +30,12 @@ const mockFlowSteps: Step[] = [
   }),
 ]
 
-describe('generateFlowsList', () => {
+describe('flowEndpoint', () => {
   it('should generate a list of flows with steps', () => {
     const lockedData = new LockedData(process.cwd())
     mockFlowSteps.forEach((step) => lockedData.createStep(step, { disableTypeCreation: true }))
 
-    const result = generateFlowsList(lockedData)
-
-    expect(result.map(({ id }) => id)).toEqual(['motia-server'])
-    expect(result.map(({ steps }) => steps.map((step) => step.name)).flat()).toEqual([
-      'Start Event',
-      'Processor',
-      'Finalizer',
-    ])
+    const result = generateFlow('motia-server', lockedData.flows['motia-server'].steps)
+    expect(result.steps.map((step) => step.name)).toEqual(['Start Event', 'Processor', 'Finalizer'])
   })
 })

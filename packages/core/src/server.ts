@@ -17,6 +17,8 @@ import {
   EventManager,
   InternalStateManager,
   IStateStream,
+  StateStreamEvent,
+  StateStreamEventChannel,
   Step,
 } from './types'
 import { systemSteps } from './steps'
@@ -25,7 +27,7 @@ import { callStepFile } from './call-step-file'
 import { LoggerFactory } from './logger-factory'
 import { generateTraceId } from './generate-trace-id'
 import { flowsConfigEndpoint } from './flows-config-endpoint'
-import { apiEndpoints } from './api-endpoints'
+import { apiEndpoints } from './streams/api-endpoints'
 import { createSocketServer } from './socket-server'
 import { Log, LogsStream } from './streams/logs-stream'
 
@@ -61,93 +63,94 @@ export const createServer = async (
       const stream = streams[streamName]
 
       if (stream) {
-        return stream(state).get(id)
+        const result = await stream(state).get(id)
+        delete result.__motia // deleting because we don't need it in the socket
+        return result
       }
     },
     onJoinGroup: async (streamName: string, groupId: string) => {
       const streams = lockedData.getStreams()
       const stream = streams[streamName]
 
-      return stream ? stream(state).getList(groupId) : []
+      const result = stream ? await stream(state).getList(groupId) : []
+      return result.map(({ __motia, ...rest }) => rest)
     },
   })
 
   lockedData.applyStreamWrapper((streamName, stream) => {
     return (state: InternalStateManager): IStateStream<BaseStateStreamData> => {
-      const originalStream = stream(state)
+      const suuper = stream(state)
       const wrapObject = (id: string, object: any) => ({
         ...object,
         __motia: { type: 'state-stream', streamName, id },
       })
 
-      const createState = async (id: string, data: any) => {
-        const created = await originalStream.create(id, data)
-        const result = wrapObject(id, created ?? data)
-        const groupId = originalStream.getGroupId(result)
+      const wrapper = {
+        ...suuper,
 
-        pushEvent({ streamName, id, event: { type: 'create', data: result } })
+        async emit<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>) {
+          pushEvent({ streamName, ...channel, event: { type: 'event', event } })
+        },
 
-        if (groupId) {
-          pushEvent({ streamName, groupId, event: { type: 'create', data: result } })
-        }
+        async get(id: string) {
+          const result = await suuper.get.apply(wrapper, [id])
+          return wrapObject(id, result)
+        },
 
-        return result
-      }
+        async update(id: string, data: BaseStateStreamData) {
+          if (!data) {
+            return null
+          }
 
-      const updateState = async (id: string, data: any) => {
-        if (!data) {
-          return null
-        }
+          const updated = await suuper.update.apply(wrapper, [id, data])
+          const result = updated ?? data
+          const wrappedResult = wrapObject(id, result)
+          const groupId = suuper.getGroupId(result)
 
-        const updated = await originalStream.update(id, data)
-        const result = wrapObject(id, updated ?? data)
-        const groupId = originalStream.getGroupId(result)
-
-        pushEvent({ streamName, id, event: { type: 'update', data: result } })
-
-        if (groupId) {
-          pushEvent({ streamName, groupId, event: { type: 'update', data: result } })
-        }
-
-        return result
-      }
-
-      const deleteState = async (id: string) => {
-        const data = await originalStream.delete(id)
-
-        if (data) {
-          const groupId = originalStream.getGroupId(data)
-
-          pushEvent({ streamName, id, event: { type: 'delete', data: data } })
+          pushEvent({ streamName, id, event: { type: 'update', data: result } })
 
           if (groupId) {
-            pushEvent({ streamName, groupId, event: { type: 'delete', data } })
+            pushEvent({ streamName, groupId, event: { type: 'update', data: result } })
           }
-        }
 
-        return data
-      }
+          return wrappedResult
+        },
 
-      return {
-        get: (id: string) =>
-          originalStream.get(id).then((object: BaseStateStreamData | null) => wrapObject(id, object)),
-        update: (id: string, data: BaseStateStreamData) => updateState(id, data),
-        delete: (id: string) => deleteState(id),
-        create: (id: string, data: BaseStateStreamData) => createState(id, data),
-        getGroupId: (data: BaseStateStreamData) => originalStream.getGroupId(data),
+        async delete(id: string) {
+          const result = await suuper.delete.apply(wrapper, [id])
+          return wrapObject(id, result)
+        },
+
+        async create(id: string, data: BaseStateStreamData) {
+          const created = await suuper.create.apply(wrapper, [id, data])
+          const result = created ?? data
+          const wrappedResult = wrapObject(id, result)
+          const groupId = suuper.getGroupId(result)
+
+          pushEvent({ streamName, id, event: { type: 'create', data: result } })
+
+          if (groupId) {
+            pushEvent({ streamName, groupId, event: { type: 'create', data: result } })
+          }
+
+          return wrappedResult
+        },
+
         getList: async (groupId: string) => {
-          const list = await originalStream.getList(groupId)
+          const list = await suuper.getList.apply(wrapper, [groupId])
           return list.map((object: BaseStateStreamData) => wrapObject(object.id, object))
         },
       }
+
+      return wrapper
     }
   })
 
   const logStream = lockedData.createStream<Log>({
-    filePath: '__motia.log',
+    filePath: '__motia.logs',
     hidden: true,
     config: {
-      name: '__motia.log',
+      name: '__motia.logs',
       baseConfig: { type: 'custom', factory: () => new LogsStream() },
       schema: null as never,
     },
@@ -255,7 +258,7 @@ export const createServer = async (
   app.use(router)
 
   apiEndpoints(lockedData, state)
-  flowsEndpoint(lockedData, app)
+  flowsEndpoint(lockedData, app, state)
   flowsConfigEndpoint(app, process.cwd())
 
   server.on('error', (error) => {

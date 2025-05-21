@@ -33,7 +33,9 @@ export const createSocketServer = ({ server, onJoin, onJoinGroup }: Props) => {
   socketServer.on('connection', (socket) => {
     subscriptions.set(socket, new Set())
 
-    socket.on('message', async (message: Message) => {
+    socket.on('message', async (payload: Buffer) => {
+      const message: Message = JSON.parse(payload.toString())
+
       if (message.type === 'join') {
         const room = getRoom(message.data)
 
@@ -45,13 +47,25 @@ export const createSocketServer = ({ server, onJoin, onJoinGroup }: Props) => {
           const item = await onJoin(message.data.streamName, message.data.id)
 
           if (item) {
-            socket.send(JSON.stringify({ type: 'sync', data: item }))
+            const resultMessage: EventMessage<typeof item> = {
+              streamName: message.data.streamName,
+              id: message.data.id,
+              event: { type: 'sync', data: item },
+            }
+
+            socket.send(JSON.stringify(resultMessage))
           }
         } else {
           const items = await onJoinGroup(message.data.streamName, message.data.groupId)
 
           if (items) {
-            socket.send(JSON.stringify({ type: 'sync', data: items }))
+            const resultMessage: EventMessage<typeof items> = {
+              streamName: message.data.streamName,
+              groupId: message.data.groupId,
+              event: { type: 'sync', data: items },
+            }
+
+            socket.send(JSON.stringify(resultMessage))
           }
         }
 

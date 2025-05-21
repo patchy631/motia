@@ -2,11 +2,12 @@ export type BaseMessage = { streamName: string } & ({ id: string } | { groupId: 
 export type JoinMessage = BaseMessage & { subscriptionId: string }
 export type ItemJoinMessage = BaseMessage & { id: string; subscriptionId: string }
 export type GroupJoinMessage = BaseMessage & { groupId: string; subscriptionId: string }
+export type CustomEvent = { type: string; data: any }
 export type StreamEvent<TData extends { id: string }> =
   | { type: 'create'; data: TData }
   | { type: 'update'; data: TData }
   | { type: 'delete'; data: TData }
-  | { type: 'event'; event: { type: string; data: any } }
+  | { type: 'event'; event: CustomEvent }
 export type ItemStreamEvent<TData extends { id: string }> = StreamEvent<TData> | { type: 'sync'; data: TData }
 export type GroupStreamEvent<TData extends { id: string }> = StreamEvent<TData> | { type: 'sync'; data: TData[] }
 export type ItemEventMessage<TData extends { id: string }> = BaseMessage & { event: ItemStreamEvent<TData> }
@@ -15,3 +16,4 @@ export type GroupEventMessage<TData extends { id: string }> = BaseMessage & { ev
 export type Message = { type: 'join' | 'leave'; data: JoinMessage }
 
 export type Listener<TData> = (state: TData | null) => void
+export type CustomEventListener<TData> = (event: TData) => void
