@@ -13,7 +13,7 @@ export class StateStream<TData extends BaseStateStreamData> implements IStateStr
   }
 
   async update(id: string, data: TData): Promise<TData> {
-    return this.state.set(id, this.propertyName, data)
+    return this.state.set(id, this.propertyName, { ...data, id })
   }
 
   async delete(id: string): Promise<TData | null> {
