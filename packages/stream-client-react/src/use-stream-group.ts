@@ -17,7 +17,11 @@ export const useStreamGroup = <TData>(args: Args) => {
 
     subscription.addChangeListener((data) => setData(data as TData[]))
     setEvent(subscription)
-    return () => subscription.close()
+
+    return () => {
+      setData([])
+      subscription.close()
+    }
   }, [stream, args.streamName, args.groupId])
 
   return { data, event }

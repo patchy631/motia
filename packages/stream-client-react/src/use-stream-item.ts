@@ -20,7 +20,10 @@ export const useStreamItem = <TData>(args?: Args) => {
     subscription.addChangeListener((data) => setData(data as TData))
     setEvent(subscription)
 
-    return () => subscription.close()
+    return () => {
+      setData(null)
+      subscription.close()
+    }
   }, [stream, args?.streamName, args?.id])
 
   return { data, event }
