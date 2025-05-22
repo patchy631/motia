@@ -13,7 +13,7 @@ import {
   ApiResponse,
   ApiRouteConfig,
   ApiRouteMethod,
-  BaseStateStreamData,
+  BaseStreamItem,
   EventManager,
   InternalStateManager,
   IStateStream,
@@ -81,7 +81,7 @@ export const createServer = async (
   })
 
   lockedData.applyStreamWrapper((streamName, stream) => {
-    return (state: InternalStateManager): IStateStream<BaseStateStreamData> => {
+    return (state: InternalStateManager): IStateStream<BaseStreamItem> => {
       const suuper = stream(state)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const wrapObject = (id: string, object: any) => ({
@@ -89,7 +89,7 @@ export const createServer = async (
         __motia: { type: 'state-stream', streamName, id },
       })
 
-      const wrapper: IStateStream<BaseStateStreamData> = {
+      const wrapper: IStateStream<BaseStreamItem> = {
         ...suuper,
 
         async send<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>) {
@@ -101,7 +101,7 @@ export const createServer = async (
           return wrapObject(id, result)
         },
 
-        async update(id: string, data: BaseStateStreamData) {
+        async update(id: string, data: BaseStreamItem) {
           if (!data) {
             return null
           }
@@ -133,7 +133,7 @@ export const createServer = async (
           return wrapObject(id, result)
         },
 
-        async create(id: string, data: BaseStateStreamData) {
+        async create(id: string, data: BaseStreamItem) {
           const created = await suuper.create.apply(wrapper, [id, data])
           const result = created ?? data
           const wrappedResult = wrapObject(id, result)
@@ -150,7 +150,7 @@ export const createServer = async (
 
         getList: async (groupId: string) => {
           const list = await suuper.getList.apply(wrapper, [groupId])
-          return list.map((object: BaseStateStreamData) => wrapObject(object.id, object))
+          return list.map((object: BaseStreamItem) => wrapObject(object.id, object))
         },
       }
 

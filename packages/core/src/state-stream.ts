@@ -1,27 +1,27 @@
-import { InternalStateManager, IStateStream, BaseStateStreamData } from './types'
+import { BaseStreamItem, InternalStateManager, IStateStream } from './types'
 
-export type StateStreamFactory<TData extends BaseStateStreamData> = (state: InternalStateManager) => IStateStream<TData>
+export type StateStreamFactory<TData> = (state: InternalStateManager) => IStateStream<TData>
 
-export class StateStream<TData extends BaseStateStreamData> implements IStateStream<TData> {
+export class StateStream<TData> implements IStateStream<TData> {
   constructor(
     private readonly state: InternalStateManager,
     private readonly propertyName: string,
   ) {}
 
-  async get(id: string): Promise<TData | null> {
-    return this.state.get<TData>(id, this.propertyName)
+  async get(id: string): Promise<BaseStreamItem<TData> | null> {
+    return this.state.get<BaseStreamItem<TData>>(id, this.propertyName)
   }
 
-  async update(id: string, data: TData): Promise<TData> {
+  async update(id: string, data: TData): Promise<BaseStreamItem<TData> | null> {
     return this.state.set(id, this.propertyName, { ...data, id })
   }
 
-  async delete(id: string): Promise<TData | null> {
+  async delete(id: string): Promise<BaseStreamItem<TData> | null> {
     const data = await this.state.delete(id, this.propertyName)
-    return data as TData
+    return data as BaseStreamItem<TData> | null
   }
 
-  async create(id: string, data: TData): Promise<TData> {
+  async create(id: string, data: TData): Promise<BaseStreamItem<TData>> {
     return this.state.set(id, this.propertyName, { ...data, id })
   }
 

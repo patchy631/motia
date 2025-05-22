@@ -1,7 +1,10 @@
 import { ApiRouteConfig, Handlers } from 'motia'
 import { z } from 'zod'
 
-const inputSchema = z.object({ message: z.string({ description: 'The message to send to OpenAI' }) })
+const inputSchema = z.object({
+  id: z.string({ description: 'The id of the stream item' }),
+  message: z.string({ description: 'The message to send to OpenAI' }),
+})
 const responseSchema = z.object({ message: z.string({ description: 'The message from OpenAI' }) })
 
 export const config: ApiRouteConfig = {

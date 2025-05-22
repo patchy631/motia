@@ -4,26 +4,14 @@ import { isApiStep, isCronStep, isEventStep } from './guards'
 import { Printer } from './printer'
 import { StateStream, StateStreamFactory } from './state-stream'
 import { validateStep } from './step-validator'
-import {
-  ApiRouteConfig,
-  BaseStateStreamData,
-  CronConfig,
-  EventConfig,
-  Flow,
-  InternalStateManager,
-  Step,
-  Stream,
-} from './types'
+import { ApiRouteConfig, CronConfig, EventConfig, Flow, InternalStateManager, Step, Stream } from './types'
 import { generateTypesFromSteps, generateTypesFromStreams, generateTypesString } from './types/generate-types'
 
 type FlowEvent = 'flow-created' | 'flow-removed' | 'flow-updated'
 type StepEvent = 'step-created' | 'step-removed' | 'step-updated'
 type StreamEvent = 'stream-created' | 'stream-removed' | 'stream-updated'
 
-type StreamWrapper<TData extends BaseStateStreamData> = (
-  streamName: string,
-  factory: StateStreamFactory<TData>,
-) => StateStreamFactory<TData>
+type StreamWrapper<TData> = (streamName: string, factory: StateStreamFactory<TData>) => StateStreamFactory<TData>
 
 export class LockedData {
   public flows: Record<string, Flow>
@@ -68,7 +56,7 @@ export class LockedData {
     this.streams = {}
   }
 
-  applyStreamWrapper<TData extends BaseStateStreamData>(streamWrapper: StreamWrapper<TData>): void {
+  applyStreamWrapper<TData>(streamWrapper: StreamWrapper<TData>): void {
     this.streamWrapper = streamWrapper
   }
 
@@ -252,10 +240,7 @@ export class LockedData {
     this.printer.printStepRemoved(step)
   }
 
-  private createFactoryWrapper<TData extends BaseStateStreamData>(
-    stream: Stream,
-    factory: StateStreamFactory<TData>,
-  ): StateStreamFactory<TData> {
+  private createFactoryWrapper<TData>(stream: Stream, factory: StateStreamFactory<TData>): StateStreamFactory<TData> {
     return (state: InternalStateManager) => {
       const streamFactory = this.streamWrapper //
         ? this.streamWrapper(stream.config.name, factory)
@@ -264,10 +249,7 @@ export class LockedData {
     }
   }
 
-  createStream<TData extends BaseStateStreamData>(
-    stream: Stream,
-    options: { disableTypeCreation?: boolean } = {},
-  ): StateStreamFactory<TData> {
+  createStream<TData>(stream: Stream, options: { disableTypeCreation?: boolean } = {}): StateStreamFactory<TData> {
     this.streams[stream.config.name] = stream
     this.streamHandlers['stream-created'].forEach((handler) => handler(stream))
 
@@ -294,8 +276,8 @@ export class LockedData {
   }
 
   deleteStream(stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
-    Object.entries(this.streams).forEach(([streamName, stream]) => {
-      if (stream.filePath === stream.filePath) {
+    Object.entries(this.streams).forEach(([streamName, { filePath }]) => {
+      if (stream.filePath === filePath) {
         delete this.streams[streamName]
       }
     })

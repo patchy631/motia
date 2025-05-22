@@ -1,11 +1,11 @@
 import { spawn } from 'child_process'
 import path from 'path'
+import { LockedData } from './locked-data'
 import { BaseLogger, Logger } from './logger'
 import { Printer } from './printer'
 import { RpcProcessor } from './step-handler-rpc-processor'
-import { EmitData, EventManager, InternalStateManager, Step, BaseStateStreamData } from './types'
+import { BaseStreamItem, EmitData, EventManager, InternalStateManager, Step } from './types'
 import { isAllowedToEmit } from './utils'
-import { LockedData } from './locked-data'
 
 type StateGetInput = { traceId: string; key: string }
 type StateSetInput = { traceId: string; key: string; value: unknown }
@@ -13,7 +13,7 @@ type StateDeleteInput = { traceId: string; key: string }
 type StateClearInput = { traceId: string }
 
 type StateStreamGetInput = { id: string }
-type StateStreamMutateInput = { id: string; data: BaseStateStreamData }
+type StateStreamMutateInput = { id: string; data: BaseStreamItem }
 
 const getLanguageBasedRunner = (
   stepFilePath = '',

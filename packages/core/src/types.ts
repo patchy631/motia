@@ -24,19 +24,18 @@ export interface StateStreamConfig {
     | { storageType: 'custom'; factory: (state: InternalStateManager) => IStateStream<any> }
 }
 
-export type BaseStateStreamData = { id: string }
-
 export type StateStreamEventChannel = { id: string } | { groupId: string }
 export type StateStreamEvent<TData> = { type: string; data: TData }
 
-export interface IStateStream<TData extends BaseStateStreamData> {
-  get(id: string): Promise<TData | null>
-  update(id: string, data: Omit<TData, 'id'>): Promise<TData | null>
-  delete(id: string): Promise<TData | null>
-  create(id: string, data: Omit<TData, 'id'>): Promise<TData>
+export type BaseStreamItem<TData = unknown> = TData & { id: string }
 
+export interface IStateStream<TData> {
+  get(id: string): Promise<BaseStreamItem<TData> | null>
+  update(id: string, data: TData): Promise<BaseStreamItem<TData> | null>
+  delete(id: string): Promise<BaseStreamItem<TData> | null>
+  create(id: string, data: TData): Promise<BaseStreamItem<TData>>
   getGroupId(data: TData): string | null
-  getList(groupId: string): Promise<TData[]>
+  getList(groupId: string): Promise<BaseStreamItem<TData>[]>
 
   send<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>): Promise<void>
 }
