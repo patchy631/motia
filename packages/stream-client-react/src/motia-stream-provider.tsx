@@ -11,7 +11,7 @@ export const MotiaStreamProvider: React.FC<Props> = ({ children, address }) => {
 
   useEffect(() => {
     const stream = new Stream(address, () => setStream(stream))
-    setTimeout(() => setStream(stream), 3000)
+    return () => stream.close()
   }, [address])
 
   if (!stream) return null
