@@ -67,7 +67,7 @@ export const apiEndpoints = (lockedData: LockedData, state: InternalStateManager
     hidden: true,
     config: {
       name: '__motia.api-endpoints',
-      baseConfig: { type: 'custom', factory: () => new ApiEndpointsStream(lockedData) },
+      baseConfig: { storageType: 'custom', factory: () => new ApiEndpointsStream(lockedData) },
       schema: null as never,
     },
   })

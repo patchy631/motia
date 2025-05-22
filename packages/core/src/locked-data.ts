@@ -118,7 +118,7 @@ export class LockedData {
 
     for (const [key, value] of Object.entries(this.streams)) {
       const baseConfig = value.config.baseConfig
-      const streamFactory = baseConfig.type === 'custom' ? baseConfig.factory : null
+      const streamFactory = baseConfig.storageType === 'custom' ? baseConfig.factory : null
 
       if (streamFactory) {
         streams[key] = streamFactory
@@ -273,14 +273,14 @@ export class LockedData {
 
     let factory: StateStreamFactory<TData>
 
-    if (stream.config.baseConfig.type === 'state') {
+    if (stream.config.baseConfig.storageType === 'state') {
       const property = stream.config.baseConfig.property
       factory = this.createFactoryWrapper(stream, (state) => new StateStream<TData>(state, property))
     } else {
       factory = this.createFactoryWrapper(stream, stream.config.baseConfig.factory)
     }
 
-    stream.config.baseConfig = { type: 'custom', factory }
+    stream.config.baseConfig = { storageType: 'custom', factory }
 
     if (!stream.hidden) {
       this.printer.printStreamCreated(stream)
@@ -319,14 +319,14 @@ export class LockedData {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let factory: StateStreamFactory<any>
 
-    if (stream.config.baseConfig.type === 'state') {
+    if (stream.config.baseConfig.storageType === 'state') {
       const property = stream.config.baseConfig.property
       factory = this.createFactoryWrapper(stream, (state) => new StateStream(state, property))
     } else {
       factory = this.createFactoryWrapper(stream, stream.config.baseConfig.factory)
     }
 
-    stream.config.baseConfig = { type: 'custom', factory }
+    stream.config.baseConfig = { storageType: 'custom', factory }
 
     this.streams[stream.config.name] = stream
     this.streamHandlers['stream-updated'].forEach((handler) => handler(stream))

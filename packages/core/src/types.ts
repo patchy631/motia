@@ -19,9 +19,9 @@ export interface StateStreamConfig {
   name: string
   schema: ZodObject<any> // eslint-disable-line @typescript-eslint/no-explicit-any
   baseConfig:
-    | { type: 'state'; property: string }
+    | { storageType: 'state'; property: string }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    | { type: 'custom'; factory: (state: InternalStateManager) => IStateStream<any> }
+    | { storageType: 'custom'; factory: (state: InternalStateManager) => IStateStream<any> }
 }
 
 export type BaseStateStreamData = { id: string }

@@ -56,7 +56,7 @@ export const flowsEndpoint = (lockedData: LockedData, app: Express, state: Inter
       config: {
         name: '__motia.flows',
         schema: z.object({ id: z.string(), name: z.string() }),
-        baseConfig: { type: 'custom', factory: () => new FlowsStream(lockedData) },
+        baseConfig: { storageType: 'custom', factory: () => new FlowsStream(lockedData) },
       },
     },
     { disableTypeCreation: true },

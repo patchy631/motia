@@ -163,7 +163,7 @@ export const createServer = async (
     hidden: true,
     config: {
       name: '__motia.logs',
-      baseConfig: { type: 'custom', factory: () => new LogsStream() },
+      baseConfig: { storageType: 'custom', factory: () => new LogsStream() },
       schema: null as never,
     },
   })(state)
