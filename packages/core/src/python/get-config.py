@@ -2,6 +2,7 @@ import sys
 import json
 import importlib.util
 import os
+import platform
 
 # get the FD from ENV
 NODEIPCFD = int(os.environ["NODE_CHANNEL_FD"])
@@ -10,8 +11,16 @@ def sendMessage(text):
     'sends a Node IPC message to parent proccess'
     # encode message as json string + newline in bytes
     bytesMessage = (json.dumps(text) + "\n").encode('utf-8')
-    # send message
-    os.write(NODEIPCFD, bytesMessage)
+    
+    # Handle Windows differently
+    if platform.system() == 'Windows':
+        # On Windows, write to stdout
+        sys.stdout.buffer.write(bytesMessage)
+        sys.stdout.buffer.flush()
+    else:
+        # On Unix systems, use the file descriptor approach
+        NODEIPCFD = int(os.environ["NODE_CHANNEL_FD"])
+        os.write(NODEIPCFD, bytesMessage)
 
 async def run_python_module(file_path: str) -> None:
     try:

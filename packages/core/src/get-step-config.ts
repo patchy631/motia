@@ -35,14 +35,29 @@ const getLanguageBasedRunner = (
 
 export const getStepConfig = (file: string): Promise<StepConfig | null> => {
   const { runner, command, args } = getLanguageBasedRunner(file)
+  const isWindows = process.platform === 'win32'
 
   return new Promise((resolve, reject) => {
     let config: StepConfig | null = null
 
     const child = spawn(command, [...args, runner, file], {
-      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+      stdio: isWindows 
+        ? ['inherit', 'pipe', 'inherit', 'ipc']  // On Windows, capture stdout
+        : ['inherit', 'inherit', 'inherit', 'ipc']  // Original config for Unix
     })
 
+    // On Windows, we need to listen for stdout data
+    if (isWindows) {
+      child.stdout?.on('data', (data) => {
+        const message = JSON.parse(data.toString());
+        globalLogger.debug('[Config] Read config', { config: message });
+        config = message;
+        resolve(config);
+        child.kill();
+      });
+    }
+
+    // Original IPC message handler
     child.on('message', (message: StepConfig) => {
       globalLogger.debug('[Config] Read config', { config: message })
       config = message
