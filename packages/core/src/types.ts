@@ -4,19 +4,23 @@ import { BaseLogger, Logger } from './logger'
 
 export type InternalStateManager = {
   get<T>(traceId: string, key: string): Promise<T | null>
-  set<T>(traceId: string, key: string, value: T): Promise<void>
-  delete(traceId: string, key: string): Promise<void>
+  set<T>(traceId: string, key: string, value: T): Promise<T>
+  delete<T>(traceId: string, key: string): Promise<T | null>
   clear(traceId: string): Promise<void>
 }
 
 export type EmitData = { topic: ''; data: unknown }
 export type Emitter<TData> = (event: TData) => Promise<void>
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface FlowContextStateStreams {}
+
 export interface FlowContext<TEmitData = never> {
   emit: Emitter<TEmitData>
   traceId: string
   state: InternalStateManager
   logger: Logger
+  streams: FlowContextStateStreams
 }
 
 export type EventHandler<TInput, TEmitData> = (input: TInput, ctx: FlowContext<TEmitData>) => Promise<void>
@@ -56,7 +60,7 @@ export type ApiMiddleware<TBody = unknown, TEmitData = never, TResult = unknown>
   next: () => Promise<ApiResponse<number, TResult>>,
 ) => Promise<ApiResponse<number, TResult>>
 
-type QueryParam = {
+export type QueryParam = {
   name: string
   description: string
 }

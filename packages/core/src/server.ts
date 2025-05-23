@@ -2,26 +2,36 @@ import { CronManager, setupCronHandlers } from './cron-handler'
 import bodyParser from 'body-parser'
 import express, { Express, Request, Response } from 'express'
 import http from 'http'
+import { Server as WsServer } from 'ws'
 import multer from 'multer'
-import { Server as SocketIOServer } from 'socket.io'
 import cors from 'cors'
 import { flowsEndpoint } from './flows-endpoint'
 import { isApiStep } from './guards'
 import { globalLogger } from './logger'
-import { StateAdapter } from './state/state-adapter'
-import { ApiRequest, ApiResponse, ApiRouteConfig, ApiRouteMethod, EventManager, Step } from './types'
+import {
+  ApiRequest,
+  ApiResponse,
+  ApiRouteConfig,
+  ApiRouteMethod,
+  EventManager,
+  InternalStateManager,
+  Step,
+} from './types'
 import { systemSteps } from './steps'
 import { LockedData } from './locked-data'
 import { callStepFile } from './call-step-file'
-import { LoggerFactory } from './LoggerFactory'
+import { LoggerFactory } from './logger-factory'
 import { generateTraceId } from './generate-trace-id'
 import { flowsConfigEndpoint } from './flows-config-endpoint'
-import { apiEndpoints } from './api-endpoints'
+import { apiEndpoints } from './streams/api-endpoints'
+import { createSocketServer } from './socket-server'
+import { Log, LogsStream } from './streams/logs-stream'
+import { BaseStreamItem, IStateStream, StateStreamEventChannel, StateStreamEvent } from './types-stream'
 
 export type MotiaServer = {
   app: Express
   server: http.Server
-  socketServer: SocketIOServer
+  socketServer: WsServer
   close: () => Promise<void>
   removeRoute: (step: Step<ApiRouteConfig>) => void
   addRoute: (step: Step<ApiRouteConfig>) => void
@@ -35,17 +45,128 @@ type MotiaServerConfig = {
 export const createServer = async (
   lockedData: LockedData,
   eventManager: EventManager,
-  state: StateAdapter,
+  state: InternalStateManager,
   config: MotiaServerConfig,
 ): Promise<MotiaServer> => {
   const printer = lockedData.printer
   const app = express()
   const server = http.createServer(app)
-  const io = new SocketIOServer(server)
-  const loggerFactory = new LoggerFactory(config.isVerbose, io)
   const upload = multer()
 
+  const { pushEvent, socketServer } = createSocketServer({
+    server,
+    onJoin: async (streamName: string, id: string) => {
+      const streams = lockedData.getStreams()
+      const stream = streams[streamName]
+
+      if (stream) {
+        const result = await stream().get(id)
+        delete result.__motia // deleting because we don't need it in the socket
+        return result
+      }
+    },
+    onJoinGroup: async (streamName: string, groupId: string) => {
+      const streams = lockedData.getStreams()
+      const stream = streams[streamName]
+
+      if (stream) {
+        const result = stream ? await stream().getList(groupId) : []
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        return result.map(({ __motia, ...rest }) => rest)
+      }
+    },
+  })
+
+  lockedData.applyStreamWrapper(state, (streamName, stream) => {
+    return (): IStateStream<BaseStreamItem> => {
+      const suuper = stream()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const wrapObject = (id: string, object: any) => ({
+        ...object,
+        __motia: { type: 'state-stream', streamName, id },
+      })
+
+      const wrapper: IStateStream<BaseStreamItem> = {
+        ...suuper,
+
+        async send<T>(channel: StateStreamEventChannel, event: StateStreamEvent<T>) {
+          pushEvent({ streamName, ...channel, event: { type: 'event', event } })
+        },
+
+        async get(id: string) {
+          const result = await suuper.get.apply(wrapper, [id])
+          return wrapObject(id, result)
+        },
+
+        async update(id: string, data: BaseStreamItem) {
+          if (!data) {
+            return null
+          }
+
+          const updated = await suuper.update.apply(wrapper, [id, data])
+          const result = updated ?? data
+          const wrappedResult = wrapObject(id, result)
+          const groupId = suuper.getGroupId(result)
+
+          pushEvent({ streamName, id, event: { type: 'update', data: result } })
+
+          if (groupId) {
+            pushEvent({ streamName, groupId, event: { type: 'update', data: result } })
+          }
+
+          return wrappedResult
+        },
+
+        async delete(id: string) {
+          const result = await suuper.delete.apply(wrapper, [id])
+          const groupId = result && suuper.getGroupId(result)
+
+          pushEvent({ streamName, id, event: { type: 'delete', data: result } })
+
+          if (groupId) {
+            pushEvent({ streamName, groupId, event: { type: 'delete', data: result } })
+          }
+
+          return wrapObject(id, result)
+        },
+
+        async create(id: string, data: BaseStreamItem) {
+          const created = await suuper.create.apply(wrapper, [id, data])
+          const result = created ?? data
+          const wrappedResult = wrapObject(id, result)
+          const groupId = suuper.getGroupId(result)
+
+          pushEvent({ streamName, id, event: { type: 'create', data: result } })
+
+          if (groupId) {
+            pushEvent({ streamName, groupId, event: { type: 'create', data: result } })
+          }
+
+          return wrappedResult
+        },
+
+        getList: async (groupId: string) => {
+          const list = await suuper.getList.apply(wrapper, [groupId])
+          return list.map((object: BaseStreamItem) => wrapObject(object.id, object))
+        },
+      }
+
+      return wrapper
+    }
+  })
+
+  const logStream = lockedData.createStream<Log>({
+    filePath: '__motia.logs',
+    hidden: true,
+    config: {
+      name: '__motia.logs',
+      baseConfig: { storageType: 'custom', factory: () => new LogsStream() },
+      schema: null as never,
+    },
+  })()
+
   const allSteps = [...systemSteps, ...lockedData.activeSteps]
+  const loggerFactory = new LoggerFactory(config.isVerbose, logStream)
   const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory)
 
   const asyncHandler = (step: Step<ApiRouteConfig>) => {
@@ -56,8 +177,7 @@ export const createServer = async (
 
       logger.debug('[API] Received request, processing step', { path: req.path })
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const request: ApiRequest<any> = {
+      const request: ApiRequest = {
         body: req.body,
         headers: req.headers as Record<string, string | string[]>,
         pathParams: req.params,
@@ -69,6 +189,7 @@ export const createServer = async (
         const data = request
         const result = await callStepFile<ApiResponse>({
           contextInFirstArg: false,
+          lockedData,
           data,
           step,
           printer,
@@ -145,7 +266,7 @@ export const createServer = async (
   app.use(cors())
   app.use(router)
 
-  apiEndpoints(lockedData, app, io)
+  apiEndpoints(lockedData)
   flowsEndpoint(lockedData, app)
   flowsConfigEndpoint(app, process.cwd())
 
@@ -155,9 +276,8 @@ export const createServer = async (
 
   const close = async (): Promise<void> => {
     cronManager.close()
-    await io.close()
-    server.close()
+    socketServer.close()
   }
 
-  return { app, server, socketServer: io, close, removeRoute, addRoute, cronManager }
+  return { app, server, socketServer, close, removeRoute, addRoute, cronManager }
 }

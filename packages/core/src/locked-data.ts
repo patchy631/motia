@@ -1,13 +1,18 @@
 import fs from 'fs'
 import path from 'path'
-import { ApiRouteConfig, CronConfig, EventConfig, Flow, Step } from './types'
 import { isApiStep, isCronStep, isEventStep } from './guards'
 import { Printer } from './printer'
+import { InternalStateStream, StateStreamFactory } from './state-stream'
 import { validateStep } from './step-validator'
-import { generateTypesString, generateTypesFromSteps } from './types/generate-types'
+import { ApiRouteConfig, CronConfig, EventConfig, Flow, InternalStateManager, Step } from './types'
+import { Stream } from './types-stream'
+import { generateTypesFromSteps, generateTypesFromStreams, generateTypesString } from './types/generate-types'
 
 type FlowEvent = 'flow-created' | 'flow-removed' | 'flow-updated'
 type StepEvent = 'step-created' | 'step-removed' | 'step-updated'
+type StreamEvent = 'stream-created' | 'stream-removed' | 'stream-updated'
+
+type StreamWrapper<TData> = (streamName: string, factory: StateStreamFactory<TData>) => StateStreamFactory<TData>
 
 export class LockedData {
   public flows: Record<string, Flow>
@@ -18,6 +23,12 @@ export class LockedData {
   private stepsMap: Record<string, Step>
   private handlers: Record<FlowEvent, ((flowName: string) => void)[]>
   private stepHandlers: Record<StepEvent, ((step: Step) => void)[]>
+  private streamHandlers: Record<StreamEvent, ((stream: Stream) => void)[]>
+  private streams: Record<string, Stream>
+  private state: InternalStateManager | null = null
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private streamWrapper?: StreamWrapper<any>
 
   constructor(public readonly baseDir: string) {
     this.flows = {}
@@ -37,11 +48,25 @@ export class LockedData {
       'step-removed': [],
       'step-updated': [],
     }
+
+    this.streamHandlers = {
+      'stream-created': [],
+      'stream-removed': [],
+      'stream-updated': [],
+    }
+
+    this.streams = {}
+  }
+
+  applyStreamWrapper<TData>(state: InternalStateManager, streamWrapper: StreamWrapper<TData>): void {
+    this.streamWrapper = streamWrapper
+    this.state = state
   }
 
   saveTypes() {
     const types = generateTypesFromSteps(this.activeSteps, this.printer)
-    const typesString = generateTypesString(types)
+    const streams = generateTypesFromStreams(this.streams)
+    const typesString = generateTypesString(types, streams)
     fs.writeFileSync(path.join(this.baseDir, 'types.d.ts'), typesString)
   }
 
@@ -51,6 +76,10 @@ export class LockedData {
 
   onStep(event: StepEvent, handler: (step: Step) => void) {
     this.stepHandlers[event].push(handler)
+  }
+
+  onStream(event: StreamEvent, handler: (stream: Stream) => void) {
+    this.streamHandlers[event].push(handler)
   }
 
   eventSteps(): Step<EventConfig>[] {
@@ -71,6 +100,27 @@ export class LockedData {
 
   tsSteps(): Step[] {
     return this.activeSteps.filter((step) => step.filePath.endsWith('.ts'))
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getStreams(): Record<string, StateStreamFactory<any>> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const streams: Record<string, StateStreamFactory<any>> = {}
+
+    for (const [key, value] of Object.entries(this.streams)) {
+      const baseConfig = value.config.baseConfig
+      const streamFactory = baseConfig.storageType === 'custom' ? baseConfig.factory : null
+
+      if (streamFactory) {
+        streams[key] = streamFactory
+      }
+    }
+
+    return streams
+  }
+
+  findStream(path: string): Stream | undefined {
+    return Object.values(this.streams).find((stream) => stream.filePath === path)
   }
 
   updateStep(oldStep: Step, newStep: Step, options: { disableTypeCreation?: boolean } = {}): boolean {
@@ -191,6 +241,88 @@ export class LockedData {
 
     this.stepHandlers['step-removed'].forEach((handler) => handler(step))
     this.printer.printStepRemoved(step)
+  }
+
+  private createFactoryWrapper<TData>(stream: Stream, factory: StateStreamFactory<TData>): StateStreamFactory<TData> {
+    return () => {
+      const streamFactory = this.streamWrapper //
+        ? this.streamWrapper(stream.config.name, factory)
+        : factory
+      return streamFactory()
+    }
+  }
+
+  createStream<TData>(stream: Stream, options: { disableTypeCreation?: boolean } = {}): StateStreamFactory<TData> {
+    this.streams[stream.config.name] = stream
+    this.streamHandlers['stream-created'].forEach((handler) => handler(stream))
+
+    let factory: StateStreamFactory<TData>
+
+    if (stream.config.baseConfig.storageType === 'state') {
+      const property = stream.config.baseConfig.property
+      factory = this.createFactoryWrapper(stream, () => new InternalStateStream<TData>(this.state!, property))
+    } else {
+      factory = this.createFactoryWrapper(stream, stream.config.baseConfig.factory)
+    }
+
+    stream.config.baseConfig = { storageType: 'custom', factory }
+
+    if (!stream.hidden) {
+      this.printer.printStreamCreated(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
+    }
+
+    return factory
+  }
+
+  deleteStream(stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
+    Object.entries(this.streams).forEach(([streamName, { filePath }]) => {
+      if (stream.filePath === filePath) {
+        delete this.streams[streamName]
+      }
+    })
+
+    this.streamHandlers['stream-removed'].forEach((handler) => handler(stream))
+
+    if (!stream.hidden) {
+      this.printer.printStreamRemoved(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
+    }
+  }
+
+  updateStream(oldStream: Stream, stream: Stream, options: { disableTypeCreation?: boolean } = {}): void {
+    if (oldStream.config.name !== stream.config.name) {
+      delete this.streams[oldStream.config.name]
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let factory: StateStreamFactory<any>
+
+    if (stream.config.baseConfig.storageType === 'state') {
+      const property = stream.config.baseConfig.property
+      factory = this.createFactoryWrapper(stream, () => new InternalStateStream(this.state!, property))
+    } else {
+      factory = this.createFactoryWrapper(stream, stream.config.baseConfig.factory)
+    }
+
+    stream.config.baseConfig = { storageType: 'custom', factory }
+
+    this.streams[stream.config.name] = stream
+    this.streamHandlers['stream-updated'].forEach((handler) => handler(stream))
+
+    if (!stream.hidden) {
+      this.printer.printStreamUpdated(stream)
+
+      if (!options.disableTypeCreation) {
+        this.saveTypes()
+      }
+    }
   }
 
   private createFlow(flowName: string): Flow {

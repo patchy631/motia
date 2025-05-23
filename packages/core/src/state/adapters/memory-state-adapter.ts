@@ -17,12 +17,19 @@ export class MemoryStateAdapter implements StateAdapter {
     const fullKey = this._makeKey(traceId, key)
 
     this.state[fullKey] = value
+
+    return value
   }
 
-  async delete(traceId: string, key: string) {
+  async delete<T>(traceId: string, key: string): Promise<T | null> {
     const fullKey = this._makeKey(traceId, key)
+    const value = await this.get<T>(traceId, key)
 
-    delete this.state[fullKey]
+    if (value) {
+      delete this.state[fullKey]
+    }
+
+    return value
   }
 
   async clear(traceId: string) {

@@ -1,14 +1,19 @@
 import { Event, EventManager, InternalStateManager, Step } from './types'
 import path from 'path'
-import { isAllowedToEmit } from './utils'
-import { BaseLogger } from './logger'
+import { LockedData } from './locked-data'
+import { BaseLogger, Logger } from './logger'
 import { Printer } from './printer'
+import { isAllowedToEmit } from './utils'
+import { BaseStreamItem } from './types-stream'
 import { ProcessManager } from './process-communication/process-manager'
 
 type StateGetInput = { traceId: string; key: string }
 type StateSetInput = { traceId: string; key: string; value: unknown }
 type StateDeleteInput = { traceId: string; key: string }
 type StateClearInput = { traceId: string }
+
+type StateStreamGetInput = { id: string }
+type StateStreamMutateInput = { id: string; data: BaseStreamItem }
 
 const getLanguageBasedRunner = (
   stepFilePath = '',
@@ -46,18 +51,21 @@ type CallStepFileOptions = {
   eventManager: EventManager
   state: InternalStateManager
   traceId: string
+  lockedData: LockedData
   printer: Printer
   data?: any
   contextInFirstArg: boolean
 }
 
 export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData | undefined> => {
-  const { step, printer, eventManager, state, traceId, data, contextInFirstArg } = options
-  const logger = options.logger.child({ step: step.config.name })
+  const { step, printer, eventManager, state, traceId, data, contextInFirstArg, lockedData } = options
+  const logger = options.logger.child({ step: step.config.name }) as Logger
   const flows = step.config.flows
 
   return new Promise((resolve, reject) => {
-    const jsonData = JSON.stringify({ data, flows, traceId, contextInFirstArg })
+    const streamConfig = lockedData.getStreams()
+    const streams = Object.keys(streamConfig).map((name) => ({ name }))
+    const jsonData = JSON.stringify({ data, flows, traceId, contextInFirstArg, streams })
     const { runner, command, args } = getLanguageBasedRunner(step.filePath)
     let result: TData | undefined
 
@@ -86,6 +94,19 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
         }
 
         return eventManager.emit({ ...input, traceId, flows: step.config.flows, logger }, step.filePath)
+      })
+
+      Object.entries(streamConfig).forEach(([name, streamFactory]) => {
+        const stateStream = streamFactory()
+
+        processManager.handler<StateStreamGetInput>(`streams.${name}.get`, (input) => stateStream.get(input.id))
+        processManager.handler<StateStreamMutateInput>(`streams.${name}.update`, (input) =>
+          stateStream.update(input.id, input.data),
+        )
+        processManager.handler<StateStreamGetInput>(`streams.${name}.delete`, (input) => stateStream.delete(input.id))
+        processManager.handler<StateStreamMutateInput>(`streams.${name}.create`, (input) =>
+          stateStream.create(input.id, input.data),
+        )
       })
 
       // Handle stdout for non-RPC mode (logging)

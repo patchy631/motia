@@ -1,11 +1,10 @@
 import * as cron from 'node-cron'
+import { LoggerFactory } from './logger-factory'
 import { callStepFile } from './call-step-file'
+import { generateTraceId } from './generate-trace-id'
 import { LockedData } from './locked-data'
 import { globalLogger } from './logger'
-import { StateAdapter } from './state/state-adapter'
-import { CronConfig, EventManager, Step } from './types'
-import { LoggerFactory } from './LoggerFactory'
-import { generateTraceId } from './generate-trace-id'
+import { CronConfig, EventManager, InternalStateManager, Step } from './types'
 
 export type CronManager = {
   createCronJob: (step: Step<CronConfig>) => void
@@ -16,7 +15,7 @@ export type CronManager = {
 export const setupCronHandlers = (
   lockedData: LockedData,
   eventManager: EventManager,
-  state: StateAdapter,
+  state: InternalStateManager,
   loggerFactory: LoggerFactory,
 ) => {
   const cronJobs = new Map<string, cron.ScheduledTask>()
@@ -47,6 +46,7 @@ export const setupCronHandlers = (
       try {
         await callStepFile({
           contextInFirstArg: true,
+          lockedData,
           step,
           eventManager,
           printer,

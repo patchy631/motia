@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useFlowListener } from './use-flow-listener'
+import { useStreamGroup } from '@motiadev/stream-client-react'
 
 type Flow = {
   id: string
@@ -7,31 +6,10 @@ type Flow = {
 }
 
 export const useListFlows = () => {
-  const [isLoading, setIsLoading] = useState(true)
-  const [flows, setFlows] = useState<Flow[]>([])
+  const { data: flows } = useStreamGroup<Flow>({
+    streamName: '__motia.flows',
+    groupId: 'default',
+  })
 
-  const onFlowAdded = useCallback(
-    (flowName: string) => {
-      setFlows((prev) => [...prev, { id: flowName, name: flowName }])
-    },
-    [setFlows],
-  )
-
-  const onFlowRemoved = useCallback(
-    (flowName: string) => {
-      setFlows((prev) => prev.filter((flow) => flow.id !== flowName))
-    },
-    [setFlows],
-  )
-
-  useFlowListener({ onFlowAdded, onFlowRemoved })
-
-  useEffect(() => {
-    fetch('/flows')
-      .then((res) => res.json())
-      .then(setFlows)
-      .finally(() => setIsLoading(false))
-  }, [])
-
-  return { flows, isLoading }
+  return { flows }
 }

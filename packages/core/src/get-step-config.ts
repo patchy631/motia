@@ -1,6 +1,7 @@
 import path from 'path'
 import { StepConfig } from './types'
 import { globalLogger } from './logger'
+import { StateStreamConfig } from './types-stream'
 import { ProcessManager } from './process-communication/process-manager'
 
 const getLanguageBasedRunner = (
@@ -51,9 +52,9 @@ export const getStepConfig = (file: string): Promise<StepConfig | null> => {
       // Use onMessage to handle direct config messages (not RPC format)
       processManager.onMessage<StepConfig>((message) => {
         config = message
-        globalLogger.debug(`[Config] Read config via ${processManager.commType?.toUpperCase()}`, { 
+        globalLogger.debug(`[Config] Read config via ${processManager.commType?.toUpperCase()}`, {
           config,
-          communicationType: processManager.commType 
+          communicationType: processManager.commType
         })
         resolve(config)
         processManager.kill()
@@ -86,3 +87,57 @@ export const getStepConfig = (file: string): Promise<StepConfig | null> => {
     })
   })
 }
+
+export const getStreamConfig = (file: string): Promise<StateStreamConfig | null> => {
+  const { runner, command, args } = getLanguageBasedRunner(file)
+
+  return new Promise((resolve, reject) => {
+    let config: StateStreamConfig | null = null
+
+    const processManager = new ProcessManager({
+      command,
+      args: [...args, runner, file],
+      logger: globalLogger,
+      context: 'Config'
+    })
+
+    processManager.spawn().then(() => {
+      // Use onMessage to handle direct config messages (not RPC format)
+      processManager.onMessage<StateStreamConfig>((message) => {
+        config = message
+        globalLogger.debug(`[Config] Read config via ${processManager.commType?.toUpperCase()}`, {
+          config,
+          communicationType: processManager.commType
+        })
+        resolve(config)
+        processManager.kill()
+      })
+
+      // Handle process close
+      processManager.onProcessClose((code) => {
+        processManager.close()
+        if (config) {
+          return // Config was already resolved
+        } else if (code !== 0) {
+          reject(`Process exited with code ${code}`)
+        } else if (!config) {
+          reject(`No config found for file ${file}`)
+        }
+      })
+
+      // Handle process errors
+      processManager.onProcessError((error) => {
+        processManager.close()
+        if (error.code === 'ENOENT') {
+          reject(`Executable ${command} not found`)
+        } else {
+          reject(error)
+        }
+      })
+
+    }).catch((error) => {
+      reject(`Failed to spawn process: ${error}`)
+    })
+  })
+}
+

@@ -1,8 +1,7 @@
-import { Event, EventConfig, EventManager, Step } from './types'
+import { Event, EventConfig, EventManager, InternalStateManager, Step } from './types'
 import { globalLogger } from './logger'
 import { callStepFile } from './call-step-file'
 import { LockedData } from './locked-data'
-import { StateAdapter } from './state/state-adapter'
 
 export type MotiaEventManager = {
   createHandler: (step: Step<EventConfig>) => void
@@ -12,7 +11,7 @@ export type MotiaEventManager = {
 export const createStepHandlers = (
   lockedData: LockedData,
   eventManager: EventManager,
-  state: StateAdapter,
+  state: InternalStateManager,
 ): MotiaEventManager => {
   const eventSteps = lockedData.eventSteps()
   const printer = lockedData.printer
@@ -48,6 +47,7 @@ export const createStepHandlers = (
               printer,
               eventManager,
               state,
+              lockedData,
               data,
               traceId,
               logger,

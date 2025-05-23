@@ -1,11 +1,12 @@
-import request from 'supertest'
 import path from 'path'
-import { createServer } from '../server'
-import { ApiMiddleware, ApiRouteConfig, Step } from '../types'
-import { LockedData } from '../locked-data'
+import request from 'supertest'
 import { createEventManager } from '../event-manager'
-import { MemoryStateAdapter } from '../state/adapters/memory-state-adapter'
+import { LockedData } from '../locked-data'
 import { Printer } from '../printer'
+import { createServer } from '../server'
+import { InternalStateStream } from '../state-stream'
+import { MemoryStateAdapter } from '../state/adapters/memory-state-adapter'
+import { ApiMiddleware, ApiRouteConfig, InternalStateManager, Step } from '../types'
 
 // Mock callStepFile to prevent actual file execution
 jest.mock('../call-step-file', () => ({
@@ -42,6 +43,9 @@ describe('Middleware Management', () => {
       eventSteps: () => [],
       cronSteps: () => [],
       onStep: () => {},
+      applyStreamWrapper: () => {},
+      createStream: () => (state: InternalStateManager) => new InternalStateStream(state, 'test'),
+      on: () => {},
     } as unknown as LockedData
 
     const eventManager = createEventManager()

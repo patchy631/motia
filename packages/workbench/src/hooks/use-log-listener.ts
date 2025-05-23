@@ -1,18 +1,9 @@
-import { useEffect } from 'react'
-import { Log, useLogs } from '@/stores/use-logs'
-import { useSocket } from './use-socket'
+import { useLogs } from '@/stores/use-logs'
+import { useStreamEventHandler, useStreamGroup } from '@motiadev/stream-client-react'
 
 export const useLogListener = () => {
-  const { socket } = useSocket()
   const addLog = useLogs((state) => state.addLog)
+  const { event } = useStreamGroup({ streamName: '__motia.logs', groupId: 'default' })
 
-  useEffect(() => {
-    const onLog = (log: Log) => addLog(log)
-
-    socket.on('log', onLog)
-
-    return () => {
-      socket.off('log', onLog)
-    }
-  }, [socket, addLog])
+  useStreamEventHandler({ event, type: 'log', listener: addLog }, [addLog])
 }

@@ -9,11 +9,11 @@ export class RpcStateManager implements InternalStateManager {
   }
 
   async set<T>(traceId: string, key: string, value: T) {
-    await this.sender.send('state.set', { traceId, key, value })
+    return this.sender.send<T>('state.set', { traceId, key, value })
   }
 
-  async delete(traceId: string, key: string) {
-    await this.sender.send('state.delete', { traceId, key })
+  async delete<T>(traceId: string, key: string): Promise<T | null> {
+    return this.sender.send<T>('state.delete', { traceId, key })
   }
 
   async clear(traceId: string) {

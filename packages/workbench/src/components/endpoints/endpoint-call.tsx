@@ -7,6 +7,7 @@ import { EndpointBadge } from './endpoint-badge'
 import { ApiEndpoint } from './hooks/use-get-endpoints'
 import { useJsonSchemaToJson } from './hooks/use-json-schema-to-json'
 import { usePathParams } from './hooks/use-path-params'
+import { useStateStream } from './hooks/use-state-stream'
 
 type Props = { endpoint: ApiEndpoint; onClose: () => void }
 
@@ -24,6 +25,7 @@ export const EndpointCall: React.FC<Props> = ({ endpoint, onClose }) => {
   const [queryParamsValues, setQueryParamsValues] = useState<Record<string, string>>(
     endpoint.queryParams?.reduce((acc, param) => ({ ...acc, [param.name]: '' }), {} as Record<string, string>) ?? {},
   )
+  const { data: responseBodyData, isStreamed } = useStateStream(responseBody)
 
   const isPlayEnabled = useMemo(() => {
     if (!pathParams) return true
@@ -119,7 +121,7 @@ export const EndpointCall: React.FC<Props> = ({ endpoint, onClose }) => {
       )}
 
       {shouldHaveBody && (
-        <div className="flex flex-col gap-2 p-4 rounded-lg bg-muted">
+        <div className="flex flex-col gap-2 rounded-lg bg-muted">
           <span className="text-xs font-bold">Body</span>
           <Textarea
             className="w-full font-mono font-medium min-h-[200px]"
@@ -134,13 +136,22 @@ export const EndpointCall: React.FC<Props> = ({ endpoint, onClose }) => {
       </Button>
 
       {responseCode !== undefined && (
-        <div className="flex flex-col gap-2 p-4 rounded-lg bg-muted">
+        <div className="flex flex-col gap-2 rounded-lg bg-muted">
           <span className="text-xs font-bold">
             <EndpointBadge variant={responseCode >= 400 ? 'DELETE' : 'GET'}>{responseCode}</EndpointBadge> Execution
             time: <span className="text-muted-foreground">{executionTime}ms</span>
           </span>
+          {isStreamed && (
+            <span className="flex flex-row items-center font-medium text-muted-foreground text-xs">
+              <span className="ml-1 inline-block w-2 h-2 rounded-full bg-green-500 mr-2 relative">
+                <span className="absolute inset-0 rounded-full bg-green-500 animate-[ping_1.5s_ease-in-out_infinite]" />
+                <span className="absolute inset-0 rounded-full bg-green-500" />
+              </span>
+              Object is being streamed, this is not the actual response from the API Endpoint
+            </span>
+          )}
           <span className="text-xs font-mono font-bold bg-black/50 p-2 rounded-lg whitespace-pre-wrap">
-            {JSON.stringify(responseBody, null, 2)}
+            {JSON.stringify(responseBodyData, null, 2)}
           </span>
         </div>
       )}
