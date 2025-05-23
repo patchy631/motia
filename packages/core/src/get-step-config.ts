@@ -34,13 +34,12 @@ const getLanguageBasedRunner = (
   throw Error(`Unsupported file extension ${stepFilePath}`)
 }
 
-export const getStepConfig = (file: string): Promise<StepConfig | null> => {
+const getConfig = <T>(file: string): Promise<T | null> => {
   const { runner, command, args } = getLanguageBasedRunner(file)
 
   return new Promise((resolve, reject) => {
-    let config: StepConfig | null = null
+    let config: T | null = null
 
-    // Create process manager for unified communication handling
     const processManager = new ProcessManager({
       command,
       args: [...args, runner, file],
@@ -49,8 +48,7 @@ export const getStepConfig = (file: string): Promise<StepConfig | null> => {
     })
 
     processManager.spawn().then(() => {
-      // Use onMessage to handle direct config messages (not RPC format)
-      processManager.onMessage<StepConfig>((message) => {
+      processManager.onMessage<T>((message) => {
         config = message
         globalLogger.debug(`[Config] Read config via ${processManager.commType?.toUpperCase()}`, {
           config,
@@ -60,11 +58,10 @@ export const getStepConfig = (file: string): Promise<StepConfig | null> => {
         processManager.kill()
       })
 
-      // Handle process close
       processManager.onProcessClose((code) => {
         processManager.close()
         if (config) {
-          return // Config was already resolved
+          return
         } else if (code !== 0) {
           reject(`Process exited with code ${code}`)
         } else if (!config) {
@@ -72,7 +69,6 @@ export const getStepConfig = (file: string): Promise<StepConfig | null> => {
         }
       })
 
-      // Handle process errors
       processManager.onProcessError((error) => {
         processManager.close()
         if (error.code === 'ENOENT') {
@@ -88,56 +84,11 @@ export const getStepConfig = (file: string): Promise<StepConfig | null> => {
   })
 }
 
+export const getStepConfig = (file: string): Promise<StepConfig | null> => {
+  return getConfig<StepConfig>(file)
+}
+
 export const getStreamConfig = (file: string): Promise<StateStreamConfig | null> => {
-  const { runner, command, args } = getLanguageBasedRunner(file)
-
-  return new Promise((resolve, reject) => {
-    let config: StateStreamConfig | null = null
-
-    const processManager = new ProcessManager({
-      command,
-      args: [...args, runner, file],
-      logger: globalLogger,
-      context: 'Config'
-    })
-
-    processManager.spawn().then(() => {
-      // Use onMessage to handle direct config messages (not RPC format)
-      processManager.onMessage<StateStreamConfig>((message) => {
-        config = message
-        globalLogger.debug(`[Config] Read config via ${processManager.commType?.toUpperCase()}`, {
-          config,
-          communicationType: processManager.commType
-        })
-        resolve(config)
-        processManager.kill()
-      })
-
-      // Handle process close
-      processManager.onProcessClose((code) => {
-        processManager.close()
-        if (config) {
-          return // Config was already resolved
-        } else if (code !== 0) {
-          reject(`Process exited with code ${code}`)
-        } else if (!config) {
-          reject(`No config found for file ${file}`)
-        }
-      })
-
-      // Handle process errors
-      processManager.onProcessError((error) => {
-        processManager.close()
-        if (error.code === 'ENOENT') {
-          reject(`Executable ${command} not found`)
-        } else {
-          reject(error)
-        }
-      })
-
-    }).catch((error) => {
-      reject(`Failed to spawn process: ${error}`)
-    })
-  })
+  return getConfig<StateStreamConfig>(file)
 }
 
