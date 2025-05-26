@@ -13,7 +13,7 @@ interface InstallConfig {
 
 type PythonInstallConfig = InstallConfig & { baseDir: string }
 
-const pythonInstall = async ({ baseDir, isVerbose = false, pythonVersion = '3.13' }: PythonInstallConfig): Promise<void> => {
+export const pythonInstall = async ({ baseDir, isVerbose = false, pythonVersion = '3.13' }: PythonInstallConfig): Promise<void> => {
   const venvPath = path.join(baseDir, 'python_modules')
   console.log('📦 Installing Python dependencies...', venvPath)
 
