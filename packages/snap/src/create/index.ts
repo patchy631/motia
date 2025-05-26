@@ -3,8 +3,8 @@ import fs from 'fs'
 import { templates } from './templates'
 import figlet from 'figlet'
 import { executeCommand } from '../utils/executeCommand'
-import { pythonInstall } from '@/install'
-import { generateTypes } from '@/generate-types'
+import { pythonInstall } from '../install'
+import { generateTypes } from '../generate-types'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require('ts-node').register({
