@@ -102,7 +102,7 @@ export const create = async ({ projectName, template, cursorEnabled }: Args): Pr
       '\n\n',
   )
 
-  const isCurrentDir = !!projectName.match(/\.\/?/)
+  const isCurrentDir = projectName === '.' || projectName === './' || projectName === '.\\'
   const rootDir = isCurrentDir ? process.cwd() : path.join(process.cwd(), projectName)
   console.log(`🛠️ Welcome to motia! Let's get you setup.`)
 
