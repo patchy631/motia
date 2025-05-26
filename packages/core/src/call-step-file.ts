@@ -109,6 +109,15 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
         )
       })
 
+      processManager.onStdout((data) => {
+        try {
+          const message = JSON.parse(data.toString())
+          logger.log(message)
+        } catch {
+          logger.info(Buffer.from(data).toString())
+        }
+      })
+
       // Handle stderr
       processManager.onStderr((data) => logger.error(Buffer.from(data).toString()))
 
