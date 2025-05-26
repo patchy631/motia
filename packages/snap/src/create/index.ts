@@ -232,10 +232,11 @@ export const create = async ({ projectName, template, cursorEnabled }: Args): Pr
   await templates[template](stepsDir)
 
   await wrapUpSetup(rootDir)
-  await executeCommand(`npm run generate-types`, rootDir)
 
   if (template === 'python') {
     await executeCommand('motia install', rootDir)
+  } else {
+    await executeCommand(`npm run generate-types`, rootDir)
   }
 
   return
