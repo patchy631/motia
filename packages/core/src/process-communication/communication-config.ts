@@ -12,7 +12,7 @@ export function createCommunicationConfig(command: string): CommunicationConfig 
   
   const spawnOptions: SpawnOptions = {
     stdio: type === 'rpc' 
-      ? ['inherit', 'pipe', 'inherit']  // RPC: capture stdout
+      ? ['pipe', 'pipe', 'inherit']  // RPC: capture stdout
       : ['inherit', 'inherit', 'inherit', 'ipc']  // IPC: include IPC channel
   }
 
