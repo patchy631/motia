@@ -3,21 +3,10 @@ import cors from 'cors'
 import express, { Express, Request, Response } from 'express'
 import http from 'http'
 import { Server as WsServer } from 'ws'
-import { analyticsEndpoint } from './analytics-endpoint'
-import { trackEvent } from './analytics/utils'
-import { callStepFile } from './call-step-file'
 import { CronManager, setupCronHandlers } from './cron-handler'
-import { flowsConfigEndpoint } from './flows-config-endpoint'
 import { flowsEndpoint } from './flows-endpoint'
-import { generateTraceId } from './generate-trace-id'
 import { isApiStep } from './guards'
-import { LockedData } from './locked-data'
 import { globalLogger } from './logger'
-import { LoggerFactory } from './logger-factory'
-import { createSocketServer } from './socket-server'
-import { systemSteps } from './steps'
-import { apiEndpoints } from './streams/api-endpoints'
-import { Log, LogsStream } from './streams/logs-stream'
 import {
   ApiRequest,
   ApiResponse,
@@ -27,7 +16,28 @@ import {
   InternalStateManager,
   Step,
 } from './types'
+import { systemSteps } from './steps'
+import { LockedData } from './locked-data'
+import { callStepFile } from './call-step-file'
+import { LoggerFactory } from './logger-factory'
+import { generateTraceId } from './generate-trace-id'
+import { flowsConfigEndpoint } from './flows-config-endpoint'
+import { apiEndpoints } from './streams/api-endpoints'
+import { createSocketServer } from './socket-server'
+import { Log, LogsStream } from './streams/logs-stream'
 import { BaseStreamItem, MotiaStream, StateStreamEvent, StateStreamEventChannel } from './types-stream'
+import { analyticsEndpoint } from './analytics-endpoint'
+import { trackEvent } from './analytics/utils'
+import {
+  getTraces,
+  getTrace,
+  getTraceWithDetails,
+  getTraceGroups,
+  getTraceGroup,
+  getObservabilityStats,
+  correlateTraces,
+  continueCorrelation
+} from './observability-endpoint'
 
 export type MotiaServer = {
   app: Express
@@ -259,6 +269,15 @@ export const createServer = async (
   flowsEndpoint(lockedData, app)
   flowsConfigEndpoint(app, process.cwd())
   analyticsEndpoint(app, process.cwd())
+
+  app.get('/motia/traces', getTraces)
+  app.get('/motia/traces/:traceId', getTrace)
+  app.get('/motia/traces/details/:traceId', getTraceWithDetails)
+  app.get('/motia/trace-groups', getTraceGroups)
+  app.get('/motia/trace-groups/:correlationId', getTraceGroup)
+  app.get('/motia/observability/stats', getObservabilityStats)
+  app.post('/motia/traces/correlate', correlateTraces)
+  app.post('/motia/traces/continue-correlation', continueCorrelation)
 
   server.on('error', (error) => {
     console.error('Server error:', error)
