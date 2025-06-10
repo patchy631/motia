@@ -10,7 +10,7 @@ export class TraceBuilder {
     this.maxTraces = maxTraces
   }
 
-  processEvent(event: ObservabilityEvent): void {
+  processEvent(event: ObservabilityEvent): Trace {
     switch (event.eventType) {
       case 'step_start':
         this.handleStepStart(event)
@@ -32,6 +32,8 @@ export class TraceBuilder {
     }
 
     this.evictOldTraces()
+    
+    return this.getTraceWithDetails(event.traceId)!
   }
 
   private handleStepStart(event: ObservabilityEvent): void {

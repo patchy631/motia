@@ -10,12 +10,10 @@ import { formatDistanceToNow } from 'date-fns'
 interface TraceTimelineProps {
   trace?: Trace
   group?: TraceGroup
-  onLoadDetails?: (traceId: string) => Promise<Trace>
 }
 
-export const TraceTimeline = ({ trace, group, onLoadDetails }: TraceTimelineProps) => {
+export const TraceTimeline = ({ trace, group }: TraceTimelineProps) => {
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set())
-  const [loadingDetails, setLoadingDetails] = useState<Set<string>>(new Set())
 
   const formatDuration = (duration?: number) => {
     if (!duration) return 'N/A'
@@ -62,22 +60,6 @@ export const TraceTimeline = ({ trace, group, onLoadDetails }: TraceTimelineProp
       newExpanded.delete(stepKey)
     } else {
       newExpanded.add(stepKey)
-      
-      // Load details if not already loaded and onLoadDetails is provided
-      if (traceId && onLoadDetails && trace && !trace.steps.find(s => s.name === stepName)?.details) {
-        setLoadingDetails(prev => new Set(prev).add(stepKey))
-        try {
-          await onLoadDetails(traceId)
-        } catch (error) {
-          console.error('Failed to load trace details:', error)
-        } finally {
-          setLoadingDetails(prev => {
-            const newSet = new Set(prev)
-            newSet.delete(stepKey)
-            return newSet
-          })
-        }
-      }
     }
     
     setExpandedSteps(newExpanded)
@@ -200,7 +182,6 @@ export const TraceTimeline = ({ trace, group, onLoadDetails }: TraceTimelineProp
             const widthPercent = ((step.duration || 0) / timelineWidth) * 100
             const stepKey = `${traceId || trace?.id}-${step.name}`
             const isExpanded = expandedSteps.has(stepKey)
-            const isLoading = loadingDetails.has(stepKey)
 
             return (
               <Collapsible key={index} open={isExpanded} onOpenChange={() => toggleStepExpansion(step.name, traceId)}>
@@ -267,11 +248,7 @@ export const TraceTimeline = ({ trace, group, onLoadDetails }: TraceTimelineProp
                   
                   <CollapsibleContent>
                     <div className="px-3 pb-3">
-                      {isLoading ? (
-                        <div className="text-center py-4 text-muted-foreground">
-                          Loading operation details...
-                        </div>
-                      ) : step.details ? (
+                      {step.details ? (
                         renderOperationDetails(step.details, baseTime)
                       ) : (
                         <div className="text-center py-4 text-muted-foreground">

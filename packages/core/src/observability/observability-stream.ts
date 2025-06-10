@@ -1,15 +1,8 @@
-import { StateStream } from '../state-stream'
-import { ObservabilityEvent } from './types'
-import { BaseStreamItem } from '../types-stream'
+import { Trace } from './types'
+import { FileStreamAdapter } from '../streams/adapters/file-stream-adapter'
 
-export class ObservabilityStream extends StateStream<ObservabilityEvent> {
-  get = async (): Promise<BaseStreamItem<ObservabilityEvent> | null> => null
-  delete = async (): Promise<BaseStreamItem<ObservabilityEvent> | null> => null
-  getGroup = async (): Promise<BaseStreamItem<ObservabilityEvent>[]> => []
-
-  async set(_: string, id: string, data: ObservabilityEvent): Promise<BaseStreamItem<ObservabilityEvent> | null> {
-    const streamItem: BaseStreamItem<ObservabilityEvent> = { ...data, id }
-    await this.send({ groupId: 'observability' }, { type: 'observability_event', data: streamItem })
-    return streamItem
+export class ObservabilityStream extends FileStreamAdapter<Trace> {
+  constructor() {
+    super(process.cwd(), 'observability-stream')
   }
-} 
+}

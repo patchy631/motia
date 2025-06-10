@@ -5,6 +5,7 @@ import { generateTraceId } from './generate-trace-id'
 import { LockedData } from './locked-data'
 import { globalLogger } from './logger'
 import { CronConfig, EventManager, InternalStateManager, Step } from './types'
+import { StreamAdapter } from './streams/adapters/stream-adapter'
 
 export type CronManager = {
   createCronJob: (step: Step<CronConfig>) => void
@@ -17,6 +18,7 @@ export const setupCronHandlers = (
   eventManager: EventManager,
   state: InternalStateManager,
   loggerFactory: LoggerFactory,
+  observabilityStream: StreamAdapter<any>,
 ) => {
   const cronJobs = new Map<string, cron.ScheduledTask>()
   const printer = lockedData.printer

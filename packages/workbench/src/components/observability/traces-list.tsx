@@ -1,7 +1,7 @@
 import { Trace, TraceGroup } from '@/types/observability'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, Clock, CheckCircle, XCircle, Play } from 'lucide-react'
+import { Clock, CheckCircle, XCircle, Play } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface TracesListProps {
@@ -11,7 +11,6 @@ interface TracesListProps {
   selectedGroup: TraceGroup | null
   onTraceSelect: (trace: Trace) => void
   onGroupSelect: (group: TraceGroup) => void
-  loading: boolean
 }
 
 export const TracesList = ({
@@ -20,8 +19,7 @@ export const TracesList = ({
   selectedTrace,
   selectedGroup,
   onTraceSelect,
-  onGroupSelect,
-  loading
+  onGroupSelect
 }: TracesListProps) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -59,14 +57,6 @@ export const TracesList = ({
     if (!duration) return 'N/A'
     if (duration < 1000) return `${duration}ms`
     return `${(duration / 1000).toFixed(1)}s`
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
-    )
   }
 
   return (
@@ -150,14 +140,14 @@ export const TracesList = ({
                 
                 <div className="text-xs text-muted-foreground space-y-1">
                   <div className="flex justify-between">
-                    <span>{trace.metadata.completedSteps}/{trace.metadata.totalSteps} steps</span>
+                    <span>{trace.metadata?.completedSteps || 0}/{trace.metadata?.totalSteps || 0} steps</span>
                     <span>{trace.entryPoint.type}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Duration: {formatDuration(trace.duration)}</span>
                     <span>{formatDistanceToNow(trace.startTime)} ago</span>
                   </div>
-                  {trace.metadata.errorCount > 0 && (
+                  {trace.metadata?.errorCount > 0 && (
                     <div className="text-red-600">
                       {trace.metadata.errorCount} errors
                     </div>

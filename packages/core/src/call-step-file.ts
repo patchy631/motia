@@ -8,6 +8,8 @@ import { BaseStreamItem } from './types-stream'
 import { ProcessManager } from './process-communication/process-manager'
 import { trackEvent } from './analytics/utils'
 import { observabilityService } from './observability/observability-service'
+import { StreamAdapter } from './streams/adapters/stream-adapter'
+import { Trace } from './observability/types'
 
 type StateGetInput = { traceId: string; key: string }
 type StateSetInput = { traceId: string; key: string; value: unknown }
@@ -57,6 +59,7 @@ type CallStepFileOptions = {
   printer: Printer
   data?: any
   contextInFirstArg: boolean
+  observabilityStream?: StreamAdapter<Trace>
 }
 
 export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData | undefined> => {
@@ -67,9 +70,10 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
     step.config.flows,
     step.config.name,
     options.logger.isVerbose,
-    (options.logger as any).logStream
+    (options.logger as any).logStream,
+    options.observabilityStream,
   )
-  
+
   const flows = step.config.flows
 
   return new Promise((resolve, reject) => {
@@ -96,32 +100,32 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
       .then(() => {
         processManager.handler<StateGetInput>('close', async () => processManager.kill())
         processManager.handler<unknown>('log', async (input: unknown) => logger.log(input))
-        
+
         processManager.handler<StateGetInput, unknown>('state.get', async (input) => {
           logger.logStateOperation(step.config.name, 'get', input.key)
           return state.get(input.traceId, input.key)
         })
-        
+
         processManager.handler<StateSetInput, unknown>('state.set', async (input) => {
           logger.logStateOperation(step.config.name, 'set', input.key)
           return state.set(input.traceId, input.key, input.value)
         })
-        
+
         processManager.handler<StateDeleteInput, unknown>('state.delete', async (input) => {
           logger.logStateOperation(step.config.name, 'delete', input.key)
           return state.delete(input.traceId, input.key)
         })
-        
+
         processManager.handler<StateClearInput, void>('state.clear', async (input) => {
           logger.logStateOperation(step.config.name, 'clear')
           return state.clear(input.traceId)
         })
-        
+
         processManager.handler<StateStreamGetInput>(`state.getGroup`, (input) => state.getGroup(input.groupId))
         processManager.handler<TData, void>('result', async (input) => {
           result = input
         })
-        
+
         processManager.handler<Event, unknown>('emit', async (input) => {
           if (!isAllowedToEmit(step, input.topic)) {
             logger.logEmitOperation(step.config.name, input.topic, false)
@@ -139,17 +143,17 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
             logger.logStreamOperation(step.config.name, name, 'get')
             return stateStream.get(input.groupId, input.id)
           })
-          
+
           processManager.handler<StateStreamMutateInput>(`streams.${name}.set`, async (input) => {
             logger.logStreamOperation(step.config.name, name, 'set')
             return stateStream.set(input.groupId, input.id, input.data)
           })
-          
+
           processManager.handler<StateStreamGetInput>(`streams.${name}.delete`, async (input) => {
             logger.logStreamOperation(step.config.name, name, 'delete')
             return stateStream.delete(input.groupId, input.id)
           })
-          
+
           processManager.handler<StateStreamGetInput>(`streams.${name}.getGroup`, async (input) => {
             logger.logStreamOperation(step.config.name, name, 'get')
             return stateStream.getGroup(input.groupId)
@@ -170,7 +174,7 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
         processManager.onProcessClose((code) => {
           processManager.close()
           const duration = Date.now() - stepStartTime
-          
+
           if (code !== 0 && code !== null) {
             const error = { message: `Process exited with code ${code}`, code }
             logger.logStepEnd(step.config.name, duration, false, error)
@@ -186,9 +190,9 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
           processManager.close()
           const duration = Date.now() - stepStartTime
           const errorObj = { message: error.message, code: error.code }
-          
+
           logger.logStepEnd(step.config.name, duration, false, errorObj)
-          
+
           if (error.code === 'ENOENT') {
             trackEvent('step_execution_error', {
               stepName: step.config.name,
@@ -205,9 +209,9 @@ export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData
       .catch((error) => {
         const duration = Date.now() - stepStartTime
         const errorObj = { message: error.message, code: error.code }
-        
+
         logger.logStepEnd(step.config.name, duration, false, errorObj)
-        
+
         trackEvent('step_execution_error', {
           stepName: step.config.name,
           traceId,

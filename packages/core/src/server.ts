@@ -28,16 +28,10 @@ import { Log, LogsStream } from './streams/logs-stream'
 import { BaseStreamItem, MotiaStream, StateStreamEvent, StateStreamEventChannel } from './types-stream'
 import { analyticsEndpoint } from './analytics-endpoint'
 import { trackEvent } from './analytics/utils'
-import {
-  getTraces,
-  getTrace,
-  getTraceWithDetails,
-  getTraceGroups,
-  getTraceGroup,
-  getObservabilityStats,
-  correlateTraces,
-  continueCorrelation
-} from './observability-endpoint'
+import { metricsEndpoint } from './metrics-endpoint'
+import { ObservabilityStream } from './observability/observability-stream'
+import { Trace } from './observability/types'
+import { createStepHandlers, MotiaEventManager } from './step-handlers'
 
 export type MotiaServer = {
   app: Express
@@ -47,6 +41,7 @@ export type MotiaServer = {
   removeRoute: (step: Step<ApiRouteConfig>) => void
   addRoute: (step: Step<ApiRouteConfig>) => void
   cronManager: CronManager
+  motiaEventManager: MotiaEventManager
 }
 
 type MotiaServerConfig = {
@@ -159,9 +154,21 @@ export const createServer = async (
     },
   })()
 
+  const observabilityStream = lockedData.createStream<Trace>({
+    filePath: '__motia.observability',
+    hidden: true,
+    config: {
+      name: '__motia.observability',
+      baseConfig: { storageType: 'custom', factory: () => new ObservabilityStream() },
+      schema: null as never,
+    },
+  })()
+
   const allSteps = [...systemSteps, ...lockedData.activeSteps]
   const loggerFactory = new LoggerFactory(config.isVerbose, logStream)
-  const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory)
+
+  const cronManager = setupCronHandlers(lockedData, eventManager, state, loggerFactory, observabilityStream)
+  const motiaEventManager = createStepHandlers(lockedData, eventManager, state, observabilityStream)
 
   const asyncHandler = (step: Step<ApiRouteConfig>) => {
     return async (req: Request, res: Response) => {
@@ -190,6 +197,7 @@ export const createServer = async (
           eventManager,
           state,
           traceId,
+          observabilityStream,
         })
 
         if (!result) {
@@ -269,15 +277,7 @@ export const createServer = async (
   flowsEndpoint(lockedData, app)
   flowsConfigEndpoint(app, process.cwd())
   analyticsEndpoint(app, process.cwd())
-
-  app.get('/motia/traces', getTraces)
-  app.get('/motia/traces/:traceId', getTrace)
-  app.get('/motia/traces/details/:traceId', getTraceWithDetails)
-  app.get('/motia/trace-groups', getTraceGroups)
-  app.get('/motia/trace-groups/:correlationId', getTraceGroup)
-  app.get('/motia/observability/stats', getObservabilityStats)
-  app.post('/motia/traces/correlate', correlateTraces)
-  app.post('/motia/traces/continue-correlation', continueCorrelation)
+  metricsEndpoint(app)
 
   server.on('error', (error) => {
     console.error('Server error:', error)
@@ -288,5 +288,5 @@ export const createServer = async (
     socketServer.close()
   }
 
-  return { app, server, socketServer, close, removeRoute, addRoute, cronManager }
+  return { app, server, socketServer, close, removeRoute, addRoute, cronManager, motiaEventManager }
 }

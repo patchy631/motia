@@ -2,6 +2,7 @@ import { Event, EventConfig, EventManager, InternalStateManager, Step } from './
 import { globalLogger } from './logger'
 import { callStepFile } from './call-step-file'
 import { LockedData } from './locked-data'
+import { StreamAdapter } from './streams/adapters/stream-adapter'
 
 export type MotiaEventManager = {
   createHandler: (step: Step<EventConfig>) => void
@@ -12,6 +13,7 @@ export const createStepHandlers = (
   lockedData: LockedData,
   eventManager: EventManager,
   state: InternalStateManager,
+  observabilityStream: StreamAdapter<any>,
 ): MotiaEventManager => {
   const eventSteps = lockedData.eventSteps()
   const printer = lockedData.printer
@@ -51,6 +53,7 @@ export const createStepHandlers = (
               data,
               traceId,
               logger,
+              observabilityStream,
             })
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

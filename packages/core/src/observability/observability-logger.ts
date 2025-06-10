@@ -1,9 +1,9 @@
 import { Logger } from '../logger'
 import { ObservabilityEvent } from './types'
-import { StateStream } from '../state-stream'
+import { StreamAdapter } from '../streams/adapters/stream-adapter'
 
 export class ObservabilityLogger extends Logger {
-  private observabilityStream?: StateStream<ObservabilityEvent>
+  private processEvent?: (event: ObservabilityEvent) => void
   protected readonly observabilityTraceId: string
   protected readonly observabilityFlows: string[] | undefined
   protected readonly observabilityStep: string
@@ -13,11 +13,11 @@ export class ObservabilityLogger extends Logger {
     flows: string[] | undefined,
     step: string,
     isVerbose: boolean,
-    logStream?: StateStream<any>,
-    observabilityStream?: StateStream<ObservabilityEvent>
+    logStream?: StreamAdapter<any>,
+    processEvent?: (event: ObservabilityEvent) => void
   ) {
     super(traceId, flows, step, isVerbose, logStream)
-    this.observabilityStream = observabilityStream
+    this.processEvent = processEvent
     this.observabilityTraceId = traceId
     this.observabilityFlows = flows
     this.observabilityStep = step
@@ -30,33 +30,33 @@ export class ObservabilityLogger extends Logger {
       meta.step as string,
       this.isVerbose,
       (this as any).logStream,
-      this.observabilityStream
+      this.processEvent
     ) as this
   }
 
-  private async emitObservabilityEvent(event: Omit<ObservabilityEvent, 'timestamp'>): Promise<void> {
-    if (!this.observabilityStream) return
+  private emitObservabilityEvent(event: Omit<ObservabilityEvent, 'timestamp'>): void {
+    if (!this.processEvent) return
 
     const observabilityEvent: ObservabilityEvent = {
       ...event,
       timestamp: Date.now()
     }
 
-    await this.observabilityStream.set('default', `${event.traceId}-${Date.now()}`, observabilityEvent)
+    this.processEvent(observabilityEvent)
   }
 
   async logStepStart(stepName: string, correlationId?: string): Promise<void> {
-    await this.emitObservabilityEvent({
+    this.emitObservabilityEvent({
       eventType: 'step_start',
       traceId: this.observabilityTraceId,
       correlationId,
       stepName
     })
-    this.info(`Step started: ${stepName}`)
+    this.debug(`Step started: ${stepName}`)
   }
 
   async logStepEnd(stepName: string, duration: number, success: boolean, error?: { message: string, code?: string | number }): Promise<void> {
-    await this.emitObservabilityEvent({
+    this.emitObservabilityEvent({
       eventType: 'step_end',
       traceId: this.observabilityTraceId,
       stepName,
@@ -65,14 +65,14 @@ export class ObservabilityLogger extends Logger {
     })
     
     if (success) {
-      this.info(`Step completed: ${stepName} (${duration}ms)`)
+      this.debug(`Step completed: ${stepName} (${duration}ms)`)
     } else {
       this.error(`Step failed: ${stepName} (${duration}ms)`, error)
     }
   }
 
   async logStateOperation(stepName: string, operation: 'get' | 'set' | 'delete' | 'clear', key?: string, success: boolean = true): Promise<void> {
-    await this.emitObservabilityEvent({
+    this.emitObservabilityEvent({
       eventType: 'state_op',
       traceId: this.observabilityTraceId,
       stepName,
@@ -81,7 +81,7 @@ export class ObservabilityLogger extends Logger {
   }
 
   async logEmitOperation(stepName: string, topic: string, success: boolean = true): Promise<void> {
-    await this.emitObservabilityEvent({
+    this.emitObservabilityEvent({
       eventType: 'emit_op',
       traceId: this.observabilityTraceId,
       stepName,
@@ -90,7 +90,7 @@ export class ObservabilityLogger extends Logger {
   }
 
   async logStreamOperation(stepName: string, streamName: string, operation: 'get' | 'set' | 'delete' | 'clear', success: boolean = true): Promise<void> {
-    await this.emitObservabilityEvent({
+    this.emitObservabilityEvent({
       eventType: 'stream_op',
       traceId: this.observabilityTraceId,
       stepName,
@@ -99,7 +99,7 @@ export class ObservabilityLogger extends Logger {
   }
 
   async logCorrelationStart(correlationId: string, correlationMethod: 'automatic' | 'manual' | 'state-based' | 'event-based', context?: any): Promise<void> {
-    await this.emitObservabilityEvent({
+    this.emitObservabilityEvent({
       eventType: 'correlation_start',
       traceId: this.observabilityTraceId,
       correlationId,
@@ -109,7 +109,7 @@ export class ObservabilityLogger extends Logger {
   }
 
   async logCorrelationContinue(correlationId: string, parentTraceId: string): Promise<void> {
-    await this.emitObservabilityEvent({
+    this.emitObservabilityEvent({
       eventType: 'correlation_continue',
       traceId: this.observabilityTraceId,
       correlationId,

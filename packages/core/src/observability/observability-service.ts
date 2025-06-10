@@ -1,36 +1,13 @@
 import { TraceBuilder } from './trace-builder'
-import { ObservabilityStream } from './observability-stream'
 import { ObservabilityLogger } from './observability-logger'
-import { Trace, TraceGroup, TraceFilter, TraceSearchResult, ObservabilityEvent } from './types'
-import { StateStream } from '../state-stream'
+import { Trace, TraceGroup, TraceFilter, TraceSearchResult } from './types'
+import { StreamAdapter } from '../streams/adapters/stream-adapter'
 
 export class ObservabilityService {
   private traceBuilder: TraceBuilder
-  private observabilityStream: ObservabilityStream
 
   constructor(maxTraces: number = 50) {
     this.traceBuilder = new TraceBuilder(maxTraces)
-    this.observabilityStream = new ObservabilityStream()
-    
-    // Ensure all events are processed by the trace builder
-    const originalSet = this.observabilityStream.set.bind(this.observabilityStream)
-    this.observabilityStream.set = async (groupId: string, id: string, data: any) => {
-      const result = await originalSet(groupId, id, data)
-      if (result) {
-        const observabilityEvent: ObservabilityEvent = {
-          eventType: result.eventType,
-          traceId: result.traceId,
-          correlationId: result.correlationId,
-          parentTraceId: result.parentTraceId,
-          stepName: result.stepName,
-          timestamp: result.timestamp,
-          duration: result.duration,
-          metadata: result.metadata
-        }
-        this.traceBuilder.processEvent(observabilityEvent)
-      }
-      return result
-    }
   }
 
   createObservabilityLogger(
@@ -38,7 +15,8 @@ export class ObservabilityService {
     flows: string[] | undefined,
     step: string,
     isVerbose: boolean,
-    logStream?: StateStream<any>
+    logStream?: StreamAdapter<any>,
+    observabilityStream?: StreamAdapter<any>,
   ): ObservabilityLogger {
     return new ObservabilityLogger(
       traceId,
@@ -46,7 +24,12 @@ export class ObservabilityService {
       step,
       isVerbose,
       logStream,
-      this.observabilityStream
+      (event) => {
+        const trace = this.traceBuilder.processEvent(event)
+        if (observabilityStream) {
+          observabilityStream.set('default', trace.id, trace);
+        }
+      }
     )
   }
 
@@ -78,12 +61,8 @@ export class ObservabilityService {
     return this.traceBuilder.getStats()
   }
 
-  getObservabilityStream(): ObservabilityStream {
-    return this.observabilityStream
-  }
-
   correlateTrace(traceId: string, correlationId: string, method: 'automatic' | 'manual' | 'state-based' | 'event-based' = 'manual', context?: any): void {
-    const event: ObservabilityEvent = {
+    this.traceBuilder.processEvent({
       eventType: 'correlation_start',
       traceId,
       correlationId,
@@ -93,22 +72,18 @@ export class ObservabilityService {
         correlationMethod: method,
         correlationContext: context
       }
-    }
-
-    this.traceBuilder.processEvent(event)
+    })
   }
 
   continueCorrelation(traceId: string, correlationId: string, parentTraceId: string): void {
-    const event: ObservabilityEvent = {
+    this.traceBuilder.processEvent({
       eventType: 'correlation_continue',
       traceId,
       correlationId,
       parentTraceId,
       stepName: 'system',
       timestamp: Date.now()
-    }
-
-    this.traceBuilder.processEvent(event)
+    })
   }
 }
 
