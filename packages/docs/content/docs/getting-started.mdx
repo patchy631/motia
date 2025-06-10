@@ -20,16 +20,12 @@ Execute the following command and Motia will scaffold a new project and install 
 ```bash
 npx motia@latest create -n <your-project-name>
 ```
-  ![terminal window showing create command](./img/qs-cmd.png)
+  ![terminal window showing create command](./img/output.gif)
  This command will:
 - scaffold a new Motia project,
 - install all the dependencies, and
 - create empty files for different steps.
-  ![the create command scaffolds a new Motia project, installs all the dependencies, and creates empty files for different steps.](./img/qs-steps.png)
 
-<Callout title="Steps" type="info">
-  Steps are to a Motia app what Components are to a React app. Steps are the fundamental, building blocks of a Motia app. They are reusable units of code, each of which can recieve an input data, perform logic and output data or trigger another event. Read more about them in our [introductory blog](https://dev.to/motiadev/introducing-motia-3oja-temp-slug-3967652?preview=c67eba085f74a7cf7b2c509a1548676bce436734e51ef49f52b1927b110de0fa2e214aa713e90c7a3301332e5d0eb658a6d1bdacb9a4777d93f37b52).
-</Callout>
 </Step>
 <Step>
 ## Write a step
@@ -59,7 +55,9 @@ exports.handler = async () => {
   - `name: 'HelloWorld'` -  Name for this step
   - `emits: []` -  Add follow-up event(s).
   - `flows: ['default']` -  Flow to which this step belongs. By default, all steps belong to the _default_ flow.
-
+<Callout title="Steps" type="info">
+  Steps are to a Motia app what Components are to a React app. Steps are the fundamental, building blocks of a Motia app. They are reusable units of code, each of which can recieve an input data, perform logic and output data or trigger another event. Read more about them in our [introductory blog](https://dev.to/motiadev/introducing-motia-3oja-temp-slug-3967652?preview=c67eba085f74a7cf7b2c509a1548676bce436734e51ef49f52b1927b110de0fa2e214aa713e90c7a3301332e5d0eb658a6d1bdacb9a4777d93f37b52).
+</Callout>
 > Everything is a Step. Steps are like React Components - reusable, isolated units of logic that handle specific tasks. Combine individual steps and you get a workflow. Learn how to [think in Steps](/docs/what-are-steps).
 </Step>
 <Step>
@@ -70,9 +68,8 @@ exports.handler = async () => {
   1. Logs: To get structured logs for each step execution, including inputs, outputs, and errors.
   2. States: To view the internal state and data passed between steps using `traceID` and `field`.
   3. Endpoints: To see and test all your API endpoints from within the Workbench:
-    ![You can test your API endpoints from Motia Workbench](./img/qs-api.png)
   4. Flows: To visually inspect how your steps are connected and triggered, what each step does, which language it was written in, what events does it subscribe/emit to and more:
-  ![Motia Workbench shows you the flow of steps and data](./img/qs-flow.png)
+  ![Motia Workbench shows you the flow of steps and data](./img/output1.gif)
   > You can click on any step to know more about it - the language it was written in, what events does it emit/subscribe to and more!
 </Step>
 
@@ -105,25 +102,25 @@ Here's where you can go to next, if you wanna dive deeper:
   >
   Adopt a new mental model for AI-native, modern backends - one Step at a time.
   </Card>
-
-  <Card
-  href="/docs/understanding-steps"
-  title="Understanding Steps"
-  icon="🧱"
->
-  Get to know the core building block of Motia - how Steps receive, process, and emit data.
-</Card>
-  <Card
+ <Card
     href="/docs/beyond-hello-world"
     title="Beyond hello world"
     icon="🔀"
   >
   Extend the _Hello World_ app from our quickest start and get hands-on with more Motia features.
   </Card>
+  <Card
+  href="/docs/foundations/steps"
+  title="What are Steps"
+  icon="🧱"
+>
+  Get to know the core building block of Motia - how Steps receive, process, and emit data.
+</Card>
+ 
     <Card
-    href="/docs/beyond-hello-world"
-    title="Automate real-world tasks"
-    icon="✏️"
+    href="/docs/foundations/types-of-step"
+    title="Types of Steps"
+    icon="📦"
   >
   Follow guides to automate tasks with AI and APIs - like sending emails with GPT.
   </Card>
