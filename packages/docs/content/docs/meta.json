@@ -1,4 +1,4 @@
 {
   "title": "Motia",
-  "pages": ["index", "getting-started","what-are-steps", "beyond-hello-world", "concepts", "platform", "tutorials", "guides", "community"]
+  "pages": ["index", "getting-started", "what-are-steps", "beyond-hello-world", "foundations", "community", "api-ref"]
 }
