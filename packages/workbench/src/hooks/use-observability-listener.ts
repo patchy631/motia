@@ -3,13 +3,13 @@ import { Trace, TraceFilter } from '@/types/observability'
 import { useStreamGroup } from '@motiadev/stream-client-react'
 
 export const useObservabilityListener = (filters: TraceFilter = {}) => {
-  const { data: allTraces } = useStreamGroup<Trace>({ streamName: '__motia.observability', groupId: 'default' })
+  const { data: allTraces } = useStreamGroup<Trace>({ streamName: '__motia.observability', groupId: 'traces' })
 
   const filteredTraces = useMemo(() => {
     if (!allTraces) return []
 
     return allTraces
-      .filter(trace => {
+      .filter((trace) => {
         if (filters.flowName && trace.flowName !== filters.flowName) {
           return false
         }
@@ -19,8 +19,8 @@ export const useObservabilityListener = (filters: TraceFilter = {}) => {
         }
 
         if (filters.stepName) {
-          const hasMatchingStep = trace.steps.some(step => 
-            step.name.toLowerCase().includes(filters.stepName!.toLowerCase())
+          const hasMatchingStep = trace.steps.some((step) =>
+            step.name.toLowerCase().includes(filters.stepName!.toLowerCase()),
           )
           if (!hasMatchingStep) {
             return false
@@ -45,10 +45,8 @@ export const useObservabilityListener = (filters: TraceFilter = {}) => {
       .sort((a, b) => b.startTime - a.startTime)
   }, [allTraces, filters])
 
-  const limitedTraces = useMemo(() => {
+  return useMemo(() => {
     if (!filters.limit) return filteredTraces
     return filteredTraces.slice(0, filters.limit)
   }, [filteredTraces, filters.limit])
-
-  return limitedTraces
-} 
+}

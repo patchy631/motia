@@ -28,7 +28,6 @@ import { Log, LogsStream } from './streams/logs-stream'
 import { BaseStreamItem, MotiaStream, StateStreamEvent, StateStreamEventChannel } from './types-stream'
 import { analyticsEndpoint } from './analytics-endpoint'
 import { trackEvent } from './analytics/utils'
-import { metricsEndpoint } from './metrics-endpoint'
 import { ObservabilityStream } from './observability/observability-stream'
 import { Trace } from './observability/types'
 import { createStepHandlers, MotiaEventManager } from './step-handlers'
@@ -277,7 +276,6 @@ export const createServer = async (
   flowsEndpoint(lockedData, app)
   flowsConfigEndpoint(app, process.cwd())
   analyticsEndpoint(app, process.cwd())
-  metricsEndpoint(app)
 
   server.on('error', (error) => {
     console.error('Server error:', error)

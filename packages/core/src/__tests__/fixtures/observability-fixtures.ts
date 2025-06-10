@@ -1,6 +1,6 @@
 import { ObservabilityEvent, Trace, TraceGroup, TraceStep } from '../../observability/types'
-import { StateStream } from '../../state-stream'
 import { BaseStreamItem } from '../../types-stream'
+import { StreamAdapter } from '../../streams/adapters/stream-adapter'
 
 export const createMockObservabilityEvent = (overrides: Partial<ObservabilityEvent> = {}): ObservabilityEvent => ({
   eventType: 'step_start',
@@ -52,7 +52,7 @@ export const createMockTraceGroup = (overrides: Partial<TraceGroup> = {}): Trace
   ...overrides
 })
 
-export class MockStateStream<T> extends StateStream<T> {
+export class MockStateStream<T> extends StreamAdapter<T> {
   private data = new Map<string, T>()
   private mockSend = jest.fn()
 
@@ -61,7 +61,7 @@ export class MockStateStream<T> extends StateStream<T> {
     return data ? { id, ...data } as BaseStreamItem<T> : null
   }
 
-  set = async (groupId: string, id: string, data: T): Promise<BaseStreamItem<T> | null> => {
+  set = async (groupId: string, id: string, data: T): Promise<BaseStreamItem<T>> => {
     this.data.set(`${groupId}-${id}`, data)
     const streamItem = { id, ...data } as BaseStreamItem<T>
     await this.send({ groupId }, { type: 'test_event', data: streamItem })
@@ -103,19 +103,62 @@ export class MockStateStream<T> extends StateStream<T> {
   }
 }
 
-export class MockObservabilityStream extends StateStream<ObservabilityEvent> {
-  private data = new Map<string, ObservabilityEvent>()
+export class MockObservabilityStream extends StreamAdapter<any> {
+  private traces = new Map<string, Trace>()
+  private groups = new Map<string, TraceGroup>()
   private mockSend = jest.fn()
 
-  get = async (): Promise<BaseStreamItem<ObservabilityEvent> | null> => null
+  get = async (groupId: string, id: string): Promise<any | null> => {
+    if (groupId === 'traces' || groupId === 'default') {
+      const trace = this.traces.get(id)
+      return trace || null
+    }
+    if (groupId === 'groups') {
+      const group = this.groups.get(id)
+      return group || null
+    }
+    return null
+  }
 
-  delete = async (): Promise<BaseStreamItem<ObservabilityEvent> | null> => null
+  delete = async (groupId: string, id: string): Promise<any | null> => {
+    if (groupId === 'traces' || groupId === 'default') {
+      const trace = this.traces.get(id)
+      if (trace) {
+        this.traces.delete(id)
+        return trace
+      }
+    }
+    if (groupId === 'groups') {
+      const group = this.groups.get(id)
+      if (group) {
+        this.groups.delete(id)
+        return group
+      }
+    }
+    return null
+  }
 
-  getGroup = async (): Promise<BaseStreamItem<ObservabilityEvent>[]> => []
+  getGroup = async (groupId: string): Promise<any[]> => {
+    if (groupId === 'traces' || groupId === 'default') {
+      return Array.from(this.traces.values())
+    }
+    if (groupId === 'groups') {
+      return Array.from(this.groups.values())
+    }
+    return []
+  }
 
-  set = async (_: string, id: string, data: ObservabilityEvent): Promise<BaseStreamItem<ObservabilityEvent> | null> => {
-    this.data.set(id, data)
-    const streamItem: BaseStreamItem<ObservabilityEvent> = { ...data, id }
+  set = async (groupId: string, id: string, data: any): Promise<BaseStreamItem<any>> => {
+    if (groupId === 'groups') {
+      this.groups.set(id, data as TraceGroup)
+      const streamItem: BaseStreamItem<any> = { ...data, id }
+      await this.send({ groupId: 'observability' }, { type: 'observability_group_event', data: streamItem })
+      return streamItem
+    }
+    
+    // Handle traces (both 'traces' and 'default' groupId map to traces)
+    this.traces.set(id, data as Trace)
+    const streamItem: BaseStreamItem<any> = { ...data, id }
     await this.send({ groupId: 'observability' }, { type: 'observability_event', data: streamItem })
     return streamItem
   }
@@ -127,6 +170,15 @@ export class MockObservabilityStream extends StateStream<ObservabilityEvent> {
   }
 
   getData() {
-    return this.data
+    return this.traces
+  }
+
+  getGroupData() {
+    return this.groups
+  }
+
+  clear() {
+    this.traces.clear()
+    this.groups.clear()
   }
 } 

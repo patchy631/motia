@@ -1,44 +1,36 @@
-import { useState, useEffect } from 'react'
-import { ObservabilityStats as StatsType } from '@/types/observability'
+import { ObservabilityStats as StatsType, Trace, TraceGroup } from '@/types/observability'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Activity, Clock, CheckCircle, XCircle, TrendingUp } from 'lucide-react'
 
-export const ObservabilityStats = () => {
-  const [stats, setStats] = useState<StatsType | null>(null)
-  const [loading, setLoading] = useState(true)
+const calculateStats = (traces: Trace[], groups: TraceGroup[]): StatsType => {
+  const runningTraces = traces.filter(t => t.status === 'running').length
+  const completedTraces = traces.filter(t => t.status === 'completed').length
+  const failedTraces = traces.filter(t => t.status === 'failed').length
+  
+  // Calculate average duration for completed traces only
+  const completedTracesWithDuration = traces.filter(t => t.status === 'completed' && t.duration)
+  const averageDuration = completedTracesWithDuration.length > 0
+    ? completedTracesWithDuration.reduce((sum, t) => sum + t.duration!, 0) / completedTracesWithDuration.length
+    : 0
 
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/motia/observability/stats')
-      const data = await response.json()
-      setStats(data)
-    } catch (error) {
-      console.error('Failed to fetch observability stats:', error)
-    } finally {
-      setLoading(false)
-    }
+  return {
+    totalTraces: traces.length,
+    totalGroups: groups.length,
+    runningTraces,
+    completedTraces,
+    failedTraces,
+    averageDuration
   }
+}
 
-  useEffect(() => {
-    fetchStats()
-    
-    const interval = setInterval(fetchStats, 5000)
-    return () => clearInterval(interval)
-  }, [])
+export const ObservabilityStats = ({ traces, groups }: { traces: Trace[], groups: TraceGroup[] }) => {
+
+  const stats = calculateStats(traces, groups)
 
   const formatDuration = (duration: number) => {
     if (duration < 1000) return `${Math.round(duration)}ms`
     return `${(duration / 1000).toFixed(1)}s`
-  }
-
-  if (loading || !stats) {
-    return (
-      <div className="flex items-center gap-2">
-        <Activity className="w-4 h-4 animate-pulse" />
-        <span className="text-sm text-muted-foreground">Loading stats...</span>
-      </div>
-    )
   }
 
   return (

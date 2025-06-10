@@ -55,6 +55,7 @@ export const setupCronHandlers = (
           state,
           traceId,
           logger,
+          observabilityStream,
         })
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

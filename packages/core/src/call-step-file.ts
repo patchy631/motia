@@ -7,7 +7,7 @@ import { isAllowedToEmit } from './utils'
 import { BaseStreamItem } from './types-stream'
 import { ProcessManager } from './process-communication/process-manager'
 import { trackEvent } from './analytics/utils'
-import { observabilityService } from './observability/observability-service'
+import { createObservabilityService } from './observability/observability-service'
 import { StreamAdapter } from './streams/adapters/stream-adapter'
 import { Trace } from './observability/types'
 
@@ -59,19 +59,19 @@ type CallStepFileOptions = {
   printer: Printer
   data?: any
   contextInFirstArg: boolean
-  observabilityStream?: StreamAdapter<Trace>
+  observabilityStream: StreamAdapter<Trace>
 }
 
 export const callStepFile = <TData>(options: CallStepFileOptions): Promise<TData | undefined> => {
   const { step, printer, eventManager, state, traceId, data, contextInFirstArg, lockedData } = options
 
+  const observabilityService = createObservabilityService(options.observabilityStream)
   const logger = observabilityService.createObservabilityLogger(
     traceId,
     step.config.flows,
     step.config.name,
     options.logger.isVerbose,
     (options.logger as any).logStream,
-    options.observabilityStream,
   )
 
   const flows = step.config.flows

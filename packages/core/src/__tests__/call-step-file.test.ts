@@ -7,6 +7,7 @@ import { Printer } from '../printer'
 import { MemoryStateAdapter } from '../state/adapters/memory-state-adapter'
 import { createCronStep } from './fixtures/step-fixtures'
 import { LockedData } from '../locked-data'
+import { MockObservabilityStream } from './fixtures/observability-fixtures'
 
 describe('callStepFile', () => {
   beforeAll(() => {
@@ -21,6 +22,7 @@ describe('callStepFile', () => {
     const printer = new Printer(baseDir)
     const traceId = randomUUID()
     const logger = new BaseLogger()
+    const observabilityStream = new MockObservabilityStream()
 
     jest.spyOn(eventManager, 'emit').mockImplementation(() => Promise.resolve())
 
@@ -33,6 +35,7 @@ describe('callStepFile', () => {
       traceId,
       logger,
       contextInFirstArg: true,
+      observabilityStream,
     })
 
     expect(eventManager.emit).toHaveBeenCalledWith(

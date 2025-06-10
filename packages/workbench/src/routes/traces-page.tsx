@@ -33,7 +33,7 @@ export const TracesPage = () => {
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Observability</h1>
-          <ObservabilityStats />
+          <ObservabilityStats traces={traces} groups={groups} />
         </div>
         <TraceSearch onSearch={handleSearch} />
       </div>
