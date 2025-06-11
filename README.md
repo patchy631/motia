@@ -60,7 +60,7 @@ Motia unifies your entire backend into a **unified state**. APIs, background job
 | --------------------------- | ---------------------------------------- |
 | Multiple deployment targets | **Single unified deployment**            |
 | Fragmented observability    | **End-to-end tracing**                   |
-| Language lock-in            | **JavaScript, TypeScript, Python, Ruby** |
+| Language dependant          | **JavaScript, TypeScript, Python, Ruby** |
 | Context-switching overhead  | **Single intuitive model**               |
 | Complex error handling      | **Automatic retries & fault tolerance**  |
 
@@ -182,7 +182,6 @@ Check out our [Contributing Guide](https://github.com/MotiaDev/motia/blob/main/C
 
 ---
 
-![Why developers love Motia](https://github.com/MotiaDev/motia/blob/main/assets/1.png?raw=true)
 <div align="center">
 
 **🌟 Ready to unify your backend?**
