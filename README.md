@@ -27,7 +27,7 @@
 
 ## 🎯 What is Motia?
 
-Motia is a **modern backend framework** that unifies APIs, background jobs, events, and AI agents into a single cohesive system. Eliminate runtime complexity and build unified backends where **JavaScript, TypeScript, Python, and Ruby** work together in event-driven workflows, with built-in state management, observability, and one-click deployments.
+Motia is a **modern backend framework** that unifies APIs, background jobs, events, and AI agents into a single cohesive system. Eliminate runtime complexity and build unified backends where **JavaScript, TypeScript, Python, and more** work together in event-driven workflows, with built-in state management, observability, and one-click deployments.
 
 Motia brings cohesion to the fragmented backend world with our core primitive: the **Step**. Think of Steps like React Components, but for backends.
 
@@ -56,13 +56,13 @@ Backend teams juggle **fragmented runtimes** across APIs, background queues, and
 
 Motia unifies your entire backend into a **unified state**. APIs, background jobs, and AI agents become interconnected Steps with shared state and integrated observability.
 
-| **Before**                  | **After (Motia)**                        |
-| --------------------------- | ---------------------------------------- |
-| Multiple deployment targets | **Single unified deployment**            |
-| Fragmented observability    | **End-to-end tracing**                   |
-| Language dependant          | **JavaScript, TypeScript, Python, Ruby** |
-| Context-switching overhead  | **Single intuitive model**               |
-| Complex error handling      | **Automatic retries & fault tolerance**  |
+| **Before**                  | **After (Motia)**                            |
+| --------------------------- | -------------------------------------------- |
+| Multiple deployment targets | **Single unified deployment**                |
+| Fragmented observability    | **End-to-end tracing**                       |
+| Language dependant          | **JavaScript, TypeScript, Python, and more** |
+| Context-switching overhead  | **Single intuitive model**                   |
+| Complex error handling      | **Automatic retries & fault tolerance**      |
 
 ---
 
@@ -158,7 +158,7 @@ Write steps in your preferred language:
 | **JavaScript** | ✅ Stable      | `handler.step.js` |
 | **TypeScript** | ✅ Stable      | `handler.step.ts` |
 | **Python**     | ✅ Stable      | `handler.step.py` |
-| **Ruby**       | ✅ Stable      | `handler.step.rb` |
+| **Ruby**       | 🔄 Coming Soon | `handler.step.rb` |
 | **Go**         | 🔄 Coming Soon | `handler.step.go` |
 | **Rust**       | 🔄 Coming Soon | `handler.step.rs` |
 
