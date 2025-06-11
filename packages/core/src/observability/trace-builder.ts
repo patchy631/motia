@@ -1,61 +1,30 @@
-import { ObservabilityEvent, Trace, TraceStep, TraceGroup, TraceFilter, TraceSearchResult, TraceStepDetails, StateOperation, EmitOperation, StreamOperation, LogEntry } from './types'
-import { StreamAdapter } from '../streams/adapters/stream-adapter'
+import {
+  EmitOperation,
+  ObservabilityEvent,
+  StateOperation,
+  StreamOperation,
+  Trace,
+  TraceGroup,
+  TraceStep,
+} from './types'
+import { ObservabilityStream } from './observability-stream'
 
 export class TraceBuilder {
-  private observabilityStream: StreamAdapter<any> // Using any to handle both Trace and TraceGroup
-  private maxTraceAgeMs: number // Time-based eviction instead of count-based
+  private observabilityStream: ObservabilityStream
 
-  constructor(observabilityStream: StreamAdapter<any>, maxTraceAgeMs: number = 24 * 60 * 60 * 1000) { // Default: 24 hours
+  constructor(observabilityStream: ObservabilityStream) {
     this.observabilityStream = observabilityStream
-    this.maxTraceAgeMs = maxTraceAgeMs
   }
 
-  async processEvent(event: ObservabilityEvent): Promise<Trace> {
-    try {
-      switch (event.eventType) {
-        case 'step_start':
-          await this.handleStepStart(event)
-          break
-        case 'step_end':
-          await this.handleStepEnd(event)
-          break
-        case 'state_op':
-        case 'emit_op':
-        case 'stream_op':
-          await this.handleOperation(event)
-          break
-        case 'correlation_start':
-          await this.handleCorrelationStart(event)
-          break
-        case 'correlation_continue':
-          await this.handleCorrelationContinue(event)
-          break
-      }
-
-      // Periodically clean up old traces
-      await this.evictOldTraces()
-      
-      const trace = await this.getTrace(event.traceId)
-      if (!trace) {
-        throw new Error(`Trace ${event.traceId} not found after processing`)
-      }
-      return trace
-    } catch (error) {
-      console.error('Error processing observability event:', error)
-      // Return a basic trace if processing fails
-      return this.createNewTrace(event)
-    }
-  }
-
-  private async handleStepStart(event: ObservabilityEvent): Promise<void> {
+  public async handleStepStart(event: ObservabilityEvent): Promise<void> {
     let trace = await this.getTrace(event.traceId)
-    
+
     if (!trace) {
       trace = this.createNewTrace(event)
       await this.saveTrace(trace)
     }
 
-    const existingStep = trace.steps.find(s => s.name === event.stepName)
+    const existingStep = trace.steps.find((s) => s.name === event.stepName)
     if (!existingStep) {
       const step: TraceStep = {
         name: event.stepName,
@@ -66,23 +35,20 @@ export class TraceBuilder {
           stateOperations: [],
           emitOperations: [],
           streamOperations: [],
-          logs: []
-        }
+          logs: [],
+        },
       }
       trace.steps.push(step)
       trace.metadata.totalSteps = trace.steps.length
     } else {
       existingStep.status = 'running'
       existingStep.startTime = event.timestamp - trace.startTime
-      // Reset operation counts when step restarts
       existingStep.operations = { state: 0, emit: 0, stream: 0 }
-      
-      // Reset step details when step restarts
       existingStep.details = {
         stateOperations: [],
         emitOperations: [],
         streamOperations: [],
-        logs: []
+        logs: [],
       }
     }
 
@@ -91,16 +57,18 @@ export class TraceBuilder {
     await this.updateTraceGroup(trace)
   }
 
-  private async handleStepEnd(event: ObservabilityEvent): Promise<void> {
+  public async handleStepEnd(event: ObservabilityEvent): Promise<void> {
     const trace = await this.getTrace(event.traceId)
     if (!trace) return
 
-    const step = trace.steps.find(s => s.name === event.stepName)
+    const step = trace.steps.find((s) => s.name === event.stepName)
     if (!step) return
+
+    if(step.status !== 'running') return
 
     step.status = event.metadata?.success ? 'completed' : 'failed'
     step.duration = event.duration
-    
+
     if (!event.metadata?.success) {
       trace.metadata.errorCount++
       if (event.metadata?.error) {
@@ -109,10 +77,11 @@ export class TraceBuilder {
     }
 
     if (step.status === 'completed') {
+      console.log(step.name, 'completed', step)
       trace.metadata.completedSteps++
     }
 
-    const allStepsCompleted = trace.steps.every(s => s.status === 'completed' || s.status === 'failed')
+    const allStepsCompleted = trace.steps.every((s) => s.status === 'completed' || s.status === 'failed')
     if (allStepsCompleted) {
       trace.status = trace.metadata.errorCount > 0 ? 'failed' : 'completed'
       trace.duration = event.timestamp - trace.startTime
@@ -122,11 +91,11 @@ export class TraceBuilder {
     await this.updateTraceGroup(trace)
   }
 
-  private async handleOperation(event: ObservabilityEvent): Promise<void> {
+  public async handleOperation(event: ObservabilityEvent): Promise<void> {
     const trace = await this.getTrace(event.traceId)
     if (!trace) return
 
-    const step = trace.steps.find(s => s.name === event.stepName)
+    const step = trace.steps.find((s) => s.name === event.stepName)
     if (!step || !step.details) return
 
     switch (event.eventType) {
@@ -135,11 +104,11 @@ export class TraceBuilder {
         const stateOp: StateOperation = {
           id: `${event.traceId}-${event.stepName}-state-${step.details.stateOperations.length}`,
           timestamp: event.timestamp,
-          operation: event.metadata?.operation as any || 'get',
+          operation: event.metadata?.operation || 'get',
           key: event.metadata?.key,
           duration: event.duration,
           success: event.metadata?.success ?? true,
-          error: event.metadata?.error
+          error: event.metadata?.error,
         }
         step.details.stateOperations.push(stateOp)
         break
@@ -150,7 +119,7 @@ export class TraceBuilder {
           timestamp: event.timestamp,
           topic: event.metadata?.topic || 'unknown',
           success: event.metadata?.success ?? true,
-          error: event.metadata?.error
+          error: event.metadata?.error,
         }
         step.details.emitOperations.push(emitOp)
         break
@@ -159,11 +128,11 @@ export class TraceBuilder {
         const streamOp: StreamOperation = {
           id: `${event.traceId}-${event.stepName}-stream-${step.details.streamOperations.length}`,
           timestamp: event.timestamp,
-          operation: event.metadata?.operation as any || 'get',
+          operation: event.metadata?.operation || 'get',
           streamName: event.metadata?.streamName || 'unknown',
           duration: event.duration,
           success: event.metadata?.success ?? true,
-          error: event.metadata?.error
+          error: event.metadata?.error,
         }
         step.details.streamOperations.push(streamOp)
         break
@@ -172,7 +141,7 @@ export class TraceBuilder {
     await this.saveTrace(trace)
   }
 
-  private async handleCorrelationStart(event: ObservabilityEvent): Promise<void> {
+  public async handleCorrelationStart(event: ObservabilityEvent): Promise<void> {
     if (!event.correlationId) return
 
     const trace = await this.getTrace(event.traceId)
@@ -185,7 +154,7 @@ export class TraceBuilder {
       group = this.createNewTraceGroup(event.correlationId, trace)
     }
 
-    if (!group.traces.find(t => t.id === trace.id)) {
+    if (!group.traces.find((t) => t.id === trace.id)) {
       group.traces.push(trace)
       this.updateTraceGroupMetadata(group)
     }
@@ -194,7 +163,7 @@ export class TraceBuilder {
     await this.saveTraceGroup(group)
   }
 
-  private async handleCorrelationContinue(event: ObservabilityEvent): Promise<void> {
+  public async handleCorrelationContinue(event: ObservabilityEvent): Promise<void> {
     if (!event.correlationId || !event.parentTraceId) return
 
     const trace = await this.getTrace(event.traceId)
@@ -205,7 +174,7 @@ export class TraceBuilder {
     trace.metadata.isChildTrace = true
 
     const group = await this.getTraceGroup(event.correlationId)
-    if (group && !group.traces.find(t => t.id === trace.id)) {
+    if (group && !group.traces.find((t) => t.id === trace.id)) {
       group.traces.push(trace)
       this.updateTraceGroupMetadata(group)
       await this.saveTraceGroup(group)
@@ -231,8 +200,8 @@ export class TraceBuilder {
         totalSteps: 0,
         completedSteps: 0,
         errorCount: 0,
-        isChildTrace: !!event.parentTraceId
-      }
+        isChildTrace: !!event.parentTraceId,
+      },
     }
   }
 
@@ -252,8 +221,8 @@ export class TraceBuilder {
         totalSteps: 0,
         averageStepDuration: 0,
         gapsCount: 0,
-        totalGapDuration: 0
-      }
+        totalGapDuration: 0,
+      },
     }
   }
 
@@ -264,20 +233,20 @@ export class TraceBuilder {
     if (!group) return
 
     group.lastActivity = Date.now()
-    
+
     // Update the trace in the group
-    const traceIndex = group.traces.findIndex(t => t.id === trace.id)
+    const traceIndex = group.traces.findIndex((t) => t.id === trace.id)
     if (traceIndex >= 0) {
       group.traces[traceIndex] = trace
     }
-    
+
     this.updateTraceGroupMetadata(group)
     await this.saveTraceGroup(group)
   }
 
   private updateTraceGroupMetadata(group: TraceGroup): void {
-    const completedTraces = group.traces.filter(t => t.status === 'completed' || t.status === 'failed')
-    const activeTraces = group.traces.filter(t => t.status === 'running')
+    const completedTraces = group.traces.filter((t) => t.status === 'completed' || t.status === 'failed')
+    const activeTraces = group.traces.filter((t) => t.status === 'running')
 
     group.metadata.totalTraces = group.traces.length
     group.metadata.completedTraces = completedTraces.length
@@ -290,7 +259,7 @@ export class TraceBuilder {
     }
 
     if (activeTraces.length === 0 && completedTraces.length > 0) {
-      group.status = group.traces.some(t => t.status === 'failed') ? 'failed' : 'completed'
+      group.status = group.traces.some((t) => t.status === 'failed') ? 'failed' : 'completed'
       group.totalDuration = group.lastActivity - group.startTime
     }
   }
@@ -309,34 +278,6 @@ export class TraceBuilder {
     return `${trace.flowName} Flow`
   }
 
-  private async evictOldTraces(): Promise<void> {
-    try {
-      const cutoffTime = Date.now() - this.maxTraceAgeMs
-      const allTraces = await this.getAllTraces()
-      
-      const tracesToRemove = allTraces.filter(trace => trace.startTime < cutoffTime)
-      
-      for (const trace of tracesToRemove) {
-        await this.observabilityStream.delete('traces', trace.id)
-        
-        // Clean up trace groups that may now be empty
-        if (trace.correlationId) {
-          const group = await this.getTraceGroup(trace.correlationId)
-          if (group) {
-            group.traces = group.traces.filter(t => t.id !== trace.id)
-            if (group.traces.length === 0) {
-              await this.observabilityStream.delete('groups', trace.correlationId)
-            } else {
-              await this.saveTraceGroup(group)
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error during trace eviction:', error)
-    }
-  }
-
   private async saveTrace(trace: Trace): Promise<void> {
     try {
       await this.observabilityStream.set('traces', trace.id, trace)
@@ -353,126 +294,33 @@ export class TraceBuilder {
     }
   }
 
-  async getTrace(traceId: string): Promise<Trace | undefined> {
+  async getTrace(traceId: string): Promise<Trace | null> {
     try {
-      const result = await this.observabilityStream.get('traces', traceId)
-      return result || undefined
+      const result = await this.observabilityStream.get<Trace>('traces', traceId)
+      return result
     } catch (error) {
       console.error('Error getting trace:', error)
-      return undefined
+      return null
     }
   }
 
-  async getTraceGroup(correlationId: string): Promise<TraceGroup | undefined> {
+  async getTraceGroup(correlationId: string): Promise<TraceGroup | null> {
     try {
-      const result = await this.observabilityStream.get('groups', correlationId)
-      return result || undefined
+      const result = await this.observabilityStream.get<TraceGroup>('groups', correlationId)
+      return result
     } catch (error) {
       console.error('Error getting trace group:', error)
-      return undefined
-    }
-  }
-
-  async searchTraces(filter: TraceFilter = {}): Promise<TraceSearchResult> {
-    try {
-      let traces = await this.getAllTraces()
-      let groups = await this.getAllTraceGroups()
-
-      if (filter.flowName) {
-        traces = traces.filter(t => t.flowName.includes(filter.flowName!))
-        groups = groups.filter(g => g.traces.some(t => t.flowName.includes(filter.flowName!)))
-      }
-
-      if (filter.status) {
-        traces = traces.filter(t => t.status === filter.status)
-        groups = groups.filter(g => g.status === filter.status)
-      }
-
-      if (filter.stepName) {
-        traces = traces.filter(t => t.steps.some(s => s.name.includes(filter.stepName!)))
-      }
-
-      if (filter.correlationId) {
-        traces = traces.filter(t => t.correlationId === filter.correlationId)
-        groups = groups.filter(g => g.correlationId === filter.correlationId)
-      }
-
-      if (filter.startTime) {
-        if (filter.startTime.from) {
-          traces = traces.filter(t => t.startTime >= filter.startTime!.from!)
-          groups = groups.filter(g => g.startTime >= filter.startTime!.from!)
-        }
-        if (filter.startTime.to) {
-          traces = traces.filter(t => t.startTime <= filter.startTime!.to!)
-          groups = groups.filter(g => g.startTime <= filter.startTime!.to!)
-        }
-      }
-
-      traces.sort((a, b) => b.startTime - a.startTime)
-      groups.sort((a, b) => b.lastActivity - a.lastActivity)
-
-      const limit = filter.limit || 20
-      const hasMore = traces.length > limit || groups.length > limit
-
-      return {
-        traces: traces.slice(0, limit),
-        groups: groups.slice(0, limit),
-        total: traces.length + groups.length,
-        hasMore
-      }
-    } catch (error) {
-      console.error('Error searching traces:', error)
-      return { traces: [], groups: [], total: 0, hasMore: false }
+      return null
     }
   }
 
   async getAllTraces(): Promise<Trace[]> {
     try {
-      const traces = await this.observabilityStream.getGroup('traces')
+      const traces = await this.observabilityStream.getGroup<Trace>('traces')
       return traces.sort((a, b) => b.startTime - a.startTime)
     } catch (error) {
       console.error('Error getting all traces:', error)
       return []
     }
   }
-
-  async getAllTraceGroups(): Promise<TraceGroup[]> {
-    try {
-      const groups = await this.observabilityStream.getGroup('groups')
-      return groups.sort((a, b) => b.lastActivity - a.lastActivity)
-    } catch (error) {
-      console.error('Error getting all trace groups:', error)
-      return []
-    }
-  }
-
-  async getTraceWithDetails(traceId: string): Promise<Trace | undefined> {
-    // Since details are now embedded in the trace steps, this is simplified
-    return await this.getTrace(traceId)
-  }
-
-  async addLogEntry(traceId: string, stepName: string, logEntry: Omit<LogEntry, 'id'>): Promise<void> {
-    try {
-      const trace = await this.getTrace(traceId)
-      if (!trace) return
-
-      const step = trace.steps.find(s => s.name === stepName)
-      if (!step || !step.details) return
-
-      const fullLogEntry: LogEntry = {
-        ...logEntry,
-        id: `${traceId}-${stepName}-log-${step.details.logs.length}`
-      }
-
-      step.details.logs.push(fullLogEntry)
-      await this.saveTrace(trace)
-    } catch (error) {
-      console.error('Error adding log entry:', error)
-    }
-  }
-
-  // New method to manually clean up old traces
-  async cleanupOldTraces(): Promise<void> {
-    await this.evictOldTraces()
-  }
-} 
+}

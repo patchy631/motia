@@ -28,6 +28,7 @@ export const createMockTrace = (overrides: Partial<Trace> = {}): Trace => ({
 export const createMockTraceStep = (overrides: Partial<TraceStep> = {}): TraceStep => ({
   name: 'test-step',
   status: 'waiting',
+  startTime: Date.now(),
   operations: { state: 0, emit: 0, stream: 0 },
   ...overrides
 })

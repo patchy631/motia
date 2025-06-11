@@ -21,7 +21,7 @@ export interface Trace {
 export interface TraceStep {
   name: string
   status: 'waiting' | 'running' | 'completed' | 'failed'
-  startTime?: number
+  startTime: number
   duration?: number
   operations: { state: number, emit: number, stream: number }
   error?: { message: string, code?: string | number }
@@ -57,7 +57,7 @@ export interface EmitOperation {
 export interface StreamOperation {
   id: string
   timestamp: number
-  operation: 'get' | 'set' | 'delete'
+  operation: 'get' | 'set' | 'delete' | 'clear'
   streamName: string
   duration?: number
   success: boolean
@@ -112,19 +112,3 @@ export interface ObservabilityEvent {
     error?: { message: string, code?: string | number }
   }
 }
-
-export interface TraceFilter {
-  flowName?: string
-  status?: Trace['status']
-  stepName?: string
-  correlationId?: string
-  startTime?: { from?: number, to?: number }
-  limit?: number
-}
-
-export interface TraceSearchResult {
-  traces: Trace[]
-  groups: TraceGroup[]
-  total: number
-  hasMore: boolean
-} 
