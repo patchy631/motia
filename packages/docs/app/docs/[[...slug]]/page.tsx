@@ -18,6 +18,7 @@ import { CodeSandbox } from '@/components/CodeSandbox'
 import { TrelloTab } from '@/components/TrelloCodeFetcher'
 import { GitHubWorkflowTab } from '@/components/GitHubIntegrationCodeFetcher'
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+import Link from 'next/link'
 
 export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params
@@ -65,9 +66,9 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
         />
         <Banner>
           Need help? Join the Motia&nbsp;
-          <a aria-label="Visit Community" href="/docs/community/first-steps">
+          <Link aria-label="Visit Community" href="/docs/community/first-steps">
             Community
-          </a>
+          </Link>
           &nbsp;for support, discussions and to contibute.
         </Banner>
       </DocsBody>
