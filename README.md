@@ -1,88 +1,141 @@
-<a name="readme-top"></a>
+# Motia
 
-<div align="center">
-  <img src="assets/PNGs/icon.png" alt="Logo" width="180">
-  <h1 align="center"> Unified Backend for APIs, Events, and Agents </h1>
-</div>
+<p align="center">
+  <img src="https://motia.dev/icon.png" alt="Motia Logo" width="200" />
+</p>
 
-<div align="center">
-  <a href="https://motia.dev"><img src="https://img.shields.io/badge/PROJECT-PAGE-FFE165?style=for-the-badge&labelColor=555555" alt="Project Page"></a>
-  <a href="https://discord.gg/nJFfsH5d6v"><img src="https://img.shields.io/badge/DISCORD-JOIN%20US-9146FF?style=for-the-badge&labelColor=555555" alt="Discord"></a>
-  <a href="https://motia.dev/docs"><img src="https://img.shields.io/badge/DOCS-READ%20NOW-000000?style=for-the-badge&labelColor=555555" alt="Documentation"></a>
-  <a href="https://www.npmjs.com/package/motia"><img src="https://img.shields.io/npm/v/motia?style=for-the-badge&label=NPM&labelColor=555555&color=CB3837" alt="NPM Version"></a>
-  <a href="https://www.npmjs.com/package/motia"><img src="https://img.shields.io/npm/dt/motia?style=for-the-badge&label=DOWNLOADS&labelColor=555555&color=CB3837" alt="NPM Downloads"></a>
-  <a href="#"><img src="https://img.shields.io/badge/STATUS-BETA-FFE165?style=for-the-badge&labelColor=555555" alt="Status Beta"></a>
-  <hr>
-</div>
+<p align="center">
+  <strong>🔥 A Modern Unified Backend Framework for APIs, Events and Agents 🔥</strong>
+</p>
 
----
+<p align="center">
+  <a href="https://www.npmjs.com/package/motia"><img src="https://img.shields.io/npm/v/motia.svg?style=for-the-badge" alt="npm version"></a>
+  <a href="https://github.com/MotiaDev/motia/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="license"></a>
+  <a href="https://twitter.com/motiadev" target="_blank"><img src="https://img.shields.io/twitter/follow/motiadev.svg?style=for-the-badge&logo=twitter&color=1da1f2&label=Follow" alt="Twitter Follow"></a>
+  <a href="https://discord.gg/7rXsekMK" target="_blank"><img src="https://img.shields.io/discord/1322278831184281721?style=for-the-badge&logo=discord&color=7289da&label=Discord" alt="Discord"></a>
+</p>
 
-Motia is a modern backend framework that unifies APIs, background jobs, event systems, and AI agents into one event-driven system that works the way developers think. Stop context-switching between multiple runtimes, build your entire backend with event-driven steps, mixing JavaScript, TypeScript, and Python freely, while keeping shared state, tracing, state of the art observability and deployment simplicity.
 
----
-
-## 🚧 Why Motia
-
-Backend engineering teams often juggle multiple fragmented runtimes:
-
-| Runtime Layer           | Common Tools                                                        |
-| ----------------------- | ------------------------------------------------------------------- |
-| 🖥️ **API Servers**       | Express, FastAPI, Rails, Django, Laravel, Spring, .NET, Flask, Nest |
-| 📬 **Job Queues/Events** | Sidekiq, Temporal, BullMQ, Kafka, RabbitMQ, AWS SQS, Redis Streams  |
-| 🤖 **AI & Agents**       | LangGraph, CrewAI, Mastra, LangChain, AutoGPT, Agno, AgentGPT       |
-
-**Common issues caused by fragmentation:**
-
-- **Deployment Complexity:** Multiple scaling models and deployment targets
-- **Debugging Difficulty:** Fragmented observability, incomplete traces
-- **Developer Constraints:** Language lock-in, limited flexibility
-- **Cognitive Overhead:** Context-switching across frameworks
-- **Redundant Boilerplate:** Duplicated logic and complex code-sharing
+<p align="center">
+  <a href="https://www.motia.dev/manifesto">💡 Motia Manifesto</a> •
+  <a href="https://www.motia.dev/docs/getting-started/quick-start">🚀 Quick Start</a> •
+  <a href="https://www.motia.dev/docs/concepts/steps/defining-steps">📋 Defining Steps</a> •
+  <a href="https://motia.dev/docs">📚 Docs</a>
+</p>
 
 ---
 
-## ✅ The Unified Runtime: One System for All Backend Concerns
+## 🎯 What is Motia?
 
-Motia solves this fragmentation by unifying your backend into a single system. It brings everything—APIs, background jobs, queues, and AI agents into a single coherent model with shared state, logging, observability, and deployment.
+Motia is a **modern backend framework** that unifies APIs, background jobs, events, and AI agents into a single cohesive system. Eliminate runtime complexity and build unified backends where **JavaScript, TypeScript, Python, and Ruby** work together in event-driven workflows, with built-in state management, observability, and one-click deployments.
 
-Motia is not another queue or AI wrapper. It's a unified backend system where APIs, background jobs, scheduled tasks, and AI agents all live together as Steps in a single runtime:
+Motia brings cohesion to the fragmented backend world with our core primitive: the **Step**. Think of Steps like React Components, but for backends.
 
-| Runtime Layer           | Motia's Approach                                               |
-| ----------------------- | -------------------------------------------------------------- |
-| 🖥️ **API Servers**       | ✅ Expose workflow steps instantly as APIs/webhooks             |
-| 📬 **Job Queues/Events** | ✅ Unified runtime with built-in queuing, retries, and state    |
-| 🤖 **AI & Agents**       | ✅ Seamlessly combine deterministic logic & AI-driven workflows |
+![Motia combines APIs, background queues, and AI agents into one system](https://github.com/MotiaDev/motia/blob/main/assets/2.gif?raw=true)
 
-**Benefits of Unifying with Motia:**
+### 🧱 The Step Philosophy
 
-- 🎯 **Unified Deployment:** Single consistent scaling model
-- 🔍 **Enhanced Observability:** Simplified end-to-end tracing
-- ⚙️ **Full Language Flexibility:** JavaScript, TypeScript, Python
-- 🧠 **Lower Cognitive Load:** Single intuitive backend model
-- ♻️ **Simplified Error Handling:** Automatic retries & error management
-- 🛡️ **Resilient Architecture:** Fault-tolerant event-based system
+- **🎯 Single Purpose**: Each Step performs one task
+- **🌍 Language agnostic**: Each Step can be in a different language, while being part of the same workflow
+- **⚡ Versatile**: Steps can trigger APIs, background jobs, or even LLMs
+- **👁️ Observable**: Everything is observable by default
+- **🌊 Workflows**: Collections of connected steps that form complete processes
+- **🏪 State Management**: Shared state across all steps with full traceability
 
 ---
 
-## 🎯 Key Motia Features
+## 🚧 The Problem
 
-Motia is engineered to scale seamlessly from early prototypes into robust, maintainable systems, providing a structured foundation for building reliable, production-ready applications.
+Backend teams juggle **fragmented runtimes** across APIs, background queues, and AI agents. This creates deployment complexity, debugging gaps, and cognitive overhead from context-switching between frameworks.
 
-| Features                            | Description                                                                                                                                                                                                                                       |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 📦 **Full PyPi & NPM Support**       | Seamlessly integrate and leverage packages from the vast ecosystems of PyPi and NPM in your workflows.                                                                                                                                            |
-| 🚏 **Built-in Routing**              | Motia provides out-of-the-box routing capabilities, allowing instant setup of APIs and webhooks with no additional configuration required.                                                                                                        |
-| 🧪 **Fully Testable**                | Integrates effortlessly with your existing test suite, enabling comprehensive testing of workflows and steps using your preferred testing tools.                                                                                                  |
-| 👤 **Human-in-the-Loop**             | Built-in mechanisms for human intervention, making it easy to integrate review or approval steps directly into automated workflows.                                                                                                               |
-| 📜 **Minimal DSL**                   | Motia uses a minimal and intuitive domain-specific language (DSL), reducing learning curves and enabling quicker adoption.                                                                                                                        |
-| 🚀 **Steps**                         | Steps are the core building block of Motia. Use them to define APIs, background jobs, cron tasks, or AI agents, all from one system.                                                                                                              |
-| 🖥️ **Motia Workbench**               | Provides a visual interface for workflow management, debugging, and monitoring, allowing easy visualization and manipulation of workflow execution.                                                                                               |
-| 🔎 **Trace IDs & Logging**           | Integrated trace IDs and structured logging enable end-to-end observability, simplifying debugging and improving reliability.                                                                                                                     |
-| 🔄 **Middleware & CLI**              | Easily extend workflow capabilities with middleware, and rapidly create, manage, and deploy projects through a powerful CLI tool.                                                                                                                 |
-| ⚡ **Hot-Reloading**                 | Real-time development experience allowing you to instantly see changes without restarting your workflows, significantly speeding up the development cycle.                                                                                        |
-| 📊 **Mermaid Diagrams**              | Automatic generation of Mermaid diagrams for each workflow, offering clear visualization of flow logic and dependencies.                                                                                                                          |
-| 🌐 **Motia Cursor & IDE Extensions** | Enhance productivity with Motia-specific rules in Cursor and VS-Code extensions, integrating workflow management directly into your preferred IDE environment.                                                                                    |
-| ☁️ **Motia Cloud**                   | One-command deployments, integrated observability tools, centralized logging, secret management, and environment-specific configurations including canary and rollback deployments, enabling robust and reliable workflow hosting and management. |
+**This fragmentation demands a unified system.**
+
+---
+
+## ✅ The Unified System
+
+Motia unifies your entire backend into a **unified state**. APIs, background jobs, and AI agents become interconnected Steps with shared state and integrated observability.
+
+| **Before**                  | **After (Motia)**                        |
+| --------------------------- | ---------------------------------------- |
+| Multiple deployment targets | **Single unified deployment**            |
+| Fragmented observability    | **End-to-end tracing**                   |
+| Language lock-in            | **JavaScript, TypeScript, Python, Ruby** |
+| Context-switching overhead  | **Single intuitive model**               |
+| Complex error handling      | **Automatic retries & fault tolerance**  |
+
+---
+
+## 🔧 Supported Step Types
+
+| Type        | Trigger               | Use Case                              |
+| ----------- | --------------------- | ------------------------------------- |
+| **`api`**   | HTTP Request          | Expose REST endpoints                 |
+| **`event`** | Emitted Topics        | React to internal or external events  |
+| **`cron`**  | Scheduled Time (cron) | Automate recurring jobs               |
+| **`noop`**  | None                  | Placeholder for manual/external tasks |
+
+---
+
+
+## 🚀 Quickstart
+
+Get up and running in **under 60 seconds**:
+
+### 1. Create Your Project
+
+```bash
+npx motia@latest create -n my-motia-app
+cd my-motia-app
+```
+
+### 2. Write Your First Step
+
+Open `01-api.step.ts` and create a simple API endpoint:
+
+```typescript
+exports.config = {
+  type: 'api',           // Step type: "api", "event", "cron", or "noop"
+  path: '/hello-world',  // API endpoint path
+  method: 'GET',         // HTTP method
+  name: 'HelloWorld',    // Step identifier
+  emits: ['test-state'], // Events this step emits
+  flows: ['default'],    // Flow this step belongs to
+}
+
+exports.handler = async () => {
+  return {
+    status: 200,
+    body: { message: 'Hello World from Motia!' },
+  }
+}
+```
+
+### 3. Launch the Workbench
+
+Start the visual development environment:
+
+```bash
+npm run dev
+# Opens at http://localhost:3000
+```
+
+🎉 **That's it!** You now have a fully functional Motia app with:
+- ✅ API endpoint at `/hello-world`
+- ✅ Visual debugger and flow inspector
+- ✅ Built-in observability
+- ✅ Hot reload for instant feedback
+
+### 4. Explore the Workbench
+
+From the Workbench, navigate to:
+
+- **📊 Logs**: Structured logs for each step execution with inputs, outputs, and errors
+- **🏪 States**: View internal state and data passed between steps using traceID
+- **🔌 Endpoints**: Test all your API endpoints directly from the UI
+- **🌊 Flows**: Visually inspect how your steps connect and what each step does
+
+---
 
 ## 🗂 Examples
 
@@ -96,99 +149,48 @@ Motia is engineered to scale seamlessly from early prototypes into robust, maint
 
 ---
 
-## 🚀 Quick Start
+## 🌐 Language Support
 
-Get your first Motia workflow running in minutes:
+Write steps in your preferred language:
 
-**1. Create a Project**
+| Language       | Status        | Example           |
+| -------------- | ------------- | ----------------- |
+| **JavaScript** | ✅ Stable      | `handler.step.js` |
+| **TypeScript** | ✅ Stable      | `handler.step.ts` |
+| **Python**     | ✅ Stable      | `handler.step.py` |
+| **Ruby**       | ✅ Stable      | `handler.step.rb` |
+| **Go**         | 🔄 Coming Soon | `handler.step.go` |
+| **Rust**       | 🔄 Coming Soon | `handler.step.rs` |
 
-Create a new project with the Motia CLI:
+---
+### 💬 **Get Help**
+- **📋 Questions**: Use our [Discord community](https://discord.gg/7rXsekMK)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/MotiaDev/motia/issues)
+- **📖 Documentation**: [Official Docs](https://motia.dev/docs)
+- **🎥 Blog**: [Motia Blog](https://dev.to/motiadev)
 
-```bash
-npx motia create -n my-first-agent
-```
+### 🤝 **Contributing**
 
-_This sets up a starter project in the `my-first-agent` folder._
+We welcome contributions! Whether it's:
+- 🐛 Bug fixes and improvements
+- ✨ New features and step types
+- 📚 Documentation and examples
+- 🌍 Language support additions
+- 🎨 Workbench UI enhancements
 
-**2. Launch the Dev Server**
+Check out our [Contributing Guide](https://github.com/MotiaDev/motia/blob/main/CONTRIBUTING.md) to get started.
 
-Navigate into your project and start the server:
+---
 
-```bash
-cd my-first-agent
-pnpm run dev
-```
+![Why developers love Motia](https://github.com/MotiaDev/motia/blob/main/assets/1.png?raw=true)
+<div align="center">
 
-**3. Open the Workbench**
+**🌟 Ready to unify your backend?**
 
-Open [http://localhost:3000](http://localhost:3000) to see your workflow visualized in the Motia Workbench.
+[🚀 **Get Started Now**](https://motia.dev) • [📖 **Read the Docs**](https://motia.dev/docs) • [💬 **Join Discord**](https://discord.gg/7rXsekMK)
 
-**4. Trigger Your Workflow**
+---
 
-Trigger your API Step:
+<sub>Built with ❤️ by the Motia team • **Star us on GitHub if you find Motia useful!** ⭐</sub>
 
-```bash
-curl -X POST http://localhost:3000/default -H "Content-Type: application/json" -d '{}'
-```
-
-Trigger your Event Step (directly):
-
-```bash
-npx motia emit --topic test-state --message '{}'
-```
-
-🎉 **That's it!** You're ready to build with Motia.
-
-## Start building your APIs, agents and automations with simple steps
-
-- Configure a simple step to emit/subscribe, assign to a flow and include runtime validation
-- Define a function to handle when the step is triggered
-- Import any package
-
-```TypeScript
-import { OpenAI } from 'openai';
-import { z } from 'zod';
-import type { EventConfig, Handlers } from 'motia';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-export const config: EventConfig = {
-  type: 'event',
-  name: 'Auto-Reply',
-  subscribes: ['email.received'],
-  emits: ['email.send'],
-  flows: ['email-support'],
-  input: z.object({ subject: z.string(), body: z.string(), from: z.string() }),
-};
-
-export const handler: Handlers['Auto-Reply'] = async (inputData, context) => {
-  const { subject, body, from } = inputData;
-  const { emit, logger } = context;
-
-  const sentimentResponse = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: `Analyze the sentiment of the following text: ${body}` }],
-  });
-
-  const sentiment = sentimentResponse.choices[0].message.content;
-
-  logger.info('[EmailAutoReply] Sentiment analysis', { sentiment });
-
-  emit({
-    type: 'email.send',
-    data: { from, subject, body, sentiment },
-  });
-};
-```
-
-## Next Steps
-
-- **Dive into the Documentation:** Explore the [full Motia documentation](https://motia.dev/docs) to understand core concepts, step types, state management, and more.
-- **Explore Examples:** Check out practical [examples](https://motia.dev/docs/real-world-use-cases) to see Motia in action and get inspiration for your own workflows and agents.
-- **Join the Community:** Connect with other Motia users and the development team on our [Discord server](https://discord.gg/nJFfsH5d6v) and contribute to the project on [GitHub](https://github.com/MotiaDev/motia).
-
-_Motia isn’t just a tool—it’s a new foundation for the AI-first backend._
-
-**License:** [MIT](LICENSE)
+</div>
