@@ -17,6 +17,7 @@ import { Breadcrumb } from '@/components/Breadcrumb'
 import { CodeSandbox } from '@/components/CodeSandbox'
 import { TrelloTab } from '@/components/TrelloCodeFetcher'
 import { GitHubWorkflowTab } from '@/components/GitHubIntegrationCodeFetcher'
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
 export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params
@@ -50,6 +51,9 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
             DescriptionTable,
             Breadcrumb,
             Step,
+            Accordion,
+            Accordions,
+            Banner,
             Steps,
             TypeTable,
             img: (props) => <ImageZoom {...(props as ImageZoomProps)} />,
@@ -60,11 +64,11 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
           })}
         />
         <Banner>
-          Need help? See our&nbsp;
-          <a aria-label="Visit Community" href="/community">
-            Community Resources
+          Need help? Join the Motia&nbsp;
+          <a aria-label="Visit Community" href="/docs/community/first-steps">
+            Community
           </a>
-          &nbsp;for questions, examples, and discussions.
+          &nbsp;for support, discussions and to contibute.
         </Banner>
       </DocsBody>
     </DocsPage>
