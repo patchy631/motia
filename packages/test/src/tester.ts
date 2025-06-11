@@ -4,9 +4,11 @@ import { generateLockedData } from 'motia'
 import { createEventManager } from './event-manager'
 import { CapturedEvent, MotiaTester } from './types'
 import path from 'path'
+import { MockObservabilityStream } from './mock-observability-stream'
 
 export const createMotiaTester = (): MotiaTester => {
   const eventManager = createEventManager()
+  const observabilityStream = new MockObservabilityStream()
   const promise = (async () => {
     const lockedData = await generateLockedData(path.join(process.cwd()), 'memory')
     const state = createStateAdapter({ adapter: 'memory' })
@@ -14,7 +16,7 @@ export const createMotiaTester = (): MotiaTester => {
       isVerbose: true,
     })
 
-    createStepHandlers(lockedData, eventManager, state)
+    createStepHandlers(lockedData, eventManager, state, observabilityStream)
 
     return { server, socketServer, eventManager, state, close }
   })()
