@@ -583,7 +583,12 @@ NOOP steps require two files with the same base name:
     ```
   </Tab>
 </Tabs>
-
+<Callout title="Alway include virtualSubscribes:[]" type="warn">
+The `virtualSubscribes:[]` property should alway be present in the configuration, even if it is empty.
+</Callout>
+<Callout title="Flags" type="info">
+Take a look at our [best practices](/docs/foundations/happy-practices#best-practices-noop-steps) for writing NOOP steps.
+</Callout>
 ### UI Component File (.tsx)
 
 <Tabs items={['TS', 'JS']}>
