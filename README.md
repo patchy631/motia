@@ -9,10 +9,21 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/motia"><img src="https://img.shields.io/npm/v/motia.svg?style=for-the-badge" alt="npm version"></a>
-  <a href="https://github.com/MotiaDev/motia/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="license"></a>
-  <a href="https://twitter.com/motiadev" target="_blank"><img src="https://img.shields.io/twitter/follow/motiadev.svg?style=for-the-badge&logo=twitter&color=1da1f2&label=Follow" alt="Twitter Follow"></a>
-  <a href="https://discord.gg/7rXsekMK" target="_blank"><img src="https://img.shields.io/discord/1322278831184281721?style=for-the-badge&logo=discord&color=7289da&label=Discord" alt="Discord"></a>
+  <a href="https://www.npmjs.com/package/motia">
+    <img src="https://img.shields.io/npm/v/motia?style=flat&logo=npm&logoColor=white&color=CB3837&labelColor=000000" alt="npm version">
+  </a>
+  <a href="https://github.com/MotiaDev/motia/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-green?style=flat&logo=opensourceinitiative&logoColor=white&labelColor=000000" alt="license">
+  </a>
+  <a href="https://github.com/MotiaDev/motia">
+    <img src="https://img.shields.io/github/stars/MotiaDev/motia?style=flat&logo=github&logoColor=white&color=yellow&labelColor=000000" alt="GitHub stars">
+  </a>
+  <a href="https://twitter.com/motiadev" target="_blank">
+    <img src="https://img.shields.io/badge/Follow-@motiadev-1DA1F2?style=flat&logo=twitter&logoColor=white&labelColor=000000" alt="Twitter Follow">
+  </a>
+  <a href="https://discord.gg/7rXsekMK" target="_blank">
+    <img src="https://img.shields.io/discord/1322278831184281721?style=flat&logo=discord&logoColor=white&color=5865F2&label=Discord&labelColor=000000" alt="Discord">
+  </a>
 </p>
 
 
