@@ -26,21 +26,11 @@
   </a>
 </p>
 
-
-<p align="center">
-  <a href="https://www.motia.dev/manifesto">💡 Motia Manifesto</a> •
-  <a href="https://www.motia.dev/docs/getting-started/quick-start">🚀 Quick Start</a> •
-  <a href="https://www.motia.dev/docs/concepts/steps/defining-steps">📋 Defining Steps</a> •
-  <a href="https://motia.dev/docs">📚 Docs</a>
-</p>
-
 ---
 
 ## 🎯 What is Motia?
 
-Motia is a **modern backend framework** that unifies APIs, background jobs, events, and AI agents into a single cohesive system. Eliminate runtime complexity and build unified backends where **JavaScript, TypeScript, Python, etc**, work together in event-driven workflows, with built-in state management, observability, and one-click deployments.
-
-Motia brings cohesion to the fragmented backend world with our core primitive: the **Step**. Think of Steps like React Components, but for backends.
+Motia is a **modern backend framework** that unifies APIs, background jobs, events, and AI agents into a single cohesive system. Build unified backends where **JavaScript, TypeScript, Python, etc**, work together in the same event-driven workflow.
 
 ![Motia combines APIs, background queues, and AI agents into one system](https://github.com/MotiaDev/motia/blob/main/assets/final.gif?raw=true)
 
