@@ -6,6 +6,14 @@ const withMDX = createMDX()
 const config = {
   reactStrictMode: false,
   turbopack: true,
+  async rewrites() {
+    return [
+      {
+        source: '/campaign/subscribe',
+        destination: 'https://motia-hub-api.motiahub.com/campaign/subscribe',
+      },
+    ];
+  },
 }
 
 export default withMDX(config)
