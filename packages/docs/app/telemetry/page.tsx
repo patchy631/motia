@@ -150,7 +150,9 @@ export default function TelemetryPage() {
               We believe great developer tools are shaped by real-world usage, but only with your consent. Your privacy matters, and your feedback, whether explicit or anonymous, helps Motia become better for everyone.
             </p>
           </section>
-
+          <p className="mt-[16px] text-[16px] text-white/40">
+            Last updated: July 2025
+          </p>
         </div>
       </div>
 

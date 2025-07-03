@@ -78,6 +78,9 @@ const HomePageLinks: React.FC = () => {
         <Link href="/telemetry" className="text-[16px] text-white/60 transition-colors ease-in-out hover:text-white">
           Telemetry
         </Link>
+        <Link href="/toc" className="text-[16px] text-white/60 transition-colors ease-in-out hover:text-white">
+          Terms and conditions
+        </Link>
       </div>
       <div className="flex w-fit flex-col items-end gap-[24px] max-lg:w-fit max-lg:items-start">
         <Link href="/manifesto" className="text-[16px] text-white/60 transition-colors ease-in-out hover:text-white">
@@ -87,6 +90,9 @@ const HomePageLinks: React.FC = () => {
           Documentation
         </Link>
         <ModalCTA variant={ModalCTAVariants.CLOUD_COMING_SOON} />
+        <Link href="/privacy-policy" className="text-[16px] text-white/60 transition-colors ease-in-out hover:text-white">
+          Privacy Policy
+        </Link>
       </div>
     </div>
   )
