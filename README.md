@@ -27,10 +27,7 @@
 </p>
 
 ---
-
-## 🎯 What is Motia?
-
-Motia is a **modern backend framework** that unifies APIs, background jobs, events, and AI agents into a single cohesive system. Eliminate runtime complexity and build unified backends where **JavaScript, TypeScript, Python, etc**, work together in event-driven workflows, with built-in state management, observability, and one-click deployments.
+Motia is a **modern backend framework** that unifies APIs, background jobs, events, and AI agents into a single cohesive system. A unified backend where **JavaScript, TypeScript, Python, etc**, work together.
 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 ![Motia combines APIs, background queues, and AI agents into one system](/assets/motia-architecture-with-bg.png)
